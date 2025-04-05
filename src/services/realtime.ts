@@ -5,8 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const subscribeToTickets = (callback: () => void) => {
   console.log("Setting up realtime subscription for tickets");
   
-  // Primeiro, habilitar o recurso de realtime para a tabela tickets
-  // Este canal irá rastrear todas as mudanças na tabela tickets (inserções, atualizações e remoções)
+  // This channel will track all changes in the tickets table (inserts, updates and removals)
   const channel = supabase
     .channel('public:tickets')
     .on('postgres_changes', 
@@ -16,7 +15,7 @@ export const subscribeToTickets = (callback: () => void) => {
         table: 'tickets' 
       }, 
       (payload) => {
-        console.log('Novo ticket detectado!', payload);
+        console.log('New ticket detected!', payload);
         callback();
       }
     )
@@ -27,7 +26,7 @@ export const subscribeToTickets = (callback: () => void) => {
         table: 'tickets'
       },
       (payload) => {
-        console.log('Ticket atualizado!', payload);
+        console.log('Ticket updated!', payload);
         callback();
       }
     )
@@ -38,12 +37,12 @@ export const subscribeToTickets = (callback: () => void) => {
         table: 'tickets'
       },
       (payload) => {
-        console.log('Ticket removido!', payload);
+        console.log('Ticket removed!', payload);
         callback();
       }
     )
     .subscribe();
     
-  // Retornar o canal para que possa ser limpo quando necessário
+  // Return the channel so it can be cleaned up when needed
   return channel;
 };
