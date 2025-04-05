@@ -9,9 +9,6 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-// Access the verbose debug setting from environment variables
-const VERBOSE = typeof VERBOSE_DEBUG !== 'undefined' ? VERBOSE_DEBUG : false;
-
 export const useTicketNotifications = (
   tickets: Ticket[],
   onTicketChange: () => void
@@ -47,14 +44,6 @@ export const useTicketNotifications = (
     // Immediately unlock audio to prepare for potential sounds
     unlockAudio();
     
-    if (VERBOSE) {
-      console.log("🔍 VERBOSE: Initial subscription status:", {
-        ticketsCount: tickets.length,
-        alertActive,
-        settings
-      });
-    }
-    
     const channel = supabase
       .channel('public:tickets')
       .on('postgres_changes', 
@@ -65,15 +54,6 @@ export const useTicketNotifications = (
         }, 
         (payload) => {
           console.log('🔔 New ticket detected! Payload:', payload);
-          
-          if (VERBOSE) {
-            console.log("🔍 VERBOSE: Document state at notification time:", {
-              hasFocus: document.hasFocus(),
-              isVisible: !document.hidden,
-              activeElement: document.activeElement?.tagName,
-              readyState: document.readyState
-            });
-          }
           
           // Show toast notification - the sound will be played by the Toaster component
           toast.info('Novo atendimento na fila!');
@@ -107,15 +87,6 @@ export const useTicketNotifications = (
         
         if (status === 'SUBSCRIBED') {
           console.log('✅ Successfully subscribed to ticket events!');
-          
-          if (VERBOSE) {
-            console.log("🔍 VERBOSE: Subscription complete, audio state:", {
-              audioElement: typeof Audio !== 'undefined',
-              audioContext: typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined',
-              notificationAPI: typeof Notification !== 'undefined',
-              notificationPermission: typeof Notification !== 'undefined' ? Notification.permission : 'undefined'
-            });
-          }
         }
       });
     

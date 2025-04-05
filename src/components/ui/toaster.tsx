@@ -12,9 +12,6 @@ import { useEffect, useRef } from "react"
 import { playSound, unlockAudio } from "@/services/notificationService"
 import { useSettings } from "@/contexts/SettingsContext"
 
-// Access the verbose debug setting from environment variables
-const VERBOSE = typeof VERBOSE_DEBUG !== 'undefined' ? VERBOSE_DEBUG : false
-
 export function Toaster() {
   const { toasts } = useToast()
   const { settings } = useSettings()
@@ -26,8 +23,6 @@ export function Toaster() {
     const newToasts = toasts.filter(toast => !processedToastIds.current.has(toast.id))
     
     if (newToasts.length > 0) {
-      if (VERBOSE) console.log(`🔍 VERBOSE: Processing ${newToasts.length} new toasts`)
-      
       newToasts.forEach(toast => {
         // Mark as processed to avoid duplicate sounds
         processedToastIds.current.add(toast.id)
@@ -35,19 +30,8 @@ export function Toaster() {
         // Check for specific toast messages
         const description = String(toast.description || "")
         
-        if (VERBOSE) console.log(`🔍 VERBOSE: Toast with description: "${description}"`)
-        
         if (description.includes("Novo atendimento na fila")) {
           console.log("🔔 Novo atendimento toast detected, playing notification sound DIRECTLY")
-          
-          if (VERBOSE) {
-            console.log("🔍 VERBOSE: Audio state before playing:", {
-              userAgent: navigator.userAgent,
-              hasAudioContext: typeof AudioContext !== 'undefined' || typeof window.webkitAudioContext !== 'undefined',
-              hasNotification: typeof Notification !== 'undefined',
-              notificationPermission: typeof Notification !== 'undefined' ? Notification.permission : 'undefined'
-            })
-          }
           
           // Unlock audio first
           unlockAudio()
@@ -60,23 +44,9 @@ export function Toaster() {
           playSound(soundPath, volume, false)
           
           // Also retry after short delays to ensure it plays
-          setTimeout(() => {
-            if (VERBOSE) console.log(`🔍 VERBOSE: First retry playing ${soundPath}`)
-            unlockAudio()
-            playSound(soundPath, volume, false)
-          }, 100)
-          
-          setTimeout(() => {
-            if (VERBOSE) console.log(`🔍 VERBOSE: Second retry playing ${soundPath}`)
-            unlockAudio()
-            playSound(soundPath, volume, false)
-          }, 500)
-          
-          setTimeout(() => {
-            if (VERBOSE) console.log(`🔍 VERBOSE: Third retry playing ${soundPath}`)
-            unlockAudio()
-            playSound(soundPath, volume, false)
-          }, 1000)
+          setTimeout(() => playSound(soundPath, volume, false), 100)
+          setTimeout(() => playSound(soundPath, volume, false), 500)
+          setTimeout(() => playSound(soundPath, volume, false), 1000)
         }
       })
       
