@@ -12,6 +12,7 @@ interface SoundTesterProps {
   isMuted: boolean;
   audioPermissionGranted: boolean;
   setAudioPermissionGranted: React.Dispatch<React.SetStateAction<boolean>>;
+  formValues: any; // To get form values
 }
 
 const SoundTester = ({ 
@@ -19,7 +20,8 @@ const SoundTester = ({
   volume, 
   isMuted, 
   audioPermissionGranted,
-  setAudioPermissionGranted 
+  setAudioPermissionGranted,
+  formValues
 }: SoundTesterProps) => {
   const [isPlayingSound, setIsPlayingSound] = useState<string | null>(null);
   const { settings } = useSettings();
@@ -33,8 +35,8 @@ const SoundTester = ({
       return;
     }
     
-    // Obter o tipo de som atual com base na configuração
-    const soundToPlay = settings[soundKey];
+    // Obter o tipo de som atual com base no formulário em vez de configurações salvas
+    const soundToPlay = formValues[soundKey];
     
     console.log(`Testing sound: ${soundKey} -> ${soundToPlay}`);
     

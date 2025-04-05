@@ -142,6 +142,7 @@ const SoundSettings = ({
         isMuted={isMuted}
         audioPermissionGranted={audioPermissionGranted}
         setAudioPermissionGranted={setAudioPermissionGranted}
+        formValues={form.getValues()} // Pass all current form values
       />
     </div>
   );
