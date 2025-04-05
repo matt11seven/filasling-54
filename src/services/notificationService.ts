@@ -75,7 +75,7 @@ export const playSoundByEventType = (
       return false;
     }
     
-    // Try to get sound configuration - explicitly check for the setting value
+    // Try to get sound configuration
     const soundType = settings[soundSetting];
     
     console.log(`playSoundByEventType: Using sound setting from '${soundSetting}': '${soundType}'`);
@@ -89,7 +89,7 @@ export const playSoundByEventType = (
       
       if (!soundType) {
         console.warn(`playSoundByEventType: No sound configured for ${eventType} (${soundSetting}), defaulting to notificacao`);
-        // Default to notificacao.mp3 if no sound is configured
+        // Try to play a default sound
         return playSound("notificacao", volume !== undefined ? volume : (settings.soundVolume || 0.5), loop);
       }
     }
@@ -97,7 +97,7 @@ export const playSoundByEventType = (
     // Add more detailed log for debugging
     console.log(`playSoundByEventType: Event type '${eventType}' mapped to config '${soundSetting}' with value '${soundType}'`);
     
-    // Try to unlock audio first
+    // Try to unlock audio first (for iOS/Safari)
     unlockAudio();
     
     // Use volume from settings or provided volume
@@ -105,22 +105,24 @@ export const playSoundByEventType = (
       settings.soundVolume !== undefined ? settings.soundVolume : 0.5
     );
     
-    // Para alertas, podemos querer configurações específicas (como loop)
-    const shouldLoop = eventType === "alert" ? true : loop;
+    // Force soundVolume to be at least 0.5 to ensure it's audible
+    const finalVolume = Math.max(soundVolume, 0.5);
     
-    console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${soundVolume}, loop: ${shouldLoop}`);
+    console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${finalVolume}, loop: ${loop}`);
     
-    // Important: Try loading the audio first to ensure it's ready to play
-    try {
-      const audio = getAudio(soundType);
-      console.log(`Audio object created for ${soundType}, loading...`);
-      audio.load();
-      console.log(`Audio loaded for ${soundType}`);
-    } catch (err) {
-      console.warn("Failed to preload audio:", err);
+    // Directly play the sound using the appropriate type
+    const success = playSound(soundType, finalVolume, loop);
+    
+    if (!success) {
+      console.warn(`playSoundByEventType: Failed to play sound ${soundType}, trying again with a delay`);
+      // Try again after a small delay
+      setTimeout(() => {
+        unlockAudio();
+        playSound(soundType, finalVolume, loop);
+      }, 300);
     }
     
-    return playSound(soundType, soundVolume, shouldLoop);
+    return success;
   } catch (error) {
     console.error("Error in playSoundByEventType:", error);
     return false;

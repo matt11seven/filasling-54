@@ -1,12 +1,10 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Ticket } from "@/types";
 import { useSettings } from "@/contexts/SettingsContext";
 import { 
-  startAlertNotification,
   stopAlertNotification,
-  unlockAudio,
-  debugAudioSystems
+  unlockAudio
 } from "@/services/notificationService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,8 +23,6 @@ export const useTicketNotifications = (
     if (pendingTickets.length > 0 && !alertActive) {
       // Unlock audio first
       unlockAudio();
-      
-      // Don't start alert sound here - only when the user sees the alert popup
       console.log("✅ Pending tickets detected, but alert sound will be played when popup is shown");
       setAlertActive(true);
     } else if (pendingTickets.length === 0 && alertActive) {
@@ -47,9 +43,6 @@ export const useTicketNotifications = (
     
     // Immediately unlock audio to prepare for potential sounds
     unlockAudio();
-    
-    // Check audio system state before setting up subscription
-    console.log("AUDIO SYSTEM STATUS BEFORE SUBSCRIPTION:", debugAudioSystems());
     
     const channel = supabase
       .channel('public:tickets')
@@ -75,8 +68,7 @@ export const useTicketNotifications = (
           schema: 'public',
           table: 'tickets'
         },
-        (payload) => {
-          console.log('Ticket updated!', payload);
+        () => {
           onTicketChange();
         }
       )
@@ -86,8 +78,7 @@ export const useTicketNotifications = (
           schema: 'public',
           table: 'tickets'
         },
-        (payload) => {
-          console.log('Ticket removed!', payload);
+        () => {
           onTicketChange();
         }
       )

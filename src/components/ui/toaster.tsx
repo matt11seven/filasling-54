@@ -9,7 +9,7 @@ import {
   ToastViewport,
 } from "@/components/ui/toast"
 import { useEffect, useRef } from "react"
-import { playSoundByEventType } from "@/services/notificationService"
+import { playSoundByEventType, unlockAudio } from "@/services/notificationService"
 import { useSettings } from "@/contexts/SettingsContext"
 
 export function Toaster() {
@@ -27,12 +27,21 @@ export function Toaster() {
         // Mark as processed to avoid duplicate sounds
         processedToastIds.current.add(toast.id)
         
+        // Aggressively try to unlock audio before playing
+        unlockAudio();
+        
         // Check for specific toast messages
         const description = String(toast.description || "")
         
         if (description.includes("Novo atendimento na fila")) {
           console.log("🔔 Novo atendimento toast detected, playing notification sound")
-          playSoundByEventType("notification", settings, undefined, false)
+          
+          // Force a small delay to ensure audio context is ready
+          setTimeout(() => {
+            // Try playing the sound - use a higher volume to ensure it's audible
+            const success = playSoundByEventType("notification", settings, 0.8, false)
+            console.log(`Notification sound played successfully: ${success}`)
+          }, 100)
         }
       })
       
