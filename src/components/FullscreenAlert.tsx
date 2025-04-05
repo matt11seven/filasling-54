@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Ticket } from "@/types";
 import { getTimeStatus, formatTimeSince } from "@/utils/timeUtils";
 import { useSettings } from "@/contexts/SettingsContext";
-import { stopAlertNotification, playSound, unlockAudio, debugAudioSystems } from "@/services/notificationService";
+import { stopAlertNotification, playSound, unlockAudio, debugAudioSystems, playSoundByEventType } from "@/services/notificationService";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,28 +30,33 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
     // Tenta desbloquear o áudio primeiro (importante para iOS/Safari)
     unlockAudio();
     
-    // Função para tentar reproduzir o som do alerta
+    // Função para tentar reproduzir o som do alerta quando o popup abrir
     const tryPlaySound = () => {
-      // Solicit unlocking sound before attempting to play
+      // Solicitar desbloqueio de som antes de tentar reproduzir
       unlockAudio();
       
-      const success = playSound("alert", settings.soundVolume, true);
+      // Usar playSoundByEventType para garantir consistência com as configurações
+      const success = playSoundByEventType("alert", settings);
+      
       if (success) {
         setSoundPlayed(true);
-        console.log("✅ Critical alert sound started successfully");
+        console.log("✅ Som de alerta crítico iniciado com sucesso");
       } else {
-        console.warn("⚠️ Failed to play critical alert sound, will retry on interaction");
+        console.warn("⚠️ Falha ao reproduzir som de alerta crítico, tentará novamente na interação");
         toast.warning("Clique na tela para permitir sons de alerta", { duration: 5000 });
       }
     };
     
-    // Tenta tocar o som imediatamente
-    tryPlaySound();
+    // Espera até que o popup esteja visível antes de tocar o som
+    // Isso garante que o som seja associado ao popup aparecendo
+    const soundTimer = setTimeout(() => {
+      tryPlaySound();
+    }, 100); // Pequeno atraso para sincronizar com a animação de entrada
     
     // Configurar event listener para interação do usuário
     const handleUserInteraction = () => {
       if (!soundPlayed) {
-        console.log("User interaction detected in FullscreenAlert, trying to play sound...");
+        console.log("Interação do usuário detectada em FullscreenAlert, tentando reproduzir som...");
         tryPlaySound();
       }
     };
@@ -74,8 +79,9 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
       document.removeEventListener('click', handleUserInteraction);
       document.removeEventListener('touchstart', handleUserInteraction);
       clearInterval(timer);
+      clearTimeout(soundTimer);
     };
-  }, [settings.soundVolume, soundPlayed]);
+  }, [settings, soundPlayed]);
 
   // Formata o tempo desde a criação
   const { minutes } = getTimeStatus(
@@ -108,7 +114,7 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
         // Try to unlock audio on any click on the alert
         unlockAudio();
         if (!soundPlayed) {
-          playSound("alert", settings.soundVolume, true);
+          playSoundByEventType("alert", settings);
           setSoundPlayed(true);
         }
       }}

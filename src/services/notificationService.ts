@@ -43,7 +43,8 @@ export const requestBackgroundAudioPermission = async (): Promise<boolean> => {
 export const playSoundByEventType = (
   eventType: "notification" | "alert" | "podium" | "firstPlace", 
   settings: any, 
-  volume?: number
+  volume?: number,
+  loop: boolean = false
 ): boolean => {
   // If no settings are provided, return false
   if (!settings) {
@@ -94,9 +95,12 @@ export const playSoundByEventType = (
       settings.soundVolume !== undefined ? settings.soundVolume : 0.5
     );
     
-    console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${soundVolume}`);
+    // Para alertas, podemos querer configurações específicas (como loop)
+    const shouldLoop = eventType === "alert" ? true : loop;
     
-    return playSound(soundType, soundVolume, false);
+    console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${soundVolume}, loop: ${shouldLoop}`);
+    
+    return playSound(soundType, soundVolume, shouldLoop);
   } catch (error) {
     console.error("Error in playSoundByEventType:", error);
     return false;
