@@ -10,13 +10,18 @@ export { canPlayAudio, unlockAudio, getAudioState };
 import { preloadSounds, getAudio } from './sound/soundResources';
 export { preloadSounds, getAudio };
 
-// Re-export from sound player
-import { playSound, stopSound, startAlertNotification, stopAlertNotification, isNotificationActive } from './sound/soundPlayer';
+// Re-export from sound player and notification manager
+import { playSound, stopSound } from './sound/soundPlayer';
+import { startAlertNotification, stopAlertNotification, isNotificationActive } from './sound/notificationManager';
 export { playSound, stopSound, startAlertNotification, stopAlertNotification, isNotificationActive };
 
 // Re-export from browser notifications
 import { requestNotificationPermission, sendBrowserNotification } from './notifications/browserNotifications';
 export { requestNotificationPermission, sendBrowserNotification };
+
+// Re-export from audio context
+import { initAudioContext, resumeAudioContext } from './sound/audioContext';
+export { initAudioContext, resumeAudioContext };
 
 // Helper function to request all necessary permissions for background audio
 export const requestBackgroundAudioPermission = async (): Promise<boolean> => {
