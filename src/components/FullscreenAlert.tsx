@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Ticket } from "@/types";
@@ -36,7 +35,8 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
       unlockAudio();
       
       // Usar playSoundByEventType para garantir consistência com as configurações
-      const success = playSoundByEventType("alert", settings);
+      // Importante: false para loop, pois queremos tocar apenas uma vez
+      const success = playSoundByEventType("alert", settings, undefined, false);
       
       if (success) {
         setSoundPlayed(true);
@@ -47,11 +47,8 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
       }
     };
     
-    // Espera até que o popup esteja visível antes de tocar o som
-    // Isso garante que o som seja associado ao popup aparecendo
-    const soundTimer = setTimeout(() => {
-      tryPlaySound();
-    }, 100); // Pequeno atraso para sincronizar com a animação de entrada
+    // Tocar o som imediatamente quando o componente montar
+    tryPlaySound();
     
     // Configurar event listener para interação do usuário
     const handleUserInteraction = () => {
@@ -79,7 +76,6 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
       document.removeEventListener('click', handleUserInteraction);
       document.removeEventListener('touchstart', handleUserInteraction);
       clearInterval(timer);
-      clearTimeout(soundTimer);
     };
   }, [settings, soundPlayed]);
 
@@ -114,7 +110,7 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
         // Try to unlock audio on any click on the alert
         unlockAudio();
         if (!soundPlayed) {
-          playSoundByEventType("alert", settings);
+          playSoundByEventType("alert", settings, undefined, false);
           setSoundPlayed(true);
         }
       }}

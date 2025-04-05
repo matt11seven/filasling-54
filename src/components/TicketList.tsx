@@ -106,8 +106,9 @@ const TicketList = ({ tickets, stages, onTicketChange }: TicketListProps) => {
     const handleTicketChange = () => {
       console.log('Alteração detectada nos tickets - atualizando lista...');
       onTicketChange();
-      // Play notification sound for new/updated tickets using the new function
-      playSoundByEventType('notification', settings);
+      
+      // Play notification sound for new/updated tickets - tocando apenas UMA VEZ
+      playSoundByEventType('notification', settings, undefined, false);
       toast.info('Atualização de tickets recebida!');
     };
     
@@ -132,27 +133,9 @@ const TicketList = ({ tickets, stages, onTicketChange }: TicketListProps) => {
       // Unlock audio first
       unlockAudio();
       
-      // Start alert sound using the alert sound setting
-      const success = startAlertNotification(settings.alertSound, settings.soundVolume);
-      
-      if (success) {
-        console.log("✅ Alert notification started successfully");
-        setAlertActive(true);
-      } else {
-        console.warn("⚠️ Failed to start alert notification, audio may be blocked");
-        // Try again with user interaction
-        const retryWithInteraction = () => {
-          unlockAudio();
-          const retrySuccess = startAlertNotification(settings.alertSound, settings.soundVolume);
-          if (retrySuccess) {
-            setAlertActive(true);
-            document.removeEventListener("click", retryWithInteraction);
-          }
-        };
-        
-        // Add temporary listener to retry on click
-        document.addEventListener("click", retryWithInteraction, { once: true });
-      }
+      // NÃO iniciar o alerta sonoro aqui - apenas quando o usuário visualizar o alerta na tela
+      console.log("✅ Tickets pendentes detectados, mas o alerta sonoro será iniciado apenas quando o popup for exibido");
+      setAlertActive(true);
     } else if (pendingTickets.length === 0 && alertActive) {
       // Stop alert sound
       stopAlertNotification();
