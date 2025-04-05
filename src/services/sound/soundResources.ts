@@ -1,18 +1,20 @@
 
 // Sound options with URLs for audio files
 export const soundOptions = {
-  notification: "/sounds/notification.mp3",
-  alert: "/sounds/alert.mp3",
-  beep: "/sounds/beep.mp3",
-  podium: "/sounds/podium.mp3",
-  firstPlace: "/sounds/firstPlace.mp3",
+  // Custom sounds only
+  alertabeebeep: "/sounds/alertabeebeep.mp3",
+  cashregister: "/sounds/cashregister.mp3",
+  notificacao: "/sounds/notificacao.mp3",
+  senna: "/sounds/senna.mp3",
+  sireneindustrial: "/sounds/sireneindustrial.mp3",
+  ultrapassagem: "/sounds/ultrapassagem.mp3",
 };
 
 // Available sound files in the sounds directory
 // This includes only the custom sounds uploaded by users
 export const availableSoundFiles: string[] = [
-  // Additional sound files from the image
-  "alertabeebep.mp3",
+  // Custom sound files
+  "alertabeebeep.mp3",
   "cashregister.mp3",
   "notificacao.mp3",
   "senna.mp3",
@@ -20,16 +22,15 @@ export const availableSoundFiles: string[] = [
   "ultrapassagem.mp3"
 ];
 
-// Combinação de todos os sons disponíveis (padrões e personalizados)
+// All available sounds (only custom sounds now)
 export const allAvailableSounds: string[] = [
-  // Sons padrão do sistema
-  "notification",
-  "alert",
-  "beep",
-  "podium", 
-  "firstPlace",
-  // Sons personalizados
-  ...availableSoundFiles
+  // Only custom sounds
+  "alertabeebeep",
+  "cashregister",
+  "notificacao",
+  "senna",
+  "sireneindustrial",
+  "ultrapassagem"
 ];
 
 // Function to get nice display name from a filename
@@ -44,13 +45,7 @@ export const getSoundDisplayName = (filename: string | undefined): string => {
   
   // Make it more readable (capitalize first letter, handle special cases)
   switch(nameWithoutExtension) {
-    case 'notification': return 'Som de Notificação';
-    case 'alert': return 'Som de Alerta';
-    case 'beep': return 'Som de Beep';
-    case 'podium': return 'Som de Pódio';
-    case 'firstPlace': return 'Som de Primeiro Lugar';
-    case 'alerta': return 'Som de Alerta (Alt)';
-    case 'alertabeebep': return 'Alerta Beep';
+    case 'alertabeebeep': return 'Alerta Beep';
     case 'cashregister': return 'Caixa Registradora';
     case 'notificacao': return 'Notificação';
     case 'senna': return 'Senna';
@@ -58,10 +53,10 @@ export const getSoundDisplayName = (filename: string | undefined): string => {
     case 'ultrapassagem': return 'Ultrapassagem';
     case 'none': return 'Sem Som';
     default:
-      // Para arquivos personalizados, capitaliza a primeira letra e adiciona espaços antes de letras maiúsculas
+      // For other files, capitalize first letter and add spaces before uppercase letters
       return nameWithoutExtension
-        .replace(/([A-Z])/g, ' $1') // Adiciona espaço antes de letras maiúsculas
-        .replace(/^./, str => str.toUpperCase()); // Capitaliza a primeira letra
+        .replace(/([A-Z])/g, ' $1') // Add space before uppercase letters
+        .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
   }
 };
 
@@ -95,25 +90,6 @@ export const preloadSounds = () => {
     }
   });
   
-  // Preload custom sounds
-  availableSoundFiles.forEach(filename => {
-    try {
-      const soundUrl = `/sounds/${filename}`;
-      const audio = new Audio(soundUrl);
-      audio.preload = "auto";
-      
-      // Cache the audio object
-      audioCache[filename] = audio;
-      
-      // This will start loading the audio file
-      audio.load();
-      
-      console.log(`Preloaded custom sound: ${filename} (${soundUrl})`);
-    } catch (error) {
-      console.error(`Failed to preload sound ${filename}:`, error);
-    }
-  });
-  
   return Object.keys(audioCache).length > 0;
 };
 
@@ -141,9 +117,9 @@ export const getAudio = (soundType: string): HTMLAudioElement => {
     soundUrl = `/sounds/${soundType}`;
     console.log(`Custom sound file: ${soundType} -> ${soundUrl}`);
   } else {
-    // Fallback to notification
-    console.warn(`Unknown sound type: "${soundType}", falling back to notification`);
-    soundUrl = soundOptions.notification;
+    // Fallback to notificacao
+    console.warn(`Unknown sound type: "${soundType}", falling back to notificacao`);
+    soundUrl = soundOptions.notificacao;
   }
   
   // If we have a cached version, clone it for safe usage

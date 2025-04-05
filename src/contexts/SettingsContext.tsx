@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { AppSettings } from "@/types";
 
@@ -15,11 +14,11 @@ const defaultSettings: AppSettings = {
   criticalTimeMinutes: 20,
   fullScreenAlertMinutes: 30,
   soundVolume: 0.5,
-  // Sons individuais para cada tipo de evento
-  notificationSound: "notification",
-  alertSound: "alert",
-  podiumSound: "podium",
-  firstPlaceSound: "firstPlace",
+  // Updated default sounds using the available custom sounds
+  notificationSound: "notificacao",
+  alertSound: "sireneindustrial",
+  podiumSound: "cashregister",
+  firstPlaceSound: "senna",
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

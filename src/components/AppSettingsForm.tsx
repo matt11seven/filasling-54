@@ -63,10 +63,10 @@ const AppSettingsForm = ({ initialTab = "general" }: AppSettingsFormProps) => {
       criticalTimeMinutes: 20,
       fullScreenAlertMinutes: 30,
       soundVolume: 0.5,
-      notificationSound: "notification",
-      alertSound: "alert",
-      podiumSound: "podium",
-      firstPlaceSound: "firstPlace",
+      notificationSound: "notificacao",
+      alertSound: "sireneindustrial",
+      podiumSound: "cashregister",
+      firstPlaceSound: "senna",
     });
     toast.info("Configurações restauradas para os valores padrão");
   };
