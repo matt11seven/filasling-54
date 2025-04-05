@@ -36,8 +36,11 @@ export function Toaster() {
           // Unlock audio context first to ensure it can play
           unlockAudio()
           
+          // Use the user's configured volume setting instead of hardcoded value
+          const volume = settings.soundVolume || 0.5 // Default to 0.5 if not defined
+          
           // CRITICAL: Play the sound with a more direct approach for notification
-          playNotificationSound("notificacao", settings.soundVolume || 0.8)
+          playNotificationSound("notificacao", volume)
         }
       })
       
