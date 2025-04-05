@@ -58,8 +58,9 @@ export const setupUserInteractionTracking = () => {
       document.addEventListener(event, handleInteraction);
     });
     
-    // Verificar imediatamente se o usuário já interagiu
-    if (userHasInteracted) {
+    // Always treat sessions with previous interactions as interacted
+    if (sessionStorage.getItem('userHasInteracted') === 'true') {
+      userHasInteracted = true;
       handleInteraction();
     }
   }
@@ -67,16 +68,14 @@ export const setupUserInteractionTracking = () => {
 
 // Check if audio can be played
 export const canPlayAudio = (): boolean => {
-  return userHasInteracted;
+  return userHasInteracted || sessionStorage.getItem('userHasInteracted') === 'true';
 };
 
 // Force unlock audio context
 export const unlockAudio = (): boolean => {
-  // Se ainda não houve interação, forçamos isso
-  if (!userHasInteracted) {
-    userHasInteracted = true;
-    sessionStorage.setItem('userHasInteracted', 'true');
-  }
+  // Always force interaction state to true
+  userHasInteracted = true;
+  sessionStorage.setItem('userHasInteracted', 'true');
 
   // Try to resume AudioContext if suspended
   if (audioContext && audioContext.state === 'suspended') {

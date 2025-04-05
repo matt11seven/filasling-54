@@ -122,18 +122,10 @@ export const getAudio = (soundType: string): HTMLAudioElement => {
     soundUrl = soundOptions.notificacao;
   }
   
-  // If we have a cached version, clone it for safe usage
-  if (audioCache[soundType]) {
-    console.log(`Using cached audio for: ${soundType}`);
-    // O problema é que clonar o audio não é uma boa ideia, melhor criar nova instância
-    const newAudio = new Audio(soundUrl);
-    newAudio.preload = "auto";
-    return newAudio;
-  }
-  
-  // Fall back to new instance if not cached
+  // Always create a new instance for reliable playback
   console.log(`Creating new audio instance for: ${soundType} (${soundUrl})`);
   const newAudio = new Audio(soundUrl);
   newAudio.preload = "auto";
+  newAudio.load(); // Force immediate loading
   return newAudio;
 };
