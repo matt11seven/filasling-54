@@ -6,17 +6,21 @@ import {
   preloadSounds,
   requestBackgroundAudioPermission
 } from "@/services/notificationService";
+import { toast } from "sonner";
 
 export const useAudioSetup = () => {
   // Initialize audio context on first render and preload sounds
   useEffect(() => {
     console.log("Initializing audio systems...");
     
-    // Attempt to unlock audio early
+    // Force unlock audio early
     unlockAudio();
     
     // Debug audio state
     console.log("Initial audio state:", debugAudioSystems());
+    
+    // Preload all sounds immediately
+    preloadSounds();
     
     // Request background audio permissions
     requestBackgroundAudioPermission().then(granted => {
@@ -24,41 +28,45 @@ export const useAudioSetup = () => {
         console.log("✅ Background audio permissions granted");
       } else {
         console.log("⚠️ Some background audio permissions may not be granted");
+        
+        // Show a toast to inform the user if permissions are needed
+        toast.info(
+          "For notification sounds, please allow notifications and interact with the page",
+          { duration: 5000, important: true }
+        );
       }
     });
     
     // Initialize handler for user interaction to unlock audio
     const handleUserInteraction = () => {
-      console.log("User interaction detected");
+      console.log("User interaction detected - unlocking audio");
       
-      // Unlock audio
+      // Unlock audio with force
       unlockAudio();
       
-      // Preload sounds
+      // Preload sounds again to make sure they're cached
       preloadSounds();
       
       // Play a test sound with very low volume to ensure the audio context is running
-      const testAudio = new Audio();
+      const testAudio = new Audio("/sounds/notificacao.mp3");
       testAudio.volume = 0.01; // Almost silent
       testAudio.play().catch(e => console.log("Silent test audio play failed:", e));
       
-      // Debug current state
+      // Debug current state after interaction
       console.log("After interaction audio state:", debugAudioSystems());
-      
-      // Remove handlers after first interaction
-      document.removeEventListener("click", handleUserInteraction);
-      document.removeEventListener("touchstart", handleUserInteraction);
     };
     
-    // Add interaction listeners
-    document.addEventListener("click", handleUserInteraction);
-    document.addEventListener("touchstart", handleUserInteraction);
+    // Add interaction listeners with capture phase to ensure they run early
+    document.addEventListener("click", handleUserInteraction, { capture: true });
+    document.addEventListener("touchstart", handleUserInteraction, { capture: true });
+    document.addEventListener("keydown", handleUserInteraction, { capture: true });
     
     // Setup visibility change listener to ensure audio works in background
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        console.log("Page hidden, ensuring audio context is running");
+      if (!document.hidden) {
+        console.log("Page visible again, ensuring audio context is running");
         unlockAudio();
+        preloadSounds();
       }
     };
     
@@ -66,8 +74,9 @@ export const useAudioSetup = () => {
     
     // Cleanup function
     return () => {
-      document.removeEventListener("click", handleUserInteraction);
-      document.removeEventListener("touchstart", handleUserInteraction);
+      document.removeEventListener("click", handleUserInteraction, { capture: true });
+      document.removeEventListener("touchstart", handleUserInteraction, { capture: true });
+      document.removeEventListener("keydown", handleUserInteraction, { capture: true });
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);

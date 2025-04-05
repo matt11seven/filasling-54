@@ -33,20 +33,11 @@ export function Toaster() {
         if (description.includes("Novo atendimento na fila")) {
           console.log("🔔 Novo atendimento toast detected, playing notification sound DIRECTLY")
           
-          // Unlock audio first
+          // Unlock audio context first to ensure it can play
           unlockAudio()
           
-          // Play sound directly with maximum volume for reliability
-          const soundPath = "notificacao"
-          const volume = 1.0 // Maximum volume
-          
-          // Try playing immediately
-          playSound(soundPath, volume, false)
-          
-          // Also retry after short delays to ensure it plays
-          setTimeout(() => playSound(soundPath, volume, false), 100)
-          setTimeout(() => playSound(soundPath, volume, false), 500)
-          setTimeout(() => playSound(soundPath, volume, false), 1000)
+          // CRITICAL: Play the sound with a more direct approach for notification
+          playNotificationSound("notificacao", settings.soundVolume || 0.8)
         }
       })
       
@@ -63,6 +54,56 @@ export function Toaster() {
       }
     }
   }, [toasts, settings])
+
+  // Dedicated function for playing notification sounds
+  const playNotificationSound = (soundName: string, volume: number) => {
+    console.log(`🎵 Attempting to play notification sound: ${soundName} with volume ${volume}`)
+    
+    // Ensure audio is unlocked
+    unlockAudio()
+    
+    // Get the proper path
+    const soundPath = soundName.includes('/') ? soundName : `/sounds/${soundName}.mp3`
+    console.log(`🎵 Using sound path: ${soundPath}`)
+    
+    // Create a new audio element directly
+    const audio = new Audio(soundPath)
+    audio.volume = Math.min(1, Math.max(0, volume)) // Ensure volume is between 0 and 1
+    
+    // Set attributes for mobile playback
+    audio.setAttribute('playsinline', 'true')
+    audio.setAttribute('preload', 'auto')
+    
+    // Log events for debugging
+    audio.addEventListener('play', () => console.log(`▶️ Sound ${soundName} started playing`))
+    audio.addEventListener('playing', () => console.log(`✅ Sound ${soundName} is now playing`))
+    audio.addEventListener('error', (e) => console.error(`❌ Error playing sound ${soundName}:`, e))
+    
+    // Force loading before playing
+    audio.load()
+    
+    // Play with promise handling
+    const playPromise = audio.play().catch(error => {
+      console.error(`❌ Failed to play ${soundName}:`, error)
+      
+      // If autoplay was prevented, try again after a short delay
+      if (error.name === 'NotAllowedError') {
+        console.warn('⚠️ Autoplay prevented. Trying again...')
+        
+        setTimeout(() => {
+          unlockAudio()
+          audio.play().catch(e => console.error(`Retry failed for ${soundName}:`, e))
+        }, 300)
+      }
+    })
+    
+    // Try again with delay to ensure it plays
+    setTimeout(() => {
+      const retryAudio = new Audio(soundPath)
+      retryAudio.volume = Math.min(1, Math.max(0, volume))
+      retryAudio.play().catch(e => console.log('Scheduled retry - ignoring if already playing:', e))
+    }, 500)
+  }
 
   return (
     <ToastProvider>
