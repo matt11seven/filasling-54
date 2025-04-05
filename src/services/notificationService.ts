@@ -18,13 +18,34 @@ export { playSound, stopSound, startAlertNotification, stopAlertNotification, is
 import { requestNotificationPermission, sendBrowserNotification } from './notifications/browserNotifications';
 export { requestNotificationPermission, sendBrowserNotification };
 
-// Função auxiliar para reproduzir som com base nas configurações do usuário
+// Helper function to request all necessary permissions for background audio
+export const requestBackgroundAudioPermission = async (): Promise<boolean> => {
+  // First unlock audio
+  const audioUnlocked = unlockAudio();
+  
+  // Then request notification permission (helps with background audio in some browsers)
+  let notificationPermission = false;
+  
+  if ("Notification" in window) {
+    if (Notification.permission === "granted") {
+      notificationPermission = true;
+    } else if (Notification.permission !== "denied") {
+      const permission = await Notification.requestPermission();
+      notificationPermission = permission === "granted";
+    }
+  }
+  
+  console.log(`Background audio permissions: Audio unlocked: ${audioUnlocked}, Notifications: ${notificationPermission}`);
+  return audioUnlocked && notificationPermission;
+};
+
+// Helper function to play sound by event type
 export const playSoundByEventType = (
   eventType: "notification" | "alert" | "podium" | "firstPlace", 
   settings: any, 
   volume?: number
 ): boolean => {
-  // Se nenhuma configuração for fornecida, retorne falso
+  // If no settings are provided, return false
   if (!settings) {
     console.warn("playSoundByEventType: settings object is missing");
     return false;
@@ -33,7 +54,7 @@ export const playSoundByEventType = (
   try {
     console.log(`playSoundByEventType: Playing sound for event: ${eventType}`);
     
-    // Mapeia o tipo de evento para a configuração correspondente
+    // Map event type to corresponding setting
     const soundSettingsMap: Record<string, string> = {
       notification: "notificationSound",
       alert: "alertSound",
@@ -48,7 +69,7 @@ export const playSoundByEventType = (
       return false;
     }
     
-    // Tenta pegar configuração do som
+    // Try to get sound configuration
     const soundType = settings[soundSetting];
     
     if (!soundType) {
@@ -56,19 +77,19 @@ export const playSoundByEventType = (
       return false;
     }
     
-    // Adiciona log mais detalhado para debug
-    console.log(`playSoundByEventType: Tipo de evento '${eventType}' mapeado para configuração '${soundSetting}' com valor '${soundType}'`);
+    // Add more detailed log for debugging
+    console.log(`playSoundByEventType: Event type '${eventType}' mapped to config '${soundSetting}' with value '${soundType}'`);
     
-    // Se o tipo de som for "none", não toca nada
+    // If sound type is "none", don't play anything
     if (soundType === "none") {
       console.log(`playSoundByEventType: Sound type is "none" for ${eventType}, not playing`);
       return true;
     }
     
-    // Tenta desbloquear o áudio primeiro
+    // Try to unlock audio first
     unlockAudio();
     
-    // Usa o volume das configurações ou o volume fornecido
+    // Use volume from settings or provided volume
     const soundVolume = volume !== undefined ? volume : (
       settings.soundVolume !== undefined ? settings.soundVolume : 0.5
     );
@@ -94,6 +115,11 @@ export const debugAudioSystems = () => {
     console.log(`AudioContext state: ${state.audioContextState}`);
   }
   console.log(`Active audio instance: ${state.audioInstanceExists ? 'Yes' : 'No'}`);
+  console.log(`Browser supports Notifications: ${"Notification" in window}`);
+  if ("Notification" in window) {
+    console.log(`Notification permission: ${Notification.permission}`);
+  }
+  console.log(`Page is visible: ${!document.hidden}`);
   console.log("-----------------");
   return state;
 };

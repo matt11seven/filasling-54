@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Ticket, Stage } from "@/types";
 import TicketCard from "./TicketCard";
@@ -13,7 +12,8 @@ import {
   unlockAudio, 
   debugAudioSystems,
   preloadSounds,
-  playSoundByEventType
+  playSoundByEventType,
+  requestBackgroundAudioPermission
 } from "@/services/notificationService";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,6 +36,15 @@ const TicketList = ({ tickets, stages, onTicketChange }: TicketListProps) => {
     
     // Debug audio state
     console.log("Initial audio state:", debugAudioSystems());
+    
+    // Request background audio permissions
+    requestBackgroundAudioPermission().then(granted => {
+      if (granted) {
+        console.log("✅ Background audio permissions granted");
+      } else {
+        console.log("⚠️ Some background audio permissions may not be granted");
+      }
+    });
     
     // Initialize handler for user interaction to unlock audio
     const handleUserInteraction = () => {
@@ -64,11 +73,28 @@ const TicketList = ({ tickets, stages, onTicketChange }: TicketListProps) => {
     document.addEventListener("click", handleUserInteraction);
     document.addEventListener("touchstart", handleUserInteraction);
     
+    // Setup visibility change listener to ensure audio works in background
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.log("Page hidden, ensuring audio context is running");
+        unlockAudio();
+        // If there are pending tickets and alert should be active, restart it
+        const pendingTickets = tickets.filter(ticket => ticket.etapa_numero === 1);
+        if (pendingTickets.length > 0 && !alertActive) {
+          startAlertNotification(settings.alertSound, settings.soundVolume);
+          setAlertActive(true);
+        }
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
     // Cleanup function
     return () => {
       stopAlertNotification();
       document.removeEventListener("click", handleUserInteraction);
       document.removeEventListener("touchstart", handleUserInteraction);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 

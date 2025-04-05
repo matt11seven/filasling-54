@@ -4,10 +4,27 @@ import { getAudioInstance, setAudioInstance, unlockAudio, canPlayAudio } from '.
 
 let notificationInterval: NodeJS.Timeout | null = null;
 let lastPlayedAudio: HTMLAudioElement | null = null;
+let audioContext: AudioContext | null = null;
+
+// Initialize Web Audio API for better background playback support
+const initAudioContext = () => {
+  if (!audioContext) {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        audioContext = new AudioContextClass();
+        console.log("AudioContext initialized for better background playback");
+      }
+    } catch (error) {
+      console.warn("Failed to create AudioContext:", error);
+    }
+  }
+  return audioContext;
+};
 
 export const playSound = (soundType: string = "notification", volume: number = 0.5, loop: boolean = false): boolean => {
   try {
-    // Checagem se o tipo de som é "none"
+    // Check if sound type is "none"
     if (soundType === "none") {
       console.log("Sound type is 'none', not playing any sound");
       return true;
@@ -22,8 +39,8 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     // Stop any existing sound
     stopSound();
     
-    // Log mais detalhado para debug
-    console.log(`▶️ Tentando reproduzir som: "${soundType}", volume: ${volume}, loop: ${loop}`);
+    // More detailed log for debugging
+    console.log(`▶️ Attempting to play sound: "${soundType}", volume: ${volume}, loop: ${loop}`);
     
     // Get the audio instance
     const newAudio = getAudio(soundType);
@@ -50,9 +67,22 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       console.error(`❌ Error playing sound '${soundType}':`, e);
     });
     
-    // Try to play the audio
+    // Try to play the audio with Web Audio API for better background support
     try {
+      // Initialize context if needed
+      initAudioContext();
+      
+      // Play with standard HTML5 Audio first
       const playPromise = newAudio.play();
+      
+      // If window is not focused, try to send a notification
+      if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+        // This might help trigger audio on some browsers when minimized
+        new Notification("Notificação de Sistema", {
+          body: `Som de alerta: ${soundType}`,
+          silent: true, // Don't play notification sound, we're playing our own
+        });
+      }
       
       if (playPromise !== undefined) {
         playPromise.catch((error) => {
@@ -90,7 +120,7 @@ export const stopSound = () => {
     }
   }
   
-  // Também pare o último áudio reproduzido
+  // Also stop the last played audio
   if (lastPlayedAudio && lastPlayedAudio !== audio) {
     try {
       lastPlayedAudio.pause();
@@ -118,8 +148,26 @@ export const startAlertNotification = (soundType: string, volume: number, interv
   // First play immediately
   const success = playSound(soundType, volume, false);
   
+  // Request notification permission if needed for background alerts
+  if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+    Notification.requestPermission().then(permission => {
+      console.log(`Notification permission: ${permission}`);
+    });
+  }
+  
   // Then set up interval only if first play was successful
   if (success) {
+    // Setup visibility change handler for minimized window
+    const handleVisibilityChange = () => {
+      if (document.hidden && notificationInterval) {
+        // When tab becomes hidden, play sound immediately to ensure it starts in background
+        playSound(soundType, volume, false);
+      }
+    };
+    
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
     notificationInterval = setInterval(() => {
       playSound(soundType, volume, false);
     }, intervalSeconds * 1000);
@@ -136,6 +184,8 @@ export const stopAlertNotification = () => {
   if (notificationInterval) {
     clearInterval(notificationInterval);
     notificationInterval = null;
+    // Remove visibility change handler
+    document.removeEventListener('visibilitychange', () => {});
     console.log("🔕 Alert notification stopped");
     return true;
   }
