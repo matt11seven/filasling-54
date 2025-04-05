@@ -33,7 +33,12 @@ export const allAvailableSounds: string[] = [
 ];
 
 // Function to get nice display name from a filename
-export const getSoundDisplayName = (filename: string): string => {
+export const getSoundDisplayName = (filename: string | undefined): string => {
+  // Handle undefined or null filenames
+  if (!filename) {
+    return "Som Desconhecido";
+  }
+  
   // Remove file extension
   const nameWithoutExtension = filename.replace('.mp3', '');
   

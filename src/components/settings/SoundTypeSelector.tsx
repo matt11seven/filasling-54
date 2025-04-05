@@ -22,12 +22,12 @@ const SoundTypeSelector = ({ form, soundType, label }: SoundTypeSelectorProps) =
           <FormLabel>{label}</FormLabel>
           <Select
             onValueChange={field.onChange}
-            defaultValue={field.value}
+            defaultValue={field.value || "none"}
           >
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um som">
-                  {field.value === 'none' ? 'Sem Som' : getSoundDisplayName(field.value)}
+                  {field.value === 'none' || !field.value ? 'Sem Som' : getSoundDisplayName(field.value)}
                 </SelectValue>
               </SelectTrigger>
             </FormControl>
