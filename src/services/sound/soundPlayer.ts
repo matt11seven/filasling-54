@@ -1,4 +1,3 @@
-
 import { getAudioInstance, setAudioInstance, unlockAudio, canPlayAudio } from './soundCore';
 import { initAudioContext } from './audioContext';
 import { setLastPlayedAudio, cleanupLastPlayedAudio } from './soundStateManager';
@@ -16,7 +15,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
         hasFocus: document.hasFocus(),
         isVisible: !document.hidden,
         hasAudioAPI: typeof Audio !== 'undefined',
-        hasAudioContext: typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined',
+        hasAudioContext: typeof AudioContext !== 'undefined' || typeof window.webkitAudioContext !== 'undefined',
       });
     }
     

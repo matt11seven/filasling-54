@@ -43,7 +43,7 @@ export function Toaster() {
           if (VERBOSE) {
             console.log("🔍 VERBOSE: Audio state before playing:", {
               userAgent: navigator.userAgent,
-              hasAudioContext: typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined',
+              hasAudioContext: typeof AudioContext !== 'undefined' || typeof window.webkitAudioContext !== 'undefined',
               hasNotification: typeof Notification !== 'undefined',
               notificationPermission: typeof Notification !== 'undefined' ? Notification.permission : 'undefined'
             })
