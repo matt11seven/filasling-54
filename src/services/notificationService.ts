@@ -80,20 +80,22 @@ export const playSoundByEventType = (
     
     console.log(`playSoundByEventType: Using sound setting from '${soundSetting}': '${soundType}'`);
     
-    if (!soundType) {
-      console.warn(`playSoundByEventType: No sound configured for ${eventType} (${soundSetting}), defaulting to notificacao`);
-      // Default to notificacao.mp3 if no sound is configured
-      return playSound("notificacao", volume !== undefined ? volume : (settings.soundVolume || 0.5), loop);
+    if (!soundType || soundType === "none") {
+      // If sound type is "none" or not set, don't play anything
+      if (soundType === "none") {
+        console.log(`playSoundByEventType: Sound type is "none" for ${eventType}, not playing`);
+        return true; // Return true since this is expected behavior
+      }
+      
+      if (!soundType) {
+        console.warn(`playSoundByEventType: No sound configured for ${eventType} (${soundSetting}), defaulting to notificacao`);
+        // Default to notificacao.mp3 if no sound is configured
+        return playSound("notificacao", volume !== undefined ? volume : (settings.soundVolume || 0.5), loop);
+      }
     }
     
     // Add more detailed log for debugging
     console.log(`playSoundByEventType: Event type '${eventType}' mapped to config '${soundSetting}' with value '${soundType}'`);
-    
-    // If sound type is "none", don't play anything
-    if (soundType === "none") {
-      console.log(`playSoundByEventType: Sound type is "none" for ${eventType}, not playing`);
-      return true;
-    }
     
     // Try to unlock audio first
     unlockAudio();
@@ -144,20 +146,6 @@ export const debugAudioSystems = () => {
   console.log(`Page is visible: ${!document.hidden}`);
   console.log("-----------------");
   return state;
-};
-
-// Create audio files to use in public folder if they don't exist
-// This function doesn't actually run - it's just a reminder that real audio files are needed
-const ensureAudioFilesExist = () => {
-  console.warn(
-    "Please ensure that real audio files exist at:\n" +
-    "- /public/sounds/notification.mp3\n" + 
-    "- /public/sounds/alert.mp3\n" + 
-    "- /public/sounds/beep.mp3\n" +
-    "- /public/sounds/podium.mp3\n" +
-    "- /public/sounds/firstPlace.mp3\n" +
-    "These should be real MP3 files, not placeholder text files."
-  );
 };
 
 // Execute setup on module import (to maintain original behavior)
