@@ -24,24 +24,61 @@ export const playSoundByEventType = (
   settings: any, 
   volume?: number
 ): boolean => {
-  // Mapeia o tipo de evento para a configuração correspondente
-  const soundSettingsMap = {
-    notification: "notificationSound",
-    alert: "alertSound",
-    podium: "podiumSound",
-    firstPlace: "firstPlaceSound"
-  };
+  // Se nenhuma configuração for fornecida, retorne falso
+  if (!settings) {
+    console.warn("playSoundByEventType: settings object is missing");
+    return false;
+  }
   
-  const soundSetting = soundSettingsMap[eventType];
-  const soundType = settings[soundSetting] || eventType;
-  
-  // Se o tipo de som for "none", não toca nada
-  if (soundType === "none") return true;
-  
-  // Usa o volume das configurações ou o volume fornecido
-  const soundVolume = volume !== undefined ? volume : (settings.soundVolume || 0.5);
-  
-  return playSound(soundType, soundVolume);
+  try {
+    console.log(`playSoundByEventType: Playing sound for event: ${eventType}`);
+    
+    // Mapeia o tipo de evento para a configuração correspondente
+    const soundSettingsMap: Record<string, string> = {
+      notification: "notificationSound",
+      alert: "alertSound",
+      podium: "podiumSound",
+      firstPlace: "firstPlaceSound"
+    };
+    
+    const soundSetting = soundSettingsMap[eventType];
+    
+    if (!soundSetting) {
+      console.warn(`playSoundByEventType: Unknown event type: ${eventType}`);
+      return false;
+    }
+    
+    // Tenta pegar configuração do som
+    const soundType = settings[soundSetting];
+    
+    if (!soundType) {
+      console.warn(`playSoundByEventType: No sound configured for ${eventType} (${soundSetting})`);
+      return false;
+    }
+    
+    console.log(`playSoundByEventType: Selected sound: ${soundType} for event: ${eventType}`);
+    
+    // Se o tipo de som for "none", não toca nada
+    if (soundType === "none") {
+      console.log(`playSoundByEventType: Sound type is "none" for ${eventType}, not playing`);
+      return true;
+    }
+    
+    // Tenta desbloquear o áudio primeiro
+    unlockAudio();
+    
+    // Usa o volume das configurações ou o volume fornecido
+    const soundVolume = volume !== undefined ? volume : (
+      settings.soundVolume !== undefined ? settings.soundVolume : 0.5
+    );
+    
+    console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${soundVolume}`);
+    
+    return playSound(soundType, soundVolume, false);
+  } catch (error) {
+    console.error("Error in playSoundByEventType:", error);
+    return false;
+  }
 };
 
 // Debug function to check all audio systems

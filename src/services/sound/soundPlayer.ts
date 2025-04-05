@@ -3,9 +3,16 @@ import { getAudio } from './soundResources';
 import { getAudioInstance, setAudioInstance, unlockAudio, canPlayAudio } from './soundCore';
 
 let notificationInterval: NodeJS.Timeout | null = null;
+let lastPlayedAudio: HTMLAudioElement | null = null;
 
 export const playSound = (soundType: string = "notification", volume: number = 0.5, loop: boolean = false): boolean => {
   try {
+    // Checagem se o tipo de som é "none"
+    if (soundType === "none") {
+      console.log("Sound type is 'none', not playing any sound");
+      return true;
+    }
+    
     // Check if user has interacted
     if (!canPlayAudio()) {
       console.warn("Cannot play audio yet - waiting for user interaction");
@@ -13,15 +20,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     }
 
     // Stop any existing sound
-    if (getAudioInstance()) {
-      stopSound();
-    }
-    
-    // Se soundType for "none", não tocar nenhum som
-    if (soundType === "none") {
-      console.log("Sound type is 'none', not playing any sound");
-      return true;
-    }
+    stopSound();
     
     // Get the audio instance
     const newAudio = getAudio(soundType);
@@ -32,6 +31,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     
     // Store the instance
     setAudioInstance(newAudio);
+    lastPlayedAudio = newAudio;
     
     console.log(`▶️ Playing sound: ${soundType}, volume: ${volume}, loop: ${loop}`);
     
@@ -47,21 +47,26 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       console.error(`❌ Error playing sound '${soundType}':`, e);
     });
     
-    // Use promise with user interaction context
-    const playPromise = newAudio.play();
-    
-    if (playPromise !== undefined) {
-      playPromise.catch((error) => {
-        console.error(`❌ Error playing sound '${soundType}':`, error);
-        if (error.name === "NotAllowedError") {
-          console.warn("⚠️ Audio playback was prevented by browser. User interaction is required first.");
-          return false;
-        }
-      });
+    // Try to play the audio
+    try {
+      const playPromise = newAudio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.error(`❌ Error playing sound '${soundType}':`, error);
+          if (error.name === "NotAllowedError") {
+            console.warn("⚠️ Audio playback was prevented by browser. User interaction is required first.");
+            return false;
+          }
+        });
+        return true;
+      }
+      
       return true;
+    } catch (e) {
+      console.error(`⚠️ Exception during play() call:`, e);
+      return false;
     }
-    
-    return true;
   } catch (error) {
     console.error("❌ Failed to play sound:", error);
     return false;
@@ -81,6 +86,18 @@ export const stopSound = () => {
       console.error("❌ Error stopping sound:", error);
     }
   }
+  
+  // Também pare o último áudio reproduzido
+  if (lastPlayedAudio && lastPlayedAudio !== audio) {
+    try {
+      lastPlayedAudio.pause();
+      lastPlayedAudio.currentTime = 0;
+      lastPlayedAudio = null;
+    } catch (error) {
+      console.error("❌ Error stopping last played sound:", error);
+    }
+  }
+  
   return false;
 };
 
@@ -88,6 +105,12 @@ export const stopSound = () => {
 export const startAlertNotification = (soundType: string, volume: number, intervalSeconds: number = 10) => {
   // Stop any existing alert first
   stopAlertNotification();
+  
+  // If sound type is "none", don't play anything
+  if (soundType === "none") {
+    console.log("Alert sound type is 'none', not starting notification");
+    return true;
+  }
   
   // First play immediately
   const success = playSound(soundType, volume, false);

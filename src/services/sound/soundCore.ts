@@ -24,6 +24,7 @@ export const setupUserInteractionTracking = () => {
     const interactionEvents = ['mousedown', 'keydown', 'touchstart', 'click', 'scroll'];
     
     const handleInteraction = () => {
+      console.log("👆 User interaction detected!");
       userHasInteracted = true;
       sessionStorage.setItem('userHasInteracted', 'true');
       
@@ -56,6 +57,11 @@ export const setupUserInteractionTracking = () => {
     interactionEvents.forEach(event => {
       document.addEventListener(event, handleInteraction);
     });
+    
+    // Verificar imediatamente se o usuário já interagiu
+    if (userHasInteracted) {
+      handleInteraction();
+    }
   }
 };
 
@@ -66,6 +72,12 @@ export const canPlayAudio = (): boolean => {
 
 // Force unlock audio context
 export const unlockAudio = (): boolean => {
+  // Se ainda não houve interação, forçamos isso
+  if (!userHasInteracted) {
+    userHasInteracted = true;
+    sessionStorage.setItem('userHasInteracted', 'true');
+  }
+
   // Try to resume AudioContext if suspended
   if (audioContext && audioContext.state === 'suspended') {
     audioContext.resume().then(() => {
@@ -73,32 +85,49 @@ export const unlockAudio = (): boolean => {
     }).catch(e => {
       console.warn('Failed to resume AudioContext:', e);
     });
+  } else if (!audioContext && hasWebAudioSupport()) {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioContext = new AudioContextClass();
+      console.log("AudioContext initialized during unlock");
+    } catch (e) {
+      console.warn("Failed to initialize AudioContext:", e);
+    }
   }
   
   // Try playing a silent sound to unlock audio on iOS
   try {
     const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
     silentSound.volume = 0.01; // Nearly silent
-    silentSound.play().then(() => {
-      userHasInteracted = true;
-      console.log('✅ Audio system unlocked with silent sound');
+    try {
+      const playPromise = silentSound.play();
       
-      // Preload sounds after successful unlock
-      import('./soundResources').then(module => {
-        module.preloadSounds();
-      });
-      
-      // Immediately pause the silent sound
-      setTimeout(() => {
-        silentSound.pause();
-        silentSound.currentTime = 0;
-      }, 1);
-      
-      return true;
-    }).catch(e => {
-      console.warn('Could not unlock audio system:', e);
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          userHasInteracted = true;
+          console.log('✅ Audio system unlocked with silent sound');
+          
+          // Preload sounds after successful unlock
+          import('./soundResources').then(module => {
+            module.preloadSounds();
+          });
+          
+          // Immediately pause the silent sound
+          setTimeout(() => {
+            silentSound.pause();
+            silentSound.currentTime = 0;
+          }, 1);
+          
+          return true;
+        }).catch(e => {
+          console.warn('Could not unlock audio system with silent sound:', e);
+          return false;
+        });
+      }
+    } catch (e) {
+      console.warn('Error attempting to play silent sound:', e);
       return false;
-    });
+    }
     
     return true;
   } catch (e) {

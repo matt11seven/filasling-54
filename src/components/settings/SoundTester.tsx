@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
+import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
 import { playSound, stopSound, unlockAudio, canPlayAudio, preloadSounds } from "@/services/notificationService";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -21,9 +21,8 @@ const SoundTester = ({
   audioPermissionGranted,
   setAudioPermissionGranted 
 }: SoundTesterProps) => {
-  const [isPlayingSound, setIsPlayingSound] = useState(false);
+  const [isPlayingSound, setIsPlayingSound] = useState<string | null>(null);
   const { settings } = useSettings();
-  const [selectedSound, setSelectedSound] = useState<string>("notificationSound");
 
   const handleSoundPreview = (soundKey: "notificationSound" | "alertSound" | "podiumSound" | "firstPlaceSound") => {
     // Parar qualquer som em reprodução
@@ -37,8 +36,9 @@ const SoundTester = ({
     // Obter o tipo de som atual com base na configuração
     const soundToPlay = settings[soundKey];
     
-    setIsPlayingSound(true);
-    setSelectedSound(soundKey);
+    console.log(`Testing sound: ${soundKey} -> ${soundToPlay}`);
+    
+    setIsPlayingSound(soundKey);
     
     // Tentar desbloquear o áudio primeiro (crucial para iOS/Safari)
     unlockAudio();
@@ -50,7 +50,7 @@ const SoundTester = ({
     const success = playSound(soundToPlay, volume);
     
     // Set timeout to update UI state
-    setTimeout(() => setIsPlayingSound(false), 1500);
+    setTimeout(() => setIsPlayingSound(null), 3000);
     
     if (!success) {
       if (!audioPermissionGranted) {
@@ -99,11 +99,11 @@ const SoundTester = ({
           type="button"
           variant="outline"
           onClick={() => handleSoundPreview("notificationSound")}
-          disabled={isMuted || isPlayingSound}
+          disabled={isMuted || isPlayingSound !== null}
           className="relative"
           size="sm"
         >
-          {isPlayingSound && selectedSound === "notificationSound" ? (
+          {isPlayingSound === "notificationSound" ? (
             <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
             <>Atendimento <Play className="h-3 w-3 ml-1" /></>
@@ -114,11 +114,11 @@ const SoundTester = ({
           type="button"
           variant="outline"
           onClick={() => handleSoundPreview("alertSound")}
-          disabled={isMuted || isPlayingSound}
+          disabled={isMuted || isPlayingSound !== null}
           className="relative"
           size="sm"
         >
-          {isPlayingSound && selectedSound === "alertSound" ? (
+          {isPlayingSound === "alertSound" ? (
             <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
             <>Alerta <Play className="h-3 w-3 ml-1" /></>
@@ -129,11 +129,11 @@ const SoundTester = ({
           type="button"
           variant="outline"
           onClick={() => handleSoundPreview("podiumSound")}
-          disabled={isMuted || isPlayingSound}
+          disabled={isMuted || isPlayingSound !== null}
           className="relative"
           size="sm"
         >
-          {isPlayingSound && selectedSound === "podiumSound" ? (
+          {isPlayingSound === "podiumSound" ? (
             <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
             <>Pódio <Play className="h-3 w-3 ml-1" /></>
@@ -144,16 +144,30 @@ const SoundTester = ({
           type="button"
           variant="outline"
           onClick={() => handleSoundPreview("firstPlaceSound")}
-          disabled={isMuted || isPlayingSound}
+          disabled={isMuted || isPlayingSound !== null}
           className="relative"
           size="sm"
         >
-          {isPlayingSound && selectedSound === "firstPlaceSound" ? (
+          {isPlayingSound === "firstPlaceSound" ? (
             <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
             <>1º Lugar <Play className="h-3 w-3 ml-1" /></>
           )}
         </Button>
+        
+        {isPlayingSound && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => {
+              stopSound();
+              setIsPlayingSound(null);
+            }}
+            size="sm"
+          >
+            <Square className="h-3 w-3 mr-1" /> Parar
+          </Button>
+        )}
       </div>
     </div>
   );
