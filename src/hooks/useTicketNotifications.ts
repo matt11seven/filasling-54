@@ -6,7 +6,8 @@ import {
   startAlertNotification,
   stopAlertNotification,
   unlockAudio,
-  playSoundByEventType
+  playSoundByEventType,
+  playSound
 } from "@/services/notificationService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +49,10 @@ export const useTicketNotifications = (
     // Immediately unlock audio to prepare for potential sounds
     unlockAudio();
     
+    // Force preload notification sound specifically
+    const notificationSound = settings.notificationSound || "notificacao";
+    console.log(`Pre-loading notification sound: ${notificationSound} to ensure immediate playback`);
+    
     const channel = supabase
       .channel('public:tickets')
       .on('postgres_changes', 
@@ -57,10 +62,20 @@ export const useTicketNotifications = (
           table: 'tickets' 
         }, 
         (payload) => {
-          console.log('New ticket detected! Playing notification sound immediately.', payload);
+          console.log('🔔 New ticket detected! Playing notification sound immediately.', payload);
           
-          // Play notification sound IMMEDIATELY when a new ticket is detected
-          // Setting loop to false to ensure it plays only once
+          // Directly play the sound using the lower-level API for immediate response
+          // The direct method helps bypass any potential delayed execution
+          const notificationSound = settings.notificationSound || "notificacao";
+          console.log(`Playing notification sound immediately: ${notificationSound}`);
+          
+          // First try unlocking audio again right before playing
+          unlockAudio();
+          
+          // Try both methods to ensure the sound plays
+          playSound(notificationSound, settings.soundVolume || 0.5, false);
+          
+          // Also try the higher level method as backup
           playSoundByEventType('notification', settings, undefined, false);
           
           toast.info('Novo atendimento na fila!');
@@ -91,7 +106,13 @@ export const useTicketNotifications = (
           onTicketChange();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Supabase channel status: ${status}`);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to ticket events!');
+        }
+      });
     
     console.log('Realtime subscription for tickets started');
 

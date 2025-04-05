@@ -7,7 +7,7 @@ import { setupUserInteractionTracking, canPlayAudio, unlockAudio, getAudioState 
 export { canPlayAudio, unlockAudio, getAudioState };
 
 // Re-export from sound resources
-import { preloadSounds } from './sound/soundResources';
+import { preloadSounds, getAudio } from './sound/soundResources';
 export { preloadSounds };
 
 // Re-export from sound player
@@ -99,6 +99,14 @@ export const playSoundByEventType = (
     const shouldLoop = eventType === "alert" ? true : loop;
     
     console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${soundVolume}, loop: ${shouldLoop}`);
+    
+    // Important: Try loading the audio first to ensure it's ready to play
+    try {
+      const audio = getAudio(soundType);
+      audio.load();
+    } catch (err) {
+      console.warn("Failed to preload audio:", err);
+    }
     
     return playSound(soundType, soundVolume, shouldLoop);
   } catch (error) {
