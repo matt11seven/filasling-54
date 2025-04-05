@@ -5,19 +5,16 @@ import { setLastPlayedAudio, cleanupLastPlayedAudio } from './soundStateManager'
 
 export const playSound = (soundType: string = "notification", volume: number = 0.5, loop: boolean = false): boolean => {
   try {
+    console.log(`▶️ DIRECT PLAY ATTEMPT: "${soundType}", volume: ${volume}, loop: ${loop}`);
+    
     // Check if sound type is "none"
     if (soundType === "none") {
       console.log("Sound type is 'none', not playing any sound");
       return true;
     }
     
-    // Check if user has interacted - always try to play anyway
-    if (!canPlayAudio()) {
-      console.warn("Cannot play audio yet - attempting to unlock audio system");
-      unlockAudio();
-    }
-    
-    console.log(`▶️ Attempting to play sound: "${soundType}", volume: ${volume}, loop: ${loop}`);
+    // Force unlock audio first
+    unlockAudio();
     
     // Get audio path - properly handle the sound type
     let audioPath = soundType;
@@ -37,8 +34,9 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     newAudio.volume = Math.max(0, Math.min(1, volume)); // Ensure volume is between 0 and 1
     newAudio.loop = loop;
     
-    // Try to unlock audio first (for iOS/Safari)
-    unlockAudio();
+    // Set attributes for better mobile compatibility
+    newAudio.setAttribute('playsinline', 'true');
+    newAudio.setAttribute('preload', 'auto');
     
     // Add event listeners to track success/failure
     newAudio.addEventListener('playing', () => {
@@ -57,57 +55,35 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     setAudioInstance(newAudio);
     setLastPlayedAudio(newAudio);
     
-    try {
-      // Initialize context if needed
-      initAudioContext();
+    // Initialize context if needed
+    initAudioContext();
+    
+    // Use a Promise for better tracking
+    const playPromise = newAudio.play();
+    
+    if (playPromise !== undefined) {
+      console.log(`Play promise exists for ${soundType}, waiting for resolution...`);
       
-      // Set a higher priority for this audio (can help with mobile devices)
-      if ('mozAudioChannelType' in newAudio) {
-        // @ts-ignore - Firefox-specific property
-        newAudio.mozAudioChannelType = 'notification';
-      }
-      
-      // Play with standard HTML5 Audio
-      const playPromise = newAudio.play();
-      
-      if (playPromise !== undefined) {
-        console.log("Play promise exists, waiting for resolution...");
-        playPromise.then(() => {
-          console.log(`✅ Sound '${soundType}' play promise resolved successfully`);
-          
-          // Try playing a second time for reliability on mobile
-          if (newAudio.currentTime === 0) {
-            console.log("Audio position is still 0, trying to play again...");
-            newAudio.play().catch(e => console.warn("Second play attempt error:", e));
-          }
-          
-          return true;
-        }).catch((error) => {
-          console.error(`❌ Error playing sound '${soundType}':`, error);
-          if (error.name === "NotAllowedError") {
-            console.warn("⚠️ Audio playback was prevented by browser. User interaction is required first.");
-            
-            // Try to unlock audio after error
-            setTimeout(() => {
-              unlockAudio();
-              // Try again after a short delay
-              setTimeout(() => {
-                newAudio.play().catch(e => console.warn("Retry play error:", e));
-              }, 500);
-            }, 100);
-            
-            return false;
-          }
-        });
+      // Handle success/failure of the play attempt
+      playPromise.then(() => {
+        console.log(`✅ Sound '${soundType}' play promise resolved successfully`);
         return true;
-      }
-      
-      console.log(`❓ Play promise was undefined for sound '${soundType}'`);
-      return true;
-    } catch (e) {
-      console.error(`⚠️ Exception during play() call:`, e);
-      return false;
+      }).catch((error) => {
+        console.error(`❌ Error playing sound '${soundType}':`, error);
+        
+        if (error.name === "NotAllowedError") {
+          console.warn("⚠️ Audio playback was prevented by browser. User interaction is required first.");
+          
+          // Try to unlock audio after error and play again
+          setTimeout(() => {
+            unlockAudio();
+            newAudio.play().catch(e => console.warn(`Retry play error for ${soundType}:`, e));
+          }, 200);
+        }
+      });
     }
+    
+    return true;
   } catch (error) {
     console.error("❌ Failed to play sound:", error);
     return false;
