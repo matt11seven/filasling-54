@@ -8,7 +8,7 @@ export { canPlayAudio, unlockAudio, getAudioState };
 
 // Re-export from sound resources
 import { preloadSounds, getAudio } from './sound/soundResources';
-export { preloadSounds };
+export { preloadSounds, getAudio };
 
 // Re-export from sound player
 import { playSound, stopSound, startAlertNotification, stopAlertNotification, isNotificationActive } from './sound/soundPlayer';
@@ -106,7 +106,9 @@ export const playSoundByEventType = (
     // Important: Try loading the audio first to ensure it's ready to play
     try {
       const audio = getAudio(soundType);
+      console.log(`Audio object created for ${soundType}, loading...`);
       audio.load();
+      console.log(`Audio loaded for ${soundType}`);
     } catch (err) {
       console.warn("Failed to preload audio:", err);
     }

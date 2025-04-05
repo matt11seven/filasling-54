@@ -67,10 +67,23 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       console.error(`❌ Error playing sound '${soundType}':`, e);
     });
     
+    newAudio.addEventListener('canplay', () => {
+      console.log(`✅ Sound '${soundType}' can play now`);
+    });
+    
+    newAudio.addEventListener('canplaythrough', () => {
+      console.log(`✅ Sound '${soundType}' can play through without buffering`);
+    });
+    
     // Try to play the audio with Web Audio API for better background support
     try {
       // Initialize context if needed
       initAudioContext();
+      
+      console.log(`Trying to play sound: ${soundType}`);
+      
+      // Force loading audio before playing
+      newAudio.load();
       
       // Play with standard HTML5 Audio first
       const playPromise = newAudio.play();
@@ -85,7 +98,11 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       }
       
       if (playPromise !== undefined) {
-        playPromise.catch((error) => {
+        console.log("Play promise exists, waiting for resolution...");
+        playPromise.then(() => {
+          console.log(`✅ Sound '${soundType}' play promise resolved successfully`);
+          return true;
+        }).catch((error) => {
           console.error(`❌ Error playing sound '${soundType}':`, error);
           if (error.name === "NotAllowedError") {
             console.warn("⚠️ Audio playback was prevented by browser. User interaction is required first.");
@@ -95,6 +112,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
         return true;
       }
       
+      console.log(`❓ Play promise was undefined for sound '${soundType}'`);
       return true;
     } catch (e) {
       console.error(`⚠️ Exception during play() call:`, e);

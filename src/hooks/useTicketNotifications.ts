@@ -7,7 +7,10 @@ import {
   stopAlertNotification,
   unlockAudio,
   playSoundByEventType,
-  playSound
+  playSound,
+  getAudio,
+  getAudioState,
+  debugAudioSystems
 } from "@/services/notificationService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +59,9 @@ export const useTicketNotifications = (
     // Force preload notification sound specifically
     console.log(`Pre-loading notification sound: ${configuredNotificationSound} to ensure immediate playback`);
     
+    // Check audio system state before setting up subscription
+    console.log("AUDIO SYSTEM STATUS BEFORE SUBSCRIPTION:", debugAudioSystems());
+    
     const channel = supabase
       .channel('public:tickets')
       .on('postgres_changes', 
@@ -65,7 +71,8 @@ export const useTicketNotifications = (
           table: 'tickets' 
         }, 
         (payload) => {
-          console.log('🔔 New ticket detected! Playing configured notification sound immediately.', payload);
+          console.log('🔔 New ticket detected! Payload:', payload);
+          console.log('AUDIO SYSTEM STATUS WHEN TICKET ARRIVES:', debugAudioSystems());
           
           // Use the configured notification sound from settings
           const notificationSound = settings.notificationSound || "notificacao";
@@ -74,11 +81,44 @@ export const useTicketNotifications = (
           // First try unlocking audio again right before playing
           unlockAudio();
           
+          // Check if we can play audio
+          console.log(`Can play audio? ${getAudioState().userHasInteracted ? 'YES' : 'NO'}`);
+          
           // Try both methods to ensure the sound plays
-          playSound(notificationSound, settings.soundVolume || 0.5, false);
+          console.log(`Attempt 1: Using playSound directly with ${notificationSound}`);
+          const playResult1 = playSound(notificationSound, settings.soundVolume || 0.5, false);
+          console.log(`playSound result: ${playResult1 ? 'SUCCESS' : 'FAILED'}`);
           
           // Also try the higher level method as backup
-          playSoundByEventType('notification', settings, undefined, false);
+          console.log(`Attempt 2: Using playSoundByEventType with 'notification'`);
+          const playResult2 = playSoundByEventType('notification', settings, undefined, false);
+          console.log(`playSoundByEventType result: ${playResult2 ? 'SUCCESS' : 'FAILED'}`);
+          
+          // Try a third approach with a fresh audio instance
+          try {
+            console.log(`Attempt 3: Creating fresh audio instance for ${notificationSound}`);
+            const audio = getAudio(notificationSound);
+            audio.volume = settings.soundVolume || 0.5;
+            audio.onplay = () => console.log("✅ Audio onplay event fired");
+            audio.oncanplay = () => console.log("✅ Audio oncanplay event fired");
+            audio.oncanplaythrough = () => console.log("✅ Audio oncanplaythrough event fired");
+            audio.onerror = (e) => console.log("❌ Audio error event fired", e);
+            
+            // Force load before play
+            audio.load();
+            console.log("Audio loaded, attempting to play...");
+            
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+              playPromise.then(() => {
+                console.log("✅ Direct Audio.play() Promise resolved successfully");
+              }).catch(err => {
+                console.error("❌ Direct Audio.play() Promise rejected:", err);
+              });
+            }
+          } catch (error) {
+            console.error("Failed in direct audio attempt:", error);
+          }
           
           toast.info('Novo atendimento na fila!');
           
