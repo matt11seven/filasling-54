@@ -23,17 +23,22 @@ export const useTicketNotifications = (
   const [alertActive, setAlertActive] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Load audio element on component mount
+  // Load audio element on component mount - using the configured sound from settings
   useEffect(() => {
+    // Get the configured notification sound from settings
+    const notificationSound = settings.notificationSound || "notificacao";
+    console.log(`Creating audio element with configured sound: ${notificationSound}`);
+    
     // Create a direct audio element reference that we'll control manually
-    const audio = new Audio("/sounds/notificacao.mp3");
+    // Use the correct path format for the configured sound
+    const audio = new Audio(`/sounds/${notificationSound}.mp3`);
     audio.preload = "auto";
     audio.volume = settings.soundVolume || 0.5;
     
     // Add logging for debug
-    audio.oncanplay = () => console.log("✅ Notification audio loaded and ready to play");
-    audio.onplay = () => console.log("✅ Notification audio started playing");
-    audio.onerror = (e) => console.error("❌ Notification audio error:", e);
+    audio.oncanplay = () => console.log(`✅ Notification audio (${notificationSound}) loaded and ready to play`);
+    audio.onplay = () => console.log(`✅ Notification audio (${notificationSound}) started playing`);
+    audio.onerror = (e) => console.error(`❌ Notification audio (${notificationSound}) error:`, e);
     
     // Save reference
     audioRef.current = audio;
@@ -41,7 +46,7 @@ export const useTicketNotifications = (
     // Force load
     audio.load();
     
-    console.log("Notification audio element created and prepared");
+    console.log(`Notification audio element created with sound: ${notificationSound}`);
     
     // Clean up on unmount
     return () => {
@@ -50,7 +55,7 @@ export const useTicketNotifications = (
         audioRef.current = null;
       }
     };
-  }, [settings.soundVolume]);
+  }, [settings.soundVolume, settings.notificationSound]); // Also depend on the notification sound setting
 
   // Check if we need to manage alert states
   useEffect(() => {
@@ -97,12 +102,16 @@ export const useTicketNotifications = (
           console.log('🔔 New ticket detected! Payload:', payload);
           console.log('AUDIO SYSTEM STATUS WHEN TICKET ARRIVES:', debugAudioSystems());
           
+          // Get the current notification sound from settings
+          const notificationSound = settings.notificationSound || "notificacao";
+          console.log(`Using configured notification sound: ${notificationSound}`);
+          
           // Try to play sound with multiple approaches for maximum compatibility
           
           // APPROACH 1: Use our direct audio reference (most reliable)
           try {
             if (audioRef.current) {
-              console.log("APPROACH 1: Playing with direct audio reference");
+              console.log(`APPROACH 1: Playing with direct audio reference (${notificationSound})`);
               // Reset playback position first to ensure it plays even if it was played before
               audioRef.current.currentTime = 0;
               audioRef.current.volume = settings.soundVolume || 0.5;
@@ -110,9 +119,9 @@ export const useTicketNotifications = (
               const playPromise = audioRef.current.play();
               if (playPromise !== undefined) {
                 playPromise
-                  .then(() => console.log("✅ Direct audio reference play succeeded"))
+                  .then(() => console.log(`✅ Direct audio reference play succeeded (${notificationSound})`))
                   .catch(err => {
-                    console.error("❌ Direct audio reference play failed:", err);
+                    console.error(`❌ Direct audio reference play failed (${notificationSound}):`, err);
                     // Try alternate methods if this one fails
                     tryAlternateSoundMethods();
                   });
@@ -167,9 +176,11 @@ export const useTicketNotifications = (
 
     // Helper function to try alternative sound playback methods
     const tryAlternateSoundMethods = () => {
-      // APPROACH 2: Try using the notificationService methods
-      console.log("APPROACH 2: Using playSoundByEventType");
+      // Get the current notification sound from settings
       const notificationSound = settings.notificationSound || "notificacao";
+      
+      // APPROACH 2: Try using the notificationService methods
+      console.log(`APPROACH 2: Using playSoundByEventType with ${notificationSound}`);
       
       // First make sure audio is unlocked
       unlockAudio();
@@ -180,7 +191,7 @@ export const useTicketNotifications = (
       
       // APPROACH 3: Create a brand new audio element and play
       if (!result) {
-        console.log("APPROACH 3: Creating fresh Audio object");
+        console.log(`APPROACH 3: Creating fresh Audio object for ${notificationSound}`);
         try {
           const freshAudio = new Audio(`/sounds/${notificationSound}.mp3`);
           freshAudio.volume = settings.soundVolume || 0.5;
@@ -191,11 +202,11 @@ export const useTicketNotifications = (
           const freshPlayPromise = freshAudio.play();
           if (freshPlayPromise !== undefined) {
             freshPlayPromise
-              .then(() => console.log("✅ Fresh audio play succeeded"))
-              .catch(err => console.error("❌ Fresh audio play failed:", err));
+              .then(() => console.log(`✅ Fresh audio play succeeded (${notificationSound})`))
+              .catch(err => console.error(`❌ Fresh audio play failed (${notificationSound}):`, err));
           }
         } catch (error) {
-          console.error("❌ Error creating fresh audio:", error);
+          console.error(`❌ Error creating fresh audio (${notificationSound}):`, error);
         }
       }
     };

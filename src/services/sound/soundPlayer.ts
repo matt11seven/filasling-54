@@ -1,3 +1,4 @@
+
 import { getAudio } from './soundResources';
 import { getAudioInstance, setAudioInstance, unlockAudio, canPlayAudio } from './soundCore';
 
@@ -37,7 +38,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     
     console.log(`▶️ Attempting to play sound: "${soundType}", volume: ${volume}, loop: ${loop}`);
     
-    // Get the audio instance - always create a fresh instance for reliable playback
+    // Get audio path - properly handle the sound type
     let audioPath = soundType;
     if (!soundType.includes('/')) {
       // If it's just a name without a path, assume it's in the sounds directory

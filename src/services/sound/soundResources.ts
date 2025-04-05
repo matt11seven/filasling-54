@@ -117,9 +117,9 @@ export const getAudio = (soundType: string): HTMLAudioElement => {
     soundUrl = `/sounds/${soundType}`;
     console.log(`Custom sound file: ${soundType} -> ${soundUrl}`);
   } else {
-    // Fallback to notificacao
-    console.warn(`Unknown sound type: "${soundType}", falling back to notificacao`);
-    soundUrl = soundOptions.notificacao;
+    // Add .mp3 extension and use from sounds directory
+    soundUrl = `/sounds/${soundType}.mp3`;
+    console.log(`Using sound file with added extension: ${soundType} -> ${soundUrl}`);
   }
   
   // Always create a new instance for reliable playback
