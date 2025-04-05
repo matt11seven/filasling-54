@@ -21,6 +21,11 @@ export const setupUserInteractionTracking = () => {
       }
     }
 
+    // Set userHasInteracted to true immediately to allow sound playback
+    // This is a more permissive approach that may help with sound playback issues
+    userHasInteracted = true;
+    sessionStorage.setItem('userHasInteracted', 'true');
+
     const interactionEvents = ['mousedown', 'keydown', 'touchstart', 'click', 'scroll'];
     
     const handleInteraction = () => {
@@ -66,9 +71,9 @@ export const setupUserInteractionTracking = () => {
   }
 };
 
-// Check if audio can be played
+// Check if audio can be played - always return true to ensure sound playback
 export const canPlayAudio = (): boolean => {
-  return userHasInteracted || sessionStorage.getItem('userHasInteracted') === 'true';
+  return true; // Always return true to attempt playback
 };
 
 // Force unlock audio context

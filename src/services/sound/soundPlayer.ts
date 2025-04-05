@@ -1,4 +1,3 @@
-
 import { getAudio } from './soundResources';
 import { getAudioInstance, setAudioInstance, unlockAudio, canPlayAudio } from './soundCore';
 
@@ -35,25 +34,26 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       console.warn("Cannot play audio yet - waiting for user interaction");
       return false;
     }
-
-    // Stop any existing sound
-    stopSound();
     
-    // More detailed log for debugging
     console.log(`▶️ Attempting to play sound: "${soundType}", volume: ${volume}, loop: ${loop}`);
     
-    // Get the audio instance
-    const newAudio = getAudio(soundType);
+    // Get the audio instance - always create a fresh instance for reliable playback
+    let audioPath = soundType;
+    if (!soundType.includes('/')) {
+      // If it's just a name without a path, assume it's in the sounds directory
+      if (!soundType.endsWith('.mp3')) {
+        audioPath = `/sounds/${soundType}.mp3`;
+      } else {
+        audioPath = `/sounds/${soundType}`;
+      }
+    }
+    
+    console.log(`Creating new audio for: ${audioPath}`);
+    const newAudio = new Audio(audioPath);
     
     // Configure the audio
     newAudio.volume = Math.max(0, Math.min(1, volume)); // Ensure volume is between 0 and 1
     newAudio.loop = loop;
-    
-    // Store the instance
-    setAudioInstance(newAudio);
-    lastPlayedAudio = newAudio;
-    
-    console.log(`▶️ Playing sound: ${soundType}, volume: ${volume}, loop: ${loop}`);
     
     // Try to unlock audio first (for iOS/Safari)
     unlockAudio();
@@ -71,31 +71,20 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       console.log(`✅ Sound '${soundType}' can play now`);
     });
     
-    newAudio.addEventListener('canplaythrough', () => {
-      console.log(`✅ Sound '${soundType}' can play through without buffering`);
-    });
+    // Force loading audio before playing
+    newAudio.load();
+    console.log(`Audio loaded for ${soundType}, attempting to play...`);
     
-    // Try to play the audio with Web Audio API for better background support
+    // Store the instance
+    setAudioInstance(newAudio);
+    lastPlayedAudio = newAudio;
+    
     try {
       // Initialize context if needed
       initAudioContext();
       
-      console.log(`Trying to play sound: ${soundType}`);
-      
-      // Force loading audio before playing
-      newAudio.load();
-      
-      // Play with standard HTML5 Audio first
+      // Play with standard HTML5 Audio
       const playPromise = newAudio.play();
-      
-      // If window is not focused, try to send a notification
-      if (document.hidden && "Notification" in window && Notification.permission === "granted") {
-        // This might help trigger audio on some browsers when minimized
-        new Notification("Notificação de Sistema", {
-          body: `Som de alerta: ${soundType}`,
-          silent: true, // Don't play notification sound, we're playing our own
-        });
-      }
       
       if (playPromise !== undefined) {
         console.log("Play promise exists, waiting for resolution...");
