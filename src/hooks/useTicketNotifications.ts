@@ -45,14 +45,8 @@ export const useTicketNotifications = (
   useEffect(() => {
     console.log('Setting up realtime subscription for tickets...');
     
-    const handleTicketChange = () => {
-      console.log('Change detected in tickets - updating list...');
-      onTicketChange();
-      
-      // Play notification sound for new/updated tickets - playing only ONCE
-      playSoundByEventType('notification', settings, undefined, false);
-      toast.info('Ticket update received!');
-    };
+    // Immediately unlock audio to prepare for potential sounds
+    unlockAudio();
     
     const channel = supabase
       .channel('public:tickets')
@@ -63,8 +57,16 @@ export const useTicketNotifications = (
           table: 'tickets' 
         }, 
         (payload) => {
-          console.log('New ticket detected!', payload);
-          handleTicketChange();
+          console.log('New ticket detected! Playing notification sound immediately.', payload);
+          
+          // Play notification sound IMMEDIATELY when a new ticket is detected
+          // Setting loop to false to ensure it plays only once
+          playSoundByEventType('notification', settings, undefined, false);
+          
+          toast.info('Novo atendimento na fila!');
+          
+          // Update the ticket list
+          onTicketChange();
         }
       )
       .on('postgres_changes',
@@ -75,7 +77,7 @@ export const useTicketNotifications = (
         },
         (payload) => {
           console.log('Ticket updated!', payload);
-          handleTicketChange();
+          onTicketChange();
         }
       )
       .on('postgres_changes',
@@ -86,7 +88,7 @@ export const useTicketNotifications = (
         },
         (payload) => {
           console.log('Ticket removed!', payload);
-          handleTicketChange();
+          onTicketChange();
         }
       )
       .subscribe();
