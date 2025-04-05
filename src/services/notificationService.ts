@@ -56,7 +56,8 @@ export const playSoundByEventType = (
       return false;
     }
     
-    console.log(`playSoundByEventType: Selected sound: ${soundType} for event: ${eventType}`);
+    // Adiciona log mais detalhado para debug
+    console.log(`playSoundByEventType: Tipo de evento '${eventType}' mapeado para configuração '${soundSetting}' com valor '${soundType}'`);
     
     // Se o tipo de som for "none", não toca nada
     if (soundType === "none") {

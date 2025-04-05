@@ -22,6 +22,9 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     // Stop any existing sound
     stopSound();
     
+    // Log mais detalhado para debug
+    console.log(`▶️ Tentando reproduzir som: "${soundType}", volume: ${volume}, loop: ${loop}`);
+    
     // Get the audio instance
     const newAudio = getAudio(soundType);
     
