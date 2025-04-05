@@ -70,12 +70,15 @@ export const playSoundByEventType = (
       return false;
     }
     
-    // Try to get sound configuration
+    // Try to get sound configuration - explicitly check for the setting value
     const soundType = settings[soundSetting];
     
+    console.log(`playSoundByEventType: Using sound setting from '${soundSetting}': '${soundType}'`);
+    
     if (!soundType) {
-      console.warn(`playSoundByEventType: No sound configured for ${eventType} (${soundSetting})`);
-      return false;
+      console.warn(`playSoundByEventType: No sound configured for ${eventType} (${soundSetting}), defaulting to notificacao`);
+      // Default to notificacao.mp3 if no sound is configured
+      return playSound("notificacao", volume !== undefined ? volume : (settings.soundVolume || 0.5), loop);
     }
     
     // Add more detailed log for debugging

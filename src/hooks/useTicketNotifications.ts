@@ -49,9 +49,12 @@ export const useTicketNotifications = (
     // Immediately unlock audio to prepare for potential sounds
     unlockAudio();
     
+    // Get the configured notification sound from settings
+    const configuredNotificationSound = settings.notificationSound || "notificacao";
+    console.log(`Using configured notification sound: ${configuredNotificationSound}`);
+    
     // Force preload notification sound specifically
-    const notificationSound = settings.notificationSound || "notificacao";
-    console.log(`Pre-loading notification sound: ${notificationSound} to ensure immediate playback`);
+    console.log(`Pre-loading notification sound: ${configuredNotificationSound} to ensure immediate playback`);
     
     const channel = supabase
       .channel('public:tickets')
@@ -62,12 +65,11 @@ export const useTicketNotifications = (
           table: 'tickets' 
         }, 
         (payload) => {
-          console.log('🔔 New ticket detected! Playing notification sound immediately.', payload);
+          console.log('🔔 New ticket detected! Playing configured notification sound immediately.', payload);
           
-          // Directly play the sound using the lower-level API for immediate response
-          // The direct method helps bypass any potential delayed execution
+          // Use the configured notification sound from settings
           const notificationSound = settings.notificationSound || "notificacao";
-          console.log(`Playing notification sound immediately: ${notificationSound}`);
+          console.log(`Playing configured notification sound: ${notificationSound}`);
           
           // First try unlocking audio again right before playing
           unlockAudio();
