@@ -118,7 +118,7 @@ export function Toaster() {
         const description = String(toast.description || "")
         const isNewTicketNotification = 
           (description.includes("Novo atendimento na fila") || 
-          (toast.data && toast.data.type === 'newTicket'));
+          (toast.data && typeof toast.data === 'object' && 'type' in toast.data && toast.data.type === 'newTicket'));
         
         if (isNewTicketNotification) {
           console.log("🔔 New ticket toast detected, playing notification sound using user settings:", settings);

@@ -6,8 +6,7 @@ type ToasterProps = React.ComponentProps<typeof Sonner> & {
   // Add extended props here if needed
 }
 
-// Extend the ExternalToast interface in Sonner to include our custom data property
-// This needs to be in a separate declaration file or directly imported where needed
+// Properly augment the sonner module without creating a duplicate interface
 declare module "sonner" {
   interface ExternalToast {
     data?: Record<string, any>;

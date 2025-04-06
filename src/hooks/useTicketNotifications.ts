@@ -10,8 +10,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-// Import the extended ExternalToast type (TS will use the module augmentation from sonner.tsx)
-// This is just to make TypeScript explicitly aware of the augmentation
+// Import the sonner module to ensure TypeScript recognizes the augmented types
 import "sonner";
 
 export const useTicketNotifications = (
@@ -64,7 +63,7 @@ export const useTicketNotifications = (
           toast.info('Novo atendimento na fila!', {
             duration: 5000,
             important: true,
-            // Custom data property to identify this is a new ticket notification
+            // Custom data property is now properly typed through module augmentation
             data: { type: 'newTicket' }
           });
           
