@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useEffect, useRef } from "react"
 import { playSound, unlockAudio } from "@/services/notificationService"
 import { useSettings } from "@/contexts/SettingsContext"
+import { ToastViewport } from "@/components/ui/toast"
 
 const ToastProvider = ToastPrimitives.Provider
 
@@ -105,37 +106,29 @@ export function Toaster() {
   const { settings } = useSettings()
   const processedToastIds = useRef<Set<string>>(new Set())
 
-  // Effect to play sounds when specific toasts are shown
   useEffect(() => {
-    // Only process new toasts
     const newToasts = toasts.filter(toast => !processedToastIds.current.has(toast.id))
     
     if (newToasts.length > 0) {
       newToasts.forEach(toast => {
-        // Mark as processed to avoid duplicate sounds
         processedToastIds.current.add(toast.id)
         
-        // Check for specific toast messages
         const description = String(toast.description || "")
         
         if (description.includes("Novo atendimento na fila")) {
           console.log("🔔 Novo atendimento toast detected, playing notification sound DIRECTLY")
           
-          // Unlock audio context first to ensure it can play
           unlockAudio()
           
-          // Get the configured notification sound and volume from settings
           const soundType = settings.notificationSound || "notificacao"
           const volume = settings.soundVolume || 0.5
           
           console.log(`🔈 Playing notification sound: ${soundType} with volume: ${volume}`)
           
-          // Play the sound directly using the configured sound type and volume
           playSound(soundType, volume, false)
         }
       })
       
-      // Clean up old processed IDs to prevent memory leaks
       if (processedToastIds.current.size > 100) {
         const idsToKeep = toasts.map(t => t.id)
         const newProcessedIds = new Set<string>()
@@ -174,7 +167,6 @@ export {
   type ToastProps,
   type ToastActionElement,
   ToastProvider,
-  ToastViewport,
   Toast,
   ToastTitle,
   ToastDescription,
