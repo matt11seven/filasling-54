@@ -5,7 +5,8 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { 
   stopAlertNotification,
   unlockAudio,
-  playSoundByEventType
+  playSoundByEventType,
+  playSound
 } from "@/services/notificationService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +65,12 @@ export const useTicketNotifications = (
             duration: 5000,
             important: true
           });
+          
+          // Play notification sound at maximum volume (100%)
+          // Use direct playSound method for maximum volume
+          unlockAudio();
+          playSound(settings.notificationSound, 1.0, false);
+          console.log(`🔊 Playing notification sound at maximum volume (100%)`);
           
           // Update the ticket list
           onTicketChange();

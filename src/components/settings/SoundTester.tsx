@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Square } from "lucide-react";
@@ -35,7 +34,7 @@ const SoundTester = ({
       return;
     }
     
-    console.log(`Testing sound: ${soundKey} -> ${formValues[soundKey]} with volume: ${volume}`);
+    console.log(`Testing sound: ${soundKey} -> ${formValues[soundKey]} with volume: ${soundKey === "notificationSound" ? 1.0 : volume}`);
     
     setIsPlayingSound(soundKey);
     
@@ -45,25 +44,14 @@ const SoundTester = ({
     // Preload sounds
     preloadSounds();
     
-    // Map sound key to event type
-    const eventTypeMap: Record<string, "notification" | "alert" | "podium" | "firstPlace"> = {
-      notificationSound: "notification",
-      alertSound: "alert",
-      podiumSound: "podium", 
-      firstPlaceSound: "firstPlace"
-    };
+    // Use 100% volume for notification sound tests, regular volume for others
+    const effectiveVolume = soundKey === "notificationSound" ? 1.0 : volume;
     
-    const eventType = eventTypeMap[soundKey];
+    // Get the sound type from form values
+    const soundType = formValues[soundKey];
     
-    // Use the current form values as temporary settings
-    const tempSettings = {
-      ...settings,
-      soundVolume: volume,  // Use the current volume slider value
-      ...formValues,        // Override with current form values
-    };
-    
-    // Use playSoundByEventType to respect the configured sound type and volume
-    const success = playSoundByEventType(eventType, tempSettings);
+    // Play the sound directly with the appropriate volume
+    const success = playSound(soundType, effectiveVolume, false);
     
     // Set timeout to update UI state
     setTimeout(() => setIsPlayingSound(null), 3000);
@@ -79,7 +67,7 @@ const SoundTester = ({
         const handleInteraction = () => {
           unlockAudio();
           preloadSounds();
-          playSoundByEventType(eventType, tempSettings);
+          playSound(soundType, effectiveVolume, false);
           setAudioPermissionGranted(true);
           document.removeEventListener('click', handleInteraction);
         };
@@ -92,7 +80,7 @@ const SoundTester = ({
         );
       }
     } else {
-      toast.success(`Som de ${getSoundName(soundKey)} reproduzido`);
+      toast.success(`Som de ${getSoundName(soundKey)} reproduzido${soundKey === "notificationSound" ? " a 100% volume" : ""}`);
       setAudioPermissionGranted(true);
     }
   };
@@ -120,7 +108,7 @@ const SoundTester = ({
           size="sm"
         >
           {isPlayingSound === "notificationSound" ? (
-            <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
+            <>Tocando (100%)... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
             <>Novo Atendimento <Play className="h-3 w-3 ml-1" /></>
           )}

@@ -122,23 +122,19 @@ export function Toaster() {
           (toast.data && typeof toast.data === 'object' && 'type' in toast.data && toast.data.type === 'newTicket');
         
         if (isNewTicketNotification) {
-          console.log("🔔 New ticket toast detected, playing notification sound using configured settings:", 
-            {
-              sound: settings.notificationSound,
-              volume: settings.soundVolume
-            }
-          );
+          console.log("🔔 New ticket toast detected, playing notification sound at maximum volume"); 
           
           // Ensure audio is unlocked
           unlockAudio();
           
           // Use a slight delay to ensure UI rendering doesn't block audio
           setTimeout(() => {
-            // Use the proper event type to get the correct sound
-            const success = playSoundByEventType("notification", settings);
+            // Use the proper event type but override volume to 100%
+            // Use either playSoundByEventType with forced volume or direct playSound
+            const success = playSound(settings.notificationSound, 1.0, false);
             
             if (success) {
-              console.log(`✅ Playing notification sound: ${settings.notificationSound} at volume ${settings.soundVolume}`);
+              console.log(`✅ Playing notification sound: ${settings.notificationSound} at maximum volume (100%)`);
             } else {
               console.error(`❌ Failed to play notification sound: ${settings.notificationSound}`);
             }
