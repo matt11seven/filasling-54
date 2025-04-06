@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
 import { AttendantPerformance } from "@/services/performance";
@@ -52,10 +51,8 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
     );
   }
 
-  // Garantir que temos exatamente 3 posições ou menos
   const podiumPositions = attendants.slice(0, 3);
   
-  // Preencher posições ausentes se necessário
   while (podiumPositions.length < 3) {
     podiumPositions.push(null as any);
   }
@@ -70,7 +67,6 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
       </CardHeader>
       <CardContent className="p-0 overflow-hidden">
         <div className="relative h-[350px] flex flex-col items-center">
-          {/* Imagem do pódio como plano de fundo */}
           <div className="absolute inset-0 w-full h-full">
             <img
               src="/lovable-uploads/a8bf7d3d-5889-4996-b0fa-0bc28f4bf03b.png"
@@ -79,10 +75,8 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
             />
           </div>
           
-          {/* Avatares dos participantes */}
           <div className="relative z-10 w-full h-full flex items-start justify-center">
-            {/* 1º Lugar - Centro */}
-            <div className="absolute top-[60px] flex flex-col items-center">
+            <div className="absolute top-[50px] flex flex-col items-center">
               {podiumPositions[0] ? (
                 <>
                   <Avatar className="w-20 h-20 border-3 border-yellow-500 mb-1 z-10 bg-white shadow-lg first-place-glow">
@@ -103,8 +97,7 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            {/* 2º Lugar - Esquerda */}
-            <div className="absolute top-[130px] left-[30%] flex flex-col items-center">
+            <div className="absolute top-[105px] left-[30%] flex flex-col items-center">
               {podiumPositions[1] ? (
                 <>
                   <Avatar className="w-16 h-16 border-2 border-gray-400 mb-1 z-10 bg-white">
@@ -125,8 +118,7 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            {/* 3º Lugar - Direita */}
-            <div className="absolute top-[130px] right-[30%] flex flex-col items-center">
+            <div className="absolute top-[105px] right-[30%] flex flex-col items-center">
               {podiumPositions[2] ? (
                 <>
                   <Avatar className="w-14 h-14 border-2 border-amber-700 mb-1 z-10 bg-white">
