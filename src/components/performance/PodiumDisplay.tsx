@@ -72,7 +72,7 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
             <img
               src="/lovable-uploads/350936d9-7ff3-4576-8d44-60ad09497263.png"
               alt="Pódio"
-              className="object-contain w-full h-full"
+              className="object-cover w-full h-full" // Changed from object-contain to object-cover
             />
           </div>
           
