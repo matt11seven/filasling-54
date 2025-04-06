@@ -114,6 +114,8 @@ export function Toaster() {
     const newToasts = toasts.filter(toast => !processedToastIds.current.has(toast.id))
     
     if (newToasts.length > 0) {
+      console.log("New toasts detected:", newToasts.map(t => ({ id: t.id, description: t.description })));
+      
       newToasts.forEach(toast => {
         processedToastIds.current.add(toast.id)
         
@@ -133,18 +135,21 @@ export function Toaster() {
           setTimeout(() => {
             // SEMPRE usar volume 100% para notificações de novo ticket
             // independentemente da configuração do usuário
+            console.log(`🎵 Toaster attempting to play sound: ${settings.notificationSound}`);
             const success = playSound(settings.notificationSound, 1.0, false);
             
             if (success) {
-              console.log(`✅ Playing notification sound: ${settings.notificationSound} at FORCED maximum volume (100%)`);
+              console.log(`✅ Toaster playing notification sound: ${settings.notificationSound} at FORCED maximum volume (100%)`);
             } else {
-              console.error(`❌ Failed to play notification sound: ${settings.notificationSound}`);
+              console.error(`❌ Toaster failed to play notification sound: ${settings.notificationSound}`);
               
               // Tentar novamente após um curto atraso
               setTimeout(() => {
+                console.log("⏱️ Delayed retry from Toaster component");
                 unlockAudio();
-                playSound(settings.notificationSound, 1.0, false);
-              }, 300);
+                const retrySuccess = playSound(settings.notificationSound, 1.0, false);
+                console.log(`🔁 Toaster retry play attempt: ${retrySuccess ? "succeeded" : "failed"}`);
+              }, 500);
             }
           }, 100);
         }

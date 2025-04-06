@@ -68,11 +68,22 @@ export const useTicketNotifications = (
           });
           
           // Play notification sound at GUARANTEED maximum volume (100%)
+          console.log("🔊 ATTEMPTING to play notification sound at FORCED maximum volume (100%)");
           // Use direct playSound method for maximum volume
           unlockAudio();
           // IMPORTANTE: Forçar volume para 1.0 (100%) independentemente da configuração do usuário
-          playSound(settings.notificationSound, 1.0, false);
-          console.log(`🔊 Playing notification sound: ${settings.notificationSound} at FORCED maximum volume (100%)`);
+          const success = playSound(settings.notificationSound, 1.0, false);
+          console.log(`🔊 Playing notification sound: ${settings.notificationSound} at FORCED maximum volume (100%) - Success: ${success}`);
+          
+          // If first attempt failed, try again after a short delay
+          if (!success) {
+            console.log("⚠️ First sound play attempt failed, trying again after delay...");
+            setTimeout(() => {
+              unlockAudio();
+              const retrySuccess = playSound(settings.notificationSound, 1.0, false);
+              console.log(`🔊 RETRY playing notification sound: ${settings.notificationSound} - Success: ${retrySuccess}`);
+            }, 300);
+          }
           
           // Update the ticket list
           onTicketChange();

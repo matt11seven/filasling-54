@@ -32,17 +32,38 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const savedSettings = localStorage.getItem("queueAppSettings");
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsedSettings = JSON.parse(savedSettings);
+        console.log("Loaded settings from localStorage:", parsedSettings);
+        
+        // Ensure notificationSound is always set to a valid value
+        if (!parsedSettings.notificationSound) {
+          console.log("⚠️ notificationSound not set in saved settings, using default");
+          parsedSettings.notificationSound = defaultSettings.notificationSound;
+        }
+        
+        setSettings(parsedSettings);
       } catch (e) {
         console.error("Error parsing saved settings:", e);
         // If there's an error parsing, use defaults
         setSettings(defaultSettings);
       }
+    } else {
+      console.log("No saved settings found, using defaults:", defaultSettings);
     }
+    
+    // Log notification sound setting at startup
+    console.log("🔔 Current notification sound setting:", 
+      settings.notificationSound || defaultSettings.notificationSound);
   }, []);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
+    
+    // Log when notification sound is changed
+    if (newSettings.notificationSound && newSettings.notificationSound !== settings.notificationSound) {
+      console.log(`🔔 Notification sound changed: ${settings.notificationSound} -> ${newSettings.notificationSound}`);
+    }
+    
     setSettings(updatedSettings);
     localStorage.setItem("queueAppSettings", JSON.stringify(updatedSettings));
   };

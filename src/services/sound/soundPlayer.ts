@@ -45,6 +45,17 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     newAudio.setAttribute('playsinline', 'true');
     newAudio.setAttribute('preload', 'auto');
     
+    // Debug audio element properties to ensure it's correctly configured
+    console.log(`Audio element properties:`, {
+      src: newAudio.src,
+      volume: newAudio.volume,
+      loop: newAudio.loop,
+      paused: newAudio.paused,
+      muted: newAudio.muted,
+      autoplay: newAudio.autoplay,
+      preload: newAudio.preload
+    });
+    
     // Add event listeners to track success/failure
     newAudio.addEventListener('playing', () => {
       console.log(`✅ Sound '${soundType}' started playing successfully with volume ${newAudio.volume}`);
@@ -58,6 +69,12 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     
     newAudio.addEventListener('error', (e) => {
       console.error(`❌ Error playing sound '${soundType}':`, e);
+      console.error(`Audio error code: ${newAudio.error?.code}, message: ${newAudio.error?.message}`);
+    });
+    
+    // Add canplaythrough listener to know when audio is ready to play
+    newAudio.addEventListener('canplaythrough', () => {
+      console.log(`🎵 Sound '${soundType}' is ready to play`);
     });
     
     // Force loading audio before playing
@@ -96,11 +113,17 @@ export const playSound = (soundType: string = "notification", volume: number = 0
           
           // Try to unlock audio after error and play again
           setTimeout(() => {
+            console.log(`🔄 Retrying after NotAllowedError for ${soundType}`);
             unlockAudio();
             newAudio.volume = exactVolume; // Ensure volume is still correct
-            newAudio.play().catch(e => console.warn(`Retry play error for ${soundType}:`, e));
+            newAudio.play().catch(e => {
+              console.warn(`Retry play error for ${soundType}:`, e);
+              return false;
+            });
           }, 200);
         }
+        
+        return false;
       });
     }
     

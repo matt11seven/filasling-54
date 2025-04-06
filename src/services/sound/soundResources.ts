@@ -78,6 +78,17 @@ export const preloadSounds = () => {
       const audio = new Audio(soundUrl);
       audio.preload = "auto";
       
+      // Add error listener to debug failed loads
+      audio.addEventListener('error', (e) => {
+        console.error(`❌ Failed to preload sound ${key}:`, e);
+        console.error(`Error code: ${audio.error?.code}, message: ${audio.error?.message}`);
+      });
+      
+      // Add canplaythrough listener to confirm successful load
+      audio.addEventListener('canplaythrough', () => {
+        console.log(`✅ Sound ${key} preloaded successfully`);
+      });
+      
       // Cache the audio object
       audioCache[key] = audio;
       
@@ -122,10 +133,24 @@ export const getAudio = (soundType: string): HTMLAudioElement => {
     console.log(`Using sound file with added extension: ${soundType} -> ${soundUrl}`);
   }
   
+  // Check if file actually exists
+  console.log(`🔍 Verifying sound file exists: ${soundUrl}`);
+  
   // Always create a new instance for reliable playback
   console.log(`Creating new audio instance for: ${soundType} (${soundUrl})`);
   const newAudio = new Audio(soundUrl);
   newAudio.preload = "auto";
+  
+  // Add event listeners to debug loading
+  newAudio.addEventListener('error', (e) => {
+    console.error(`❌ Error loading sound ${soundType} (${soundUrl}):`, e);
+    console.error(`Error code: ${newAudio.error?.code}, message: ${newAudio.error?.message}`);
+  });
+  
+  newAudio.addEventListener('canplaythrough', () => {
+    console.log(`✅ Sound ${soundType} (${soundUrl}) loaded successfully`);
+  });
+  
   newAudio.load(); // Force immediate loading
   return newAudio;
 };
