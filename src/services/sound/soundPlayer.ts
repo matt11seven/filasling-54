@@ -29,9 +29,18 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     }
     
     console.log(`Creating new audio for: ${audioPath}`);
+    console.log(`DEBUG: Checking if sound file exists at path: ${audioPath}`);
     
     // Use the getAudio helper to get a proper Audio instance
     const newAudio = getAudio(soundType);
+    
+    // DEBUG: Check if audio was created successfully
+    if (!newAudio) {
+      console.error(`❌ CRITICAL ERROR: Failed to create Audio object for ${soundType}`);
+      return false;
+    }
+    
+    console.log(`DEBUG: Audio object created with src: ${newAudio.src}`);
     
     // CRITICAL FIX: Ensure volume is exactly as requested without any modification
     // For notification sounds, this should be 1.0 (100%)
@@ -55,6 +64,12 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       autoplay: newAudio.autoplay,
       preload: newAudio.preload
     });
+    
+    // Test if audio file exists by using the networkState property
+    console.log(`Audio network state: ${newAudio.networkState}`);
+    if (newAudio.networkState === 3) { // NETWORK_NO_SOURCE = 3
+      console.error(`❌ ERROR: Audio file not found or cannot be loaded: ${audioPath}`);
+    }
     
     // Add event listeners to track success/failure
     newAudio.addEventListener('playing', () => {
@@ -125,6 +140,8 @@ export const playSound = (soundType: string = "notification", volume: number = 0
         
         return false;
       });
+    } else {
+      console.warn(`⚠️ No play promise returned for ${soundType} - this might indicate a browser limitation`);
     }
     
     return true;

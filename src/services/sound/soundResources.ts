@@ -1,156 +1,128 @@
 
-// Sound options with URLs for audio files
-export const soundOptions = {
-  // Custom sounds only
-  alertabeebeep: "/sounds/alertabeebeep.mp3",
-  cashregister: "/sounds/cashregister.mp3",
-  notificacao: "/sounds/notificacao.mp3",
-  senna: "/sounds/senna.mp3",
-  sireneindustrial: "/sounds/sireneindustrial.mp3",
-  ultrapassagem: "/sounds/ultrapassagem.mp3",
-};
+// Sound resource management
 
-// Available sound files in the sounds directory
-// This includes only the custom sounds uploaded by users
-export const availableSoundFiles: string[] = [
-  // Custom sound files
-  "alertabeebeep.mp3",
-  "cashregister.mp3",
-  "notificacao.mp3",
-  "senna.mp3",
-  "sireneindustrial.mp3",
-  "ultrapassagem.mp3"
-];
-
-// All available sounds (only custom sounds now)
-export const allAvailableSounds: string[] = [
-  // Only custom sounds
-  "alertabeebeep",
-  "cashregister",
-  "notificacao",
-  "senna",
-  "sireneindustrial",
-  "ultrapassagem"
-];
-
-// Function to get nice display name from a filename
-export const getSoundDisplayName = (filename: string | undefined): string => {
-  // Handle undefined or null filenames
-  if (!filename) {
-    return "Som Desconhecido";
-  }
-  
-  // Remove file extension
-  const nameWithoutExtension = filename.replace('.mp3', '');
-  
-  // Make it more readable (capitalize first letter, handle special cases)
-  switch(nameWithoutExtension) {
-    case 'alertabeebeep': return 'Alerta Beep';
-    case 'cashregister': return 'Caixa Registradora';
-    case 'notificacao': return 'Notificação';
-    case 'senna': return 'Senna';
-    case 'sireneindustrial': return 'Sirene Industrial';
-    case 'ultrapassagem': return 'Ultrapassagem';
-    case 'none': return 'Sem Som';
-    default:
-      // For other files, capitalize first letter and add spaces before uppercase letters
-      return nameWithoutExtension
-        .replace(/([A-Z])/g, ' $1') // Add space before uppercase letters
-        .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
-  }
-};
-
-// Map to store preloaded audio objects
+// Cache for preloaded audio objects
 const audioCache: Record<string, HTMLAudioElement> = {};
 
-// Preload sounds for better performance
+// Define a list of sounds to preload
+const soundsToPreload = [
+  'notificacao',
+  'alertabeebeep',
+  'sireneindustrial',
+  'cashregister',
+  'senna',
+  'ultrapassagem'
+];
+
+// Preload sounds for faster playback
 export const preloadSounds = () => {
   console.log("Preloading sounds...");
   
-  // Clean cache first
-  Object.keys(audioCache).forEach(key => {
-    delete audioCache[key];
-  });
-
-  // Preload each sound
-  Object.entries(soundOptions).forEach(([key, soundUrl]) => {
+  soundsToPreload.forEach(soundName => {
+    const path = `/sounds/${soundName}.mp3`;
     try {
-      const audio = new Audio(soundUrl);
-      audio.preload = "auto";
+      // Create new audio object
+      const audio = new Audio(path);
       
-      // Add error listener to debug failed loads
-      audio.addEventListener('error', (e) => {
-        console.error(`❌ Failed to preload sound ${key}:`, e);
-        console.error(`Error code: ${audio.error?.code}, message: ${audio.error?.message}`);
-      });
+      // Add to cache
+      audioCache[soundName] = audio;
       
-      // Add canplaythrough listener to confirm successful load
+      // Log the preloaded sound
+      console.log(`Preloaded sound: ${soundName} (${path})`);
+      
+      // Check if file exists
       audio.addEventListener('canplaythrough', () => {
-        console.log(`✅ Sound ${key} preloaded successfully`);
+        console.log(`✅ Sound ${soundName} preloaded successfully`);
       });
       
-      // Cache the audio object
-      audioCache[key] = audio;
+      audio.addEventListener('error', (e) => {
+        console.error(`❌ Failed to preload sound ${soundName}:`, e);
+        console.error(`Error code: ${audio.error?.code}, message: ${audio.error?.message}`);
+        
+        // If sound failed to load, remove from cache
+        delete audioCache[soundName];
+      });
       
-      // This will start loading the audio file
+      // Start loading the audio file
       audio.load();
       
-      console.log(`Preloaded sound: ${key} (${soundUrl})`);
     } catch (error) {
-      console.error(`Failed to preload sound ${key}:`, error);
+      console.error(`Error preloading sound ${soundName}:`, error);
+    }
+  });
+};
+
+// Get an audio object for a sound, either from cache or creating a new one
+export const getAudio = (soundType: string): HTMLAudioElement => {
+  // Normalize the sound type name (remove .mp3 extension if present and path)
+  const normalizedSound = soundType.replace('.mp3', '').split('/').pop() || soundType;
+  
+  console.log(`DEBUG getAudio: Requested sound '${soundType}', normalized to '${normalizedSound}'`);
+  
+  // Check if the sound is in cache
+  if (audioCache[normalizedSound]) {
+    console.log(`DEBUG getAudio: Found cached audio for '${normalizedSound}'`);
+    
+    // Clone the audio to allow multiple simultaneous playbacks
+    try {
+      const cachedAudio = audioCache[normalizedSound];
+      
+      // Instead of cloning (which doesn't always work well), create a new Audio with the same src
+      const newAudio = new Audio(cachedAudio.src);
+      
+      // Log for debugging
+      console.log(`DEBUG getAudio: Created new Audio from cache for '${normalizedSound}', src: ${newAudio.src}`);
+      
+      return newAudio;
+    } catch (error) {
+      console.error(`Error cloning cached audio for ${normalizedSound}:`, error);
+      // Fall back to creating a new audio object
+    }
+  }
+  
+  // If not in cache or clone failed, create a new audio object
+  const path = normalizedSound.includes('/') 
+    ? normalizedSound 
+    : `/sounds/${normalizedSound}${normalizedSound.endsWith('.mp3') ? '' : '.mp3'}`;
+  
+  console.log(`DEBUG getAudio: Creating new Audio for '${normalizedSound}' at path '${path}'`);
+  
+  const audio = new Audio(path);
+  
+  // Check if sound file exists
+  audio.addEventListener('error', (e) => {
+    console.error(`❌ Sound file error for '${normalizedSound}' at path '${path}':`, e);
+    console.error(`Error code: ${audio.error?.code}, message: ${audio.error?.message}`);
+    
+    // Try a fallback if this is a notification sound
+    if (normalizedSound === 'notificacao' || normalizedSound === 'notification') {
+      console.log(`⚠️ Critical notification sound failed, trying fallback...`);
+      const fallbackAudio = new Audio('/sounds/beep.mp3');
+      return fallbackAudio;
     }
   });
   
-  return Object.keys(audioCache).length > 0;
+  return audio;
 };
 
-// Get cached audio object if available, or create a new one
-export const getAudio = (soundType: string): HTMLAudioElement => {
-  // Se o tipo de som for "none", vamos retornar um Audio vazio que não vai tocar nada
-  if (soundType === "none") {
-    console.log("Requested 'none' sound type, returning silent audio");
-    const silentAudio = new Audio();
-    silentAudio.volume = 0;
-    return silentAudio;
-  }
+// Test all sound files to verify they can be loaded
+export const testSoundFiles = () => {
+  console.log("Testing all sound files...");
   
-  console.log(`Getting audio for sound type: "${soundType}"`);
-  
-  // Check if it's a standard sound or a custom file
-  let soundUrl: string;
-  
-  if (soundType in soundOptions) {
-    // Standard sound type
-    soundUrl = soundOptions[soundType as keyof typeof soundOptions];
-    console.log(`Standard sound: ${soundType} -> ${soundUrl}`);
-  } else if (soundType.endsWith('.mp3')) {
-    // Custom sound file
-    soundUrl = `/sounds/${soundType}`;
-    console.log(`Custom sound file: ${soundType} -> ${soundUrl}`);
-  } else {
-    // Add .mp3 extension and use from sounds directory
-    soundUrl = `/sounds/${soundType}.mp3`;
-    console.log(`Using sound file with added extension: ${soundType} -> ${soundUrl}`);
-  }
-  
-  // Check if file actually exists
-  console.log(`🔍 Verifying sound file exists: ${soundUrl}`);
-  
-  // Always create a new instance for reliable playback
-  console.log(`Creating new audio instance for: ${soundType} (${soundUrl})`);
-  const newAudio = new Audio(soundUrl);
-  newAudio.preload = "auto";
-  
-  // Add event listeners to debug loading
-  newAudio.addEventListener('error', (e) => {
-    console.error(`❌ Error loading sound ${soundType} (${soundUrl}):`, e);
-    console.error(`Error code: ${newAudio.error?.code}, message: ${newAudio.error?.message}`);
+  soundsToPreload.forEach(soundName => {
+    const path = `/sounds/${soundName}.mp3`;
+    const audio = new Audio(path);
+    
+    audio.addEventListener('canplaythrough', () => {
+      console.log(`✅ Sound file test OK: ${soundName} (${path})`);
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error(`❌ Sound file test FAILED: ${soundName} (${path})`);
+      console.error(`Error code: ${audio.error?.code}, message: ${audio.error?.message}`);
+    });
+    
+    // Start loading the audio
+    audio.load();
   });
-  
-  newAudio.addEventListener('canplaythrough', () => {
-    console.log(`✅ Sound ${soundType} (${soundUrl}) loaded successfully`);
-  });
-  
-  newAudio.load(); // Force immediate loading
-  return newAudio;
 };

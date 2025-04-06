@@ -45,6 +45,7 @@ export const useTicketNotifications = (
   // Set up realtime subscription for tickets table
   useEffect(() => {
     console.log('Setting up realtime subscription for tickets...');
+    console.log('📢 DEBUG: Current notification sound setting:', settings.notificationSound);
     
     // Immediately unlock audio to prepare for potential sounds
     unlockAudio();
@@ -59,6 +60,7 @@ export const useTicketNotifications = (
         }, 
         (payload) => {
           console.log('🔔 New ticket detected! Payload:', payload);
+          console.log('🛎️ DEBUG: About to create toast notification for new ticket');
           
           // Fixed: Use a custom id to identify this toast in the Toaster component
           toast.info('Novo atendimento na fila!', {
@@ -67,8 +69,12 @@ export const useTicketNotifications = (
             id: 'new-ticket-notification' // Use id instead of data property
           });
           
+          console.log('🚨 DEBUG: Created toast with id "new-ticket-notification"');
+          
           // Play notification sound at GUARANTEED maximum volume (100%)
           console.log("🔊 ATTEMPTING to play notification sound at FORCED maximum volume (100%)");
+          console.log(`🔈 DEBUG: About to play sound "${settings.notificationSound}" from useTicketNotifications`);
+          
           // Use direct playSound method for maximum volume
           unlockAudio();
           // IMPORTANTE: Forçar volume para 1.0 (100%) independentemente da configuração do usuário
@@ -80,8 +86,16 @@ export const useTicketNotifications = (
             console.log("⚠️ First sound play attempt failed, trying again after delay...");
             setTimeout(() => {
               unlockAudio();
+              console.log(`🔁 DEBUG: Retrying sound "${settings.notificationSound}" after first failure`);
               const retrySuccess = playSound(settings.notificationSound, 1.0, false);
               console.log(`🔊 RETRY playing notification sound: ${settings.notificationSound} - Success: ${retrySuccess}`);
+              
+              // If still failing, try with a hardcoded sound name
+              if (!retrySuccess) {
+                console.log("⚠️ Second attempt failed, trying with hardcoded sound name...");
+                const lastResortSuccess = playSound("notificacao", 1.0, false);
+                console.log(`🔊 LAST RESORT playing notification sound: "notificacao" - Success: ${lastResortSuccess}`);
+              }
             }, 300);
           }
           
@@ -114,6 +128,10 @@ export const useTicketNotifications = (
         
         if (status === 'SUBSCRIBED') {
           console.log('✅ Successfully subscribed to ticket events!');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Error subscribing to ticket events!');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Subscription timed out!');
         }
       });
     

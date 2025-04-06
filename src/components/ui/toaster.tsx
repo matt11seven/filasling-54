@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -126,7 +125,8 @@ export function Toaster() {
           (toast.id === 'new-ticket-notification');
         
         if (isNewTicketNotification) {
-          console.log("🔔 New ticket toast detected, playing notification sound at FORCED maximum volume"); 
+          console.log("🔔 New ticket toast detected in Toaster component, id:", toast.id); 
+          console.log("🔈 DEBUG Toaster: Current notification sound setting:", settings.notificationSound);
           
           // Ensure audio is unlocked
           unlockAudio();
@@ -149,6 +149,13 @@ export function Toaster() {
                 unlockAudio();
                 const retrySuccess = playSound(settings.notificationSound, 1.0, false);
                 console.log(`🔁 Toaster retry play attempt: ${retrySuccess ? "succeeded" : "failed"}`);
+                
+                // Se ainda falhar, tente com um nome de som codificado
+                if (!retrySuccess) {
+                  console.log("🔄 Trying hardcoded fallback sound in Toaster");
+                  const lastAttempt = playSound("notificacao", 1.0, false);
+                  console.log(`🎵 Last resort sound attempt from Toaster: ${lastAttempt ? "succeeded" : "failed"}`);
+                }
               }, 500);
             }
           }, 100);
