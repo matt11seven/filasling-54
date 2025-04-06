@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Ticket } from "@/types";
@@ -36,7 +37,7 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
       
       // Usar playSoundByEventType para garantir consistência com as configurações
       // Importante: false para loop, pois queremos tocar apenas uma vez
-      const success = playSoundByEventType("alert", settings, undefined, false);
+      const success = playSoundByEventType("alert", settings, settings.soundVolume, false);
       
       if (success) {
         setSoundPlayed(true);
@@ -110,7 +111,7 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
         // Try to unlock audio on any click on the alert
         unlockAudio();
         if (!soundPlayed) {
-          playSoundByEventType("alert", settings, undefined, false);
+          playSoundByEventType("alert", settings, settings.soundVolume, false);
           setSoundPlayed(true);
         }
       }}

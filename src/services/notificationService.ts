@@ -105,20 +105,17 @@ export const playSoundByEventType = (
       settings.soundVolume !== undefined ? settings.soundVolume : 0.5
     );
     
-    // Force soundVolume to be at least 0.5 to ensure it's audible
-    const finalVolume = Math.max(soundVolume, 0.5);
-    
-    console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${finalVolume}, loop: ${loop}`);
+    console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${soundVolume}, loop: ${loop}`);
     
     // Directly play the sound using the appropriate type
-    const success = playSound(soundType, finalVolume, loop);
+    const success = playSound(soundType, soundVolume, loop);
     
     if (!success) {
       console.warn(`playSoundByEventType: Failed to play sound ${soundType}, trying again with a delay`);
       // Try again after a small delay
       setTimeout(() => {
         unlockAudio();
-        playSound(soundType, finalVolume, loop);
+        playSound(soundType, soundVolume, loop);
       }, 300);
     }
     
