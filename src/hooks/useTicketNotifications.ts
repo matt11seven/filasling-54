@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Ticket } from "@/types";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -9,6 +8,10 @@ import {
 } from "@/services/notificationService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+// Import the extended ExternalToast type (TS will use the module augmentation from sonner.tsx)
+// This is just to make TypeScript explicitly aware of the augmentation
+import "sonner";
 
 export const useTicketNotifications = (
   tickets: Ticket[],
@@ -56,8 +59,7 @@ export const useTicketNotifications = (
         (payload) => {
           console.log('🔔 New ticket detected! Payload:', payload);
           
-          // Don't play sound here - we'll let the Toaster component handle it
-          // Just show the notification toast with a custom data attribute
+          // Use the toast with custom data property that's now properly typed
           toast.info('Novo atendimento na fila!', {
             duration: 5000,
             important: true,

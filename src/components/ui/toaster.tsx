@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -9,6 +8,8 @@ import { useEffect, useRef } from "react"
 import { playSound, unlockAudio, playSoundByEventType } from "@/services/notificationService"
 import { useSettings } from "@/contexts/SettingsContext"
 import { ToastViewport } from "@/components/ui/toast"
+
+import "sonner";
 
 const ToastProvider = ToastPrimitives.Provider
 
