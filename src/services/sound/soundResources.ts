@@ -14,6 +14,46 @@ const soundsToPreload = [
   'ultrapassagem'
 ];
 
+// Lista completa de sons disponíveis para seleção na interface
+export const allAvailableSounds = [
+  'notificacao',
+  'alertabeebeep',
+  'sireneindustrial',
+  'cashregister',
+  'senna',
+  'ultrapassagem',
+  'notification',
+  'alert',
+  'alerta',
+  'beep',
+  'podium',
+  'firstPlace'
+];
+
+// Retorna um nome amigável para exibição com base no ID do som
+export const getSoundDisplayName = (soundId: string): string => {
+  if (!soundId || soundId === 'none') return 'Sem Som';
+  
+  // Mapeamento de IDs para nomes amigáveis
+  const soundNameMap: Record<string, string> = {
+    'notificacao': 'Notificação Padrão',
+    'alertabeebeep': 'Alerta Beep',
+    'sireneindustrial': 'Sirene Industrial',
+    'cashregister': 'Caixa Registradora',
+    'senna': 'Senna Ultrapassagem',
+    'ultrapassagem': 'Ultrapassagem F1',
+    'notification': 'Notificação Alternativa',
+    'alert': 'Alerta Básico',
+    'alerta': 'Alerta Brasileiro',
+    'beep': 'Beep Simples',
+    'podium': 'Pódio',
+    'firstPlace': 'Primeiro Lugar'
+  };
+  
+  // Retorna o nome mapeado ou o próprio ID se não houver mapeamento
+  return soundNameMap[soundId] || soundId;
+};
+
 // Preload sounds for faster playback
 export const preloadSounds = () => {
   console.log("Preloading sounds...");
