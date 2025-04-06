@@ -142,13 +142,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange 
             </div>
           )}
           
-          {/* Display system number if available */}
-          {ticket.numero_sistema !== null && ticket.numero_sistema !== undefined && (
-            <div className="mb-2">
-              <p className="text-sm font-medium">Número no Sistema:</p>
-              <p className="text-sm">{ticket.numero_sistema}</p>
-            </div>
-          )}
+          {/* Removed "Número no Sistema" display section */}
           
           {/* Waiting time info */}
           {waitingTimeInfo && (

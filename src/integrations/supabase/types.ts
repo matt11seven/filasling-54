@@ -47,7 +47,7 @@ export type Database = {
           id: string
           nome: string
           numero: number
-          numeroSistema: number | null
+          numero_sistema: number | null
         }
         Insert: {
           cor: string
@@ -56,7 +56,7 @@ export type Database = {
           id?: string
           nome: string
           numero: number
-          numeroSistema?: number | null
+          numero_sistema?: number | null
         }
         Update: {
           cor?: string
@@ -65,7 +65,7 @@ export type Database = {
           id?: string
           nome?: string
           numero?: number
-          numeroSistema?: number | null
+          numero_sistema?: number | null
         }
         Relationships: []
       }
@@ -158,13 +158,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "atendentes"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_etapa_numero_fkey"
-            columns: ["etapa_numero"]
-            isOneToOne: false
-            referencedRelation: "etapas"
-            referencedColumns: ["numero"]
           },
         ]
       }
