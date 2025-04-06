@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
 import { AttendantPerformance } from "@/services/performance";
@@ -97,7 +98,7 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            <div className="absolute top-[105px] left-[30%] flex flex-col items-center">
+            <div className="absolute top-[105px] left-[43%] flex flex-col items-center">
               {podiumPositions[1] ? (
                 <>
                   <Avatar className="w-16 h-16 border-2 border-gray-400 mb-1 z-10 bg-white">
@@ -118,7 +119,7 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            <div className="absolute top-[105px] right-[30%] flex flex-col items-center">
+            <div className="absolute top-[105px] right-[43%] flex flex-col items-center">
               {podiumPositions[2] ? (
                 <>
                   <Avatar className="w-14 h-14 border-2 border-amber-700 mb-1 z-10 bg-white">
