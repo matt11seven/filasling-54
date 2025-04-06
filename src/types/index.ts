@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   usuario: string;
@@ -30,7 +31,7 @@ export interface Ticket {
   motivo?: string;
   setor?: string;
   atendente_id?: string;
-  email_atendente?: string;
+  email_atendente: string;
   nome_atendente?: string;
   etapa_numero: number;
   numero_sistema?: number;
@@ -60,7 +61,7 @@ export interface Agent {
 
 export interface AppSettings {
   showUserNS: boolean;
-  phoneDisplayMode: 'full' | 'partial' | 'hidden' | 'none';
+  phoneDisplayMode: 'full' | 'partial' | 'hidden';
   warningTimeMinutes: number;
   criticalTimeMinutes: number;
   fullScreenAlertMinutes: number;

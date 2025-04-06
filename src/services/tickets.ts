@@ -51,6 +51,11 @@ export const createTicket = async (ticket: Omit<Ticket, "id" | "data_criado" | "
       ticket.etapa_numero = 1;
     }
     
+    // Ensure that email_atendente is provided as it's required by the database
+    if (!ticket.email_atendente) {
+      throw new Error("Email do atendente é obrigatório");
+    }
+    
     const { data, error } = await supabase
       .from("tickets")
       .insert(ticket)

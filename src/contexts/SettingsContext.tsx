@@ -41,6 +41,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
           parsedSettings.notificationSound = defaultSettings.notificationSound;
         }
         
+        // Ensure phoneDisplayMode is always set to a valid value
+        if (!parsedSettings.phoneDisplayMode || parsedSettings.phoneDisplayMode === "none") {
+          console.log("⚠️ phoneDisplayMode not set or invalid in saved settings, using default");
+          parsedSettings.phoneDisplayMode = defaultSettings.phoneDisplayMode;
+        }
+        
         setSettings(parsedSettings);
       } catch (e) {
         console.error("Error parsing saved settings:", e);
