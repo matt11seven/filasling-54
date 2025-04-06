@@ -4,7 +4,8 @@ import { Ticket } from "@/types";
 import { useSettings } from "@/contexts/SettingsContext";
 import { 
   stopAlertNotification,
-  unlockAudio
+  unlockAudio,
+  playSoundByEventType
 } from "@/services/notificationService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";

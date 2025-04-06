@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -5,7 +6,7 @@ import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useEffect, useRef } from "react"
-import { playSound, unlockAudio } from "@/services/notificationService"
+import { playSound, unlockAudio, playSoundByEventType } from "@/services/notificationService"
 import { useSettings } from "@/contexts/SettingsContext"
 import { ToastViewport } from "@/components/ui/toast"
 
@@ -116,16 +117,12 @@ export function Toaster() {
         const description = String(toast.description || "")
         
         if (description.includes("Novo atendimento na fila")) {
-          console.log("🔔 Novo atendimento toast detected, playing notification sound DIRECTLY")
+          console.log("🔔 Novo atendimento toast detected, playing notification sound using user settings")
           
           unlockAudio()
           
-          const soundType = settings.notificationSound || "notificacao"
-          const volume = settings.soundVolume || 0.5
-          
-          console.log(`🔈 Playing notification sound: ${soundType} with volume: ${volume}`)
-          
-          playSound(soundType, volume, false)
+          // Use playSoundByEventType which respects user settings
+          playSoundByEventType("notification", settings);
         }
       })
       

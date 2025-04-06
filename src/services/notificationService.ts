@@ -58,7 +58,7 @@ export const playSoundByEventType = (
   }
   
   try {
-    console.log(`playSoundByEventType: Playing sound for event: ${eventType}`);
+    console.log(`playSoundByEventType: Playing sound for event: ${eventType} with settings:`, settings);
     
     // Map event type to corresponding setting
     const soundSettingsMap: Record<string, string> = {
@@ -96,6 +96,7 @@ export const playSoundByEventType = (
     
     // Add more detailed log for debugging
     console.log(`playSoundByEventType: Event type '${eventType}' mapped to config '${soundSetting}' with value '${soundType}'`);
+    console.log(`playSoundByEventType: Volume setting from settings: ${settings.soundVolume}, override: ${volume}`);
     
     // Try to unlock audio first (for iOS/Safari)
     unlockAudio();

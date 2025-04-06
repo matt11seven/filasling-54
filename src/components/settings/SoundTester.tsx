@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
-import { playSound, stopSound, unlockAudio, canPlayAudio, preloadSounds } from "@/services/notificationService";
+import { playSound, stopSound, unlockAudio, canPlayAudio, preloadSounds, playSoundByEventType } from "@/services/notificationService";
 import { useSettings } from "@/contexts/SettingsContext";
 
 interface SoundTesterProps {
@@ -35,10 +35,7 @@ const SoundTester = ({
       return;
     }
     
-    // Obter o tipo de som atual com base no formulário em vez de configurações salvas
-    const soundToPlay = formValues[soundKey];
-    
-    console.log(`Testing sound: ${soundKey} -> ${soundToPlay}`);
+    console.log(`Testing sound: ${soundKey} -> ${formValues[soundKey]} with volume: ${volume}`);
     
     setIsPlayingSound(soundKey);
     
@@ -48,8 +45,25 @@ const SoundTester = ({
     // Preload sounds
     preloadSounds();
     
-    // Tenta reproduzir o som e fornecer feedback
-    const success = playSound(soundToPlay, volume);
+    // Map sound key to event type
+    const eventTypeMap: Record<string, "notification" | "alert" | "podium" | "firstPlace"> = {
+      notificationSound: "notification",
+      alertSound: "alert",
+      podiumSound: "podium", 
+      firstPlaceSound: "firstPlace"
+    };
+    
+    const eventType = eventTypeMap[soundKey];
+    
+    // Use the current form values as temporary settings
+    const tempSettings = {
+      ...settings,
+      soundVolume: volume,  // Use the current volume slider value
+      ...formValues,        // Override with current form values
+    };
+    
+    // Use playSoundByEventType to respect the configured sound type and volume
+    const success = playSoundByEventType(eventType, tempSettings);
     
     // Set timeout to update UI state
     setTimeout(() => setIsPlayingSound(null), 3000);
@@ -65,7 +79,7 @@ const SoundTester = ({
         const handleInteraction = () => {
           unlockAudio();
           preloadSounds();
-          playSound(soundToPlay, volume);
+          playSoundByEventType(eventType, tempSettings);
           setAudioPermissionGranted(true);
           document.removeEventListener('click', handleInteraction);
         };
