@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-// Import sonner first to enable type augmentation
+// Import sonner first to ensure proper type augmentation
 import "sonner";
 
 export const useTicketNotifications = (
@@ -59,11 +59,10 @@ export const useTicketNotifications = (
         (payload) => {
           console.log('🔔 New ticket detected! Payload:', payload);
           
+          // Use the toast.info without a data property for now
           toast.info('Novo atendimento na fila!', {
             duration: 5000,
-            important: true,
-            // Use a standard type that's compatible with our augmentations
-            data: { type: 'newTicket' }
+            important: true
           });
           
           // Update the ticket list

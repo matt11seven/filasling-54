@@ -2,16 +2,14 @@
 import { useTheme } from "next-themes"
 import { Toaster as Sonner } from "sonner"
 
-type ToasterProps = React.ComponentProps<typeof Sonner> & {
-  // Add extended props here if needed
-}
+type ToasterProps = React.ComponentProps<typeof Sonner>
 
 // Import sonner first to ensure proper module augmentation
 import "sonner"
 
 // Then augment the module
 declare module "sonner" {
-  // Use interface merging instead of redefining the interface
+  // Directly extend the Toast interface without redefining
   interface Toast {
     data?: Record<string, unknown>;
   }
