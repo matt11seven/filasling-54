@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { updateStage } from "@/services";
 import { toast } from "sonner";
 import { Edit, Check, X, ArrowUp, ArrowDown } from "lucide-react";
+import ColorPicker from "./ColorPicker";
 
 interface StageListProps {
   stages: Stage[];
@@ -122,20 +123,11 @@ const StageList = ({ stages, onStageChange }: StageListProps) => {
                   />
                 </div>
                 
-                <div>
-                  <Label htmlFor={`stage-color-${stage.id}`}>Cor</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id={`stage-color-${stage.id}`}
-                      value={editingStage.cor}
-                      onChange={(e) => setEditingStage({ ...editingStage, cor: e.target.value })}
-                    />
-                    <div 
-                      className="w-10 h-10 rounded border" 
-                      style={{ backgroundColor: editingStage.cor }} 
-                    />
-                  </div>
-                </div>
+                <ColorPicker
+                  label="Cor"
+                  color={editingStage.cor}
+                  onChange={(color) => setEditingStage({ ...editingStage, cor: color })}
+                />
                 
                 <div className="flex justify-end space-x-2">
                   <Button 
