@@ -77,7 +77,8 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
           </div>
           
           <div className="relative z-10 w-full h-full flex items-start justify-center">
-            <div className="absolute top-[50px] flex flex-col items-center">
+            {/* First place - centered and above the trophy */}
+            <div className="absolute top-[40px] flex flex-col items-center">
               {podiumPositions[0] ? (
                 <>
                   <Avatar className="w-20 h-20 border-3 border-yellow-500 mb-1 z-10 bg-white shadow-lg first-place-glow">
@@ -98,7 +99,8 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            <div className="absolute top-[105px] left-[43%] flex flex-col items-center">
+            {/* Second place - above silver medal, further left */}
+            <div className="absolute top-[90px] left-[40%] flex flex-col items-center">
               {podiumPositions[1] ? (
                 <>
                   <Avatar className="w-16 h-16 border-2 border-gray-400 mb-1 z-10 bg-white">
@@ -119,7 +121,8 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            <div className="absolute top-[105px] right-[43%] flex flex-col items-center">
+            {/* Third place - above bronze medal, further right */}
+            <div className="absolute top-[90px] right-[40%] flex flex-col items-center">
               {podiumPositions[2] ? (
                 <>
                   <Avatar className="w-14 h-14 border-2 border-amber-700 mb-1 z-10 bg-white">
