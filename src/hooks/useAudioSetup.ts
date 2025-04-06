@@ -6,7 +6,6 @@ import {
   preloadSounds,
   requestBackgroundAudioPermission
 } from "@/services/notificationService";
-import { toast } from "sonner";
 
 export const useAudioSetup = () => {
   // Initialize audio context on first render and preload sounds
@@ -29,11 +28,7 @@ export const useAudioSetup = () => {
       } else {
         console.log("⚠️ Some background audio permissions may not be granted");
         
-        // Show a toast to inform the user if permissions are needed
-        toast.info(
-          "For notification sounds, please allow notifications and interact with the page",
-          { duration: 5000, important: true }
-        );
+        // Remove the permission toast that was here
       }
     });
     
