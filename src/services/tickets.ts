@@ -44,17 +44,41 @@ export const getTicketById = async (id: string): Promise<Ticket | undefined> => 
   }
 };
 
-export const createTicket = async (ticket: Omit<Ticket, "id" | "data_criado" | "data_atualizado">): Promise<Ticket> => {
+export const createTicket = async (ticketData: Partial<Omit<Ticket, "id" | "data_criado" | "data_atualizado">>): Promise<Ticket> => {
   try {
     // Auto-set the stage to 1 (Aguardando) if not specified
-    if (!ticket.etapa_numero) {
-      ticket.etapa_numero = 1;
+    if (!ticketData.etapa_numero) {
+      ticketData.etapa_numero = 1;
     }
     
-    // Ensure that email_atendente is provided as it's required by the database
-    if (!ticket.email_atendente) {
+    // Validate required fields
+    if (!ticketData.email_atendente) {
       throw new Error("Email do atendente é obrigatório");
     }
+    
+    if (!ticketData.nome) {
+      throw new Error("Nome é obrigatório");
+    }
+    
+    if (!ticketData.motivo) {
+      throw new Error("Motivo é obrigatório");
+    }
+    
+    if (!ticketData.user_ns) {
+      throw new Error("ID do usuário é obrigatório");
+    }
+    
+    // Create a properly typed ticket object for the database
+    const ticket = {
+      nome: ticketData.nome,
+      telefone: ticketData.telefone,
+      user_ns: ticketData.user_ns,
+      motivo: ticketData.motivo,
+      setor: ticketData.setor,
+      email_atendente: ticketData.email_atendente,
+      etapa_numero: ticketData.etapa_numero,
+      numero_sistema: ticketData.numero_sistema
+    };
     
     const { data, error } = await supabase
       .from("tickets")

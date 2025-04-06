@@ -27,8 +27,8 @@ export interface Ticket {
   id: string;
   nome: string;
   telefone?: string;
-  user_ns?: string;
-  motivo?: string;
+  user_ns: string;
+  motivo: string;
   setor?: string;
   atendente_id?: string;
   email_atendente: string;

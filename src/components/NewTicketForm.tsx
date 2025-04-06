@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,7 +65,7 @@ const NewTicketForm = ({ onTicketCreated }: NewTicketFormProps) => {
         numero_sistema: values.numero_sistema
       };
       
-      await createTicket(newTicketData as any);
+      await createTicket(newTicketData);
       toast.success("Chamado criado com sucesso!");
       form.reset();
       onTicketCreated();
