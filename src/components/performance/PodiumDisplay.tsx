@@ -70,7 +70,7 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
         <div className="relative h-[350px] flex flex-col items-center">
           <div className="absolute inset-0 w-full h-full">
             <img
-              src="/lovable-uploads/a8bf7d3d-5889-4996-b0fa-0bc28f4bf03b.png"
+              src="/lovable-uploads/350936d9-7ff3-4576-8d44-60ad09497263.png"
               alt="Pódio"
               className="object-contain w-full h-full"
             />
@@ -78,7 +78,7 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
           
           <div className="relative z-10 w-full h-full flex items-start justify-center">
             {/* First place - centered and above the trophy */}
-            <div className="absolute top-[40px] flex flex-col items-center">
+            <div className="absolute top-[30px] flex flex-col items-center">
               {podiumPositions[0] ? (
                 <>
                   <Avatar className="w-20 h-20 border-3 border-yellow-500 mb-1 z-10 bg-white shadow-lg first-place-glow">
@@ -99,8 +99,8 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            {/* Second place - above silver medal, further left */}
-            <div className="absolute top-[90px] left-[40%] flex flex-col items-center">
+            {/* Second place - above silver medal, left side */}
+            <div className="absolute top-[120px] left-[32%] flex flex-col items-center">
               {podiumPositions[1] ? (
                 <>
                   <Avatar className="w-16 h-16 border-2 border-gray-400 mb-1 z-10 bg-white">
@@ -121,8 +121,8 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            {/* Third place - above bronze medal, further right */}
-            <div className="absolute top-[90px] right-[40%] flex flex-col items-center">
+            {/* Third place - above bronze medal, right side */}
+            <div className="absolute top-[120px] right-[32%] flex flex-col items-center">
               {podiumPositions[2] ? (
                 <>
                   <Avatar className="w-14 h-14 border-2 border-amber-700 mb-1 z-10 bg-white">
