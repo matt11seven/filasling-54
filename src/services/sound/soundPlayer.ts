@@ -2,6 +2,7 @@
 import { getAudioInstance, setAudioInstance, unlockAudio, canPlayAudio } from './soundCore';
 import { initAudioContext } from './audioContext';
 import { setLastPlayedAudio, cleanupLastPlayedAudio } from './soundStateManager';
+import { getAudio } from './soundResources';
 
 export const playSound = (soundType: string = "notification", volume: number = 0.5, loop: boolean = false): boolean => {
   try {
@@ -28,7 +29,9 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     }
     
     console.log(`Creating new audio for: ${audioPath}`);
-    const newAudio = new Audio(audioPath);
+    
+    // Use the getAudio helper to get a proper Audio instance
+    const newAudio = getAudio(soundType);
     
     // Configure the audio - IMPORTANT: preserve exact volume without reduction
     const exactVolume = Math.max(0, Math.min(1, volume)); // Ensure volume is between 0 and 1

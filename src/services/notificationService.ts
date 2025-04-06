@@ -75,10 +75,10 @@ export const playSoundByEventType = (
       return false;
     }
     
-    // Try to get sound configuration
+    // Get sound configuration from settings
     const soundType = settings[soundSetting];
     
-    console.log(`playSoundByEventType: Using sound setting from '${soundSetting}': '${soundType}'`);
+    console.log(`playSoundByEventType: Using sound from settings['${soundSetting}']: '${soundType}'`);
     
     if (!soundType || soundType === "none") {
       // If sound type is "none" or not set, don't play anything
@@ -94,19 +94,15 @@ export const playSoundByEventType = (
       }
     }
     
-    // Add more detailed log for debugging
-    console.log(`playSoundByEventType: Event type '${eventType}' mapped to config '${soundSetting}' with value '${soundType}'`);
-    console.log(`playSoundByEventType: Volume setting from settings: ${settings.soundVolume}, override: ${volume}`);
-    
-    // Try to unlock audio first (for iOS/Safari)
-    unlockAudio();
-    
     // Use volume from settings or provided volume
     const soundVolume = volume !== undefined ? volume : (
       settings.soundVolume !== undefined ? settings.soundVolume : 0.5
     );
     
-    console.log(`playSoundByEventType: Playing sound ${soundType} with volume ${soundVolume}, loop: ${loop}`);
+    console.log(`playSoundByEventType: Final config - Sound: ${soundType}, Volume: ${soundVolume}, Loop: ${loop}`);
+    
+    // Try to unlock audio first (for iOS/Safari)
+    unlockAudio();
     
     // Directly play the sound using the appropriate type
     const success = playSound(soundType, soundVolume, loop);

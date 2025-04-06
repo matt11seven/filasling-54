@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -115,14 +114,19 @@ export function Toaster() {
         processedToastIds.current.add(toast.id)
         
         const description = String(toast.description || "")
+        const isNewTicketNotification = 
+          (description.includes("Novo atendimento na fila") || 
+          (toast.data && toast.data.type === 'newTicket'));
         
-        if (description.includes("Novo atendimento na fila")) {
-          console.log("🔔 Novo atendimento toast detected, playing notification sound using user settings")
+        if (isNewTicketNotification) {
+          console.log("🔔 New ticket toast detected, playing notification sound using user settings:", settings);
           
-          unlockAudio()
+          unlockAudio();
           
-          // Use playSoundByEventType which respects user settings
-          playSoundByEventType("notification", settings);
+          setTimeout(() => {
+            playSoundByEventType("notification", settings, settings.soundVolume, false);
+            console.log(`Playing notification sound: ${settings.notificationSound} at volume ${settings.soundVolume}`);
+          }, 100);
         }
       })
       
