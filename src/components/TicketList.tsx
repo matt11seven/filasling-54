@@ -75,7 +75,7 @@ const TicketList = ({ tickets, stages, onTicketChange }: TicketListProps) => {
       
       {tickets.length === 0 && (
         <div className="col-span-full text-center p-12">
-          <p className="text-muted-foreground">No tickets found</p>
+          <p className="text-muted-foreground">Sem atendimentos até o momento</p>
         </div>
       )}
     </div>
