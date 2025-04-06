@@ -11,7 +11,9 @@ const soundsToPreload = [
   'sireneindustrial',
   'cashregister',
   'senna',
-  'ultrapassagem'
+  'ultrapassagem',
+  'notification',  // Adicionando esse som para pré-carregamento
+  'beep'           // Adicionando esse som para pré-carregamento
 ];
 
 // Lista completa de sons disponíveis para seleção na interface

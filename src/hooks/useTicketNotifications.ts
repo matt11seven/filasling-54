@@ -50,6 +50,10 @@ export const useTicketNotifications = (
     // Immediately unlock audio to prepare for potential sounds
     unlockAudio();
     
+    // Teste de reprodução do som no início (apenas para depuração)
+    console.log('🔊 Testing sound system with a silent test');
+    playSound('beep', 0.01, false);  // Volume muito baixo, quase inaudível
+    
     const channel = supabase
       .channel('public:tickets')
       .on('postgres_changes', 
@@ -71,33 +75,31 @@ export const useTicketNotifications = (
           
           console.log('🚨 DEBUG: Created toast with id "new-ticket-notification"');
           
-          // Play notification sound at GUARANTEED maximum volume (100%)
-          console.log("🔊 ATTEMPTING to play notification sound at FORCED maximum volume (100%)");
-          console.log(`🔈 DEBUG: About to play sound "${settings.notificationSound}" from useTicketNotifications`);
-          
-          // Use direct playSound method for maximum volume
+          // Try multiple sound options to ensure one works
           unlockAudio();
-          // IMPORTANTE: Forçar volume para 1.0 (100%) independentemente da configuração do usuário
-          const success = playSound(settings.notificationSound, 1.0, false);
-          console.log(`🔊 Playing notification sound: ${settings.notificationSound} at FORCED maximum volume (100%) - Success: ${success}`);
           
-          // If first attempt failed, try again after a short delay
+          // Primeiro tenta com a configuração do usuário
+          console.log(`🔈 Attempting to play primary notification sound: "${settings.notificationSound}"`);
+          let success = playSound(settings.notificationSound, 1.0, false);
+          
+          // Se falhar, tenta com um som fixo
           if (!success) {
-            console.log("⚠️ First sound play attempt failed, trying again after delay...");
-            setTimeout(() => {
-              unlockAudio();
-              console.log(`🔁 DEBUG: Retrying sound "${settings.notificationSound}" after first failure`);
-              const retrySuccess = playSound(settings.notificationSound, 1.0, false);
-              console.log(`🔊 RETRY playing notification sound: ${settings.notificationSound} - Success: ${retrySuccess}`);
-              
-              // If still failing, try with a hardcoded sound name
-              if (!retrySuccess) {
-                console.log("⚠️ Second attempt failed, trying with hardcoded sound name...");
-                const lastResortSuccess = playSound("notificacao", 1.0, false);
-                console.log(`🔊 LAST RESORT playing notification sound: "notificacao" - Success: ${lastResortSuccess}`);
-              }
-            }, 300);
+            console.log("⚠️ Primary sound failed, trying with fixed sound 'notificacao'");
+            success = playSound('notificacao', 1.0, false);
+            
+            // Se ainda falhar, tenta com 'beep'
+            if (!success) {
+              console.log("⚠️ Second attempt failed, trying with 'beep'");
+              success = playSound('beep', 1.0, false);
+            }
           }
+          
+          // Backup: Tenta novamente após um curto atraso
+          setTimeout(() => {
+            console.log("🕒 Delayed backup sound attempt");
+            unlockAudio();
+            playSound('beep', 1.0, false);
+          }, 500);
           
           // Update the ticket list
           onTicketChange();

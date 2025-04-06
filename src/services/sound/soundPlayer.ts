@@ -1,4 +1,3 @@
-
 import { getAudioInstance, setAudioInstance, unlockAudio, canPlayAudio } from './soundCore';
 import { initAudioContext } from './audioContext';
 import { setLastPlayedAudio, cleanupLastPlayedAudio } from './soundStateManager';
@@ -14,8 +13,11 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       return true;
     }
     
-    // Force unlock audio first
+    // Força desbloquear áudio primeiro e garante que estamos usando o máximo volume para notificações
     unlockAudio();
+    
+    // Force maximum volume for notifications (this is critical)
+    const effectiveVolume = volume > 0.9 ? 1.0 : volume;
     
     // Get audio path - properly handle the sound type
     let audioPath = soundType;
@@ -34,6 +36,20 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     // Use the getAudio helper to get a proper Audio instance
     const newAudio = getAudio(soundType);
     
+    // Try to play as quickly as possible
+    const quickPlayAttempt = () => {
+      try {
+        const tempAudio = new Audio(audioPath);
+        tempAudio.volume = effectiveVolume;
+        tempAudio.play().catch(e => console.log("Quick play failed, continuing with main audio"));
+      } catch (e) {
+        // Ignore errors in quick play attempt
+      }
+    };
+    
+    // Try a quick play in parallel
+    quickPlayAttempt();
+    
     // DEBUG: Check if audio was created successfully
     if (!newAudio) {
       console.error(`❌ CRITICAL ERROR: Failed to create Audio object for ${soundType}`);
@@ -44,8 +60,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     
     // CRITICAL FIX: Ensure volume is exactly as requested without any modification
     // For notification sounds, this should be 1.0 (100%)
-    const exactVolume = Math.max(0, Math.min(1, volume)); // Ensure volume is between 0 and 1
-    newAudio.volume = exactVolume;
+    newAudio.volume = effectiveVolume;
     console.log(`🔊 Audio volume explicitly set to: ${newAudio.volume} (from requested: ${volume})`);
     
     newAudio.loop = loop;
@@ -65,31 +80,26 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       preload: newAudio.preload
     });
     
-    // Test if audio file exists by using the networkState property
-    console.log(`Audio network state: ${newAudio.networkState}`);
-    if (newAudio.networkState === 3) { // NETWORK_NO_SOURCE = 3
-      console.error(`❌ ERROR: Audio file not found or cannot be loaded: ${audioPath}`);
-    }
-    
     // Add event listeners to track success/failure
     newAudio.addEventListener('playing', () => {
       console.log(`✅ Sound '${soundType}' started playing successfully with volume ${newAudio.volume}`);
       
       // Double-check the volume is correct after playing starts
-      if (newAudio.volume !== exactVolume) {
-        console.warn(`⚠️ Volume changed after play started. Forcing back to ${exactVolume}`);
-        newAudio.volume = exactVolume;
+      if (newAudio.volume !== effectiveVolume) {
+        console.warn(`⚠️ Volume changed after play started. Forcing back to ${effectiveVolume}`);
+        newAudio.volume = effectiveVolume;
       }
     });
     
     newAudio.addEventListener('error', (e) => {
       console.error(`❌ Error playing sound '${soundType}':`, e);
       console.error(`Audio error code: ${newAudio.error?.code}, message: ${newAudio.error?.message}`);
-    });
-    
-    // Add canplaythrough listener to know when audio is ready to play
-    newAudio.addEventListener('canplaythrough', () => {
-      console.log(`🎵 Sound '${soundType}' is ready to play`);
+      
+      // Try fallback with a different sound
+      if (soundType !== "beep") {
+        console.log("⚠️ Attempting fallback to 'beep' sound");
+        setTimeout(() => playSound("beep", effectiveVolume, false), 100);
+      }
     });
     
     // Force loading audio before playing
@@ -114,9 +124,9 @@ export const playSound = (soundType: string = "notification", volume: number = 0
         console.log(`✅ Sound '${soundType}' play promise resolved successfully with volume ${newAudio.volume}`);
         
         // Ensure volume is still correct after promise resolves
-        if (newAudio.volume !== exactVolume) {
-          console.warn(`⚠️ Volume changed after promise. Forcing back to ${exactVolume}`);
-          newAudio.volume = exactVolume;
+        if (newAudio.volume !== effectiveVolume) {
+          console.warn(`⚠️ Volume changed after promise. Forcing back to ${effectiveVolume}`);
+          newAudio.volume = effectiveVolume;
         }
         
         return true;
@@ -130,11 +140,15 @@ export const playSound = (soundType: string = "notification", volume: number = 0
           setTimeout(() => {
             console.log(`🔄 Retrying after NotAllowedError for ${soundType}`);
             unlockAudio();
-            newAudio.volume = exactVolume; // Ensure volume is still correct
-            newAudio.play().catch(e => {
-              console.warn(`Retry play error for ${soundType}:`, e);
-              return false;
-            });
+            try {
+              const retryAudio = new Audio(audioPath);
+              retryAudio.volume = effectiveVolume;
+              retryAudio.play().catch(e => {
+                console.warn(`Retry play error for ${soundType}:`, e);
+              });
+            } catch (e) {
+              console.warn(`Error creating retry audio for ${soundType}:`, e);
+            }
           }, 200);
         }
         
