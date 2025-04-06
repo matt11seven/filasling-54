@@ -36,8 +36,9 @@ export function Toaster() {
           // Unlock audio context first to ensure it can play
           unlockAudio()
           
-          // Use the user's configured volume setting
+          // Use the user's configured volume setting (ensure it's fully applied)
           const volume = settings.soundVolume || 0.5 // Default to 0.5 if not defined
+          console.log(`🔊 Using volume for notification: ${volume} (from settings)`)
           
           // CRITICAL: Play the sound with a more direct approach for notification
           playNotificationSound("notificacao", volume)
@@ -71,15 +72,18 @@ export function Toaster() {
     
     // Create a new audio element directly
     const audio = new Audio(soundPath)
+    
+    // IMPORTANT: Ensure volume is exactly as configured, with no reduction
     audio.volume = Math.min(1, Math.max(0, volume)) // Ensure volume is between 0 and 1
+    console.log(`🔊 Set audio volume to: ${audio.volume}`)
     
     // Set attributes for mobile playback
     audio.setAttribute('playsinline', 'true')
     audio.setAttribute('preload', 'auto')
     
     // Log events for debugging
-    audio.addEventListener('play', () => console.log(`▶️ Sound ${soundName} started playing`))
-    audio.addEventListener('playing', () => console.log(`✅ Sound ${soundName} is now playing`))
+    audio.addEventListener('play', () => console.log(`▶️ Sound ${soundName} started playing with volume ${audio.volume}`))
+    audio.addEventListener('playing', () => console.log(`✅ Sound ${soundName} is now playing with volume ${audio.volume}`))
     audio.addEventListener('error', (e) => console.error(`❌ Error playing sound ${soundName}:`, e))
     
     // Force loading before playing
@@ -104,6 +108,7 @@ export function Toaster() {
     setTimeout(() => {
       const retryAudio = new Audio(soundPath)
       retryAudio.volume = Math.min(1, Math.max(0, volume))
+      console.log(`🔊 Retry with volume: ${retryAudio.volume}`)
       retryAudio.play().catch(e => console.log('Scheduled retry - ignoring if already playing:', e))
     }, 500)
   }

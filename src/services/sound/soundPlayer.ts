@@ -30,8 +30,11 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     console.log(`Creating new audio for: ${audioPath}`);
     const newAudio = new Audio(audioPath);
     
-    // Configure the audio
-    newAudio.volume = Math.max(0, Math.min(1, volume)); // Ensure volume is between 0 and 1
+    // Configure the audio - IMPORTANT: preserve exact volume without reduction
+    const exactVolume = Math.max(0, Math.min(1, volume)); // Ensure volume is between 0 and 1
+    newAudio.volume = exactVolume;
+    console.log(`🔊 Audio volume set to: ${newAudio.volume} (from requested: ${volume})`);
+    
     newAudio.loop = loop;
     
     // Set attributes for better mobile compatibility
@@ -40,7 +43,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     
     // Add event listeners to track success/failure
     newAudio.addEventListener('playing', () => {
-      console.log(`✅ Sound '${soundType}' started playing successfully`);
+      console.log(`✅ Sound '${soundType}' started playing successfully with volume ${newAudio.volume}`);
     });
     
     newAudio.addEventListener('error', (e) => {
@@ -66,7 +69,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       
       // Handle success/failure of the play attempt
       playPromise.then(() => {
-        console.log(`✅ Sound '${soundType}' play promise resolved successfully`);
+        console.log(`✅ Sound '${soundType}' play promise resolved successfully with volume ${newAudio.volume}`);
         return true;
       }).catch((error) => {
         console.error(`❌ Error playing sound '${soundType}':`, error);
