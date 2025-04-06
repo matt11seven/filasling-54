@@ -61,7 +61,7 @@ export const useTicketNotifications = (
           toast.info('Novo atendimento na fila!', {
             duration: 5000,
             important: true,
-            // Add custom data to identify this is a new ticket notification
+            // Custom data property to identify this is a new ticket notification
             data: { type: 'newTicket' }
           });
           
