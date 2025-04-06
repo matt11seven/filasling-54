@@ -24,8 +24,8 @@ export const useTicketFilters = (tickets: Ticket[]) => {
     
     // Sort tickets
     return filtered.sort((a, b) => {
-      const dateA = new Date(a.data_criado);
-      const dateB = new Date(b.data_criado);
+      const dateA = new Date(a.data_criado || a.data_criacao || '');
+      const dateB = new Date(b.data_criado || b.data_criacao || '');
       return sortOrder === "desc" 
         ? dateB.getTime() - dateA.getTime() 
         : dateA.getTime() - dateB.getTime();

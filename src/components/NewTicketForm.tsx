@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,19 +53,18 @@ const NewTicketForm = ({ onTicketCreated }: NewTicketFormProps) => {
     try {
       setIsSubmitting(true);
       
-      // Ensure all required fields are explicitly provided
-      const newTicketData: Omit<Ticket, "id" | "data_criado" | "data_atualizado"> = {
+      const newTicketData = {
         nome: values.nome,
         telefone: values.telefone,
         user_ns: values.user_ns,
         motivo: values.motivo,
         setor: values.setor,
         email_atendente: values.email_atendente,
-        etapa_numero: 1, // Start with status "Aguardando"
-        numero_sistema: values.numero_sistema,
+        etapa_numero: 1,
+        numero_sistema: values.numero_sistema
       };
       
-      await createTicket(newTicketData);
+      await createTicket(newTicketData as any);
       toast.success("Chamado criado com sucesso!");
       form.reset();
       onTicketCreated();
@@ -152,7 +150,7 @@ const NewTicketForm = ({ onTicketCreated }: NewTicketFormProps) => {
                     placeholder="Número do sistema externo" 
                     {...field} 
                     value={field.value || ''}
-                    onChange={e => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                    onChange={e => field.onChange(e.target.value ? e.target.value : undefined)}
                   />
                 </FormControl>
                 <FormMessage />

@@ -81,14 +81,15 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
   }, [settings, soundPlayed]);
 
   // Formata o tempo desde a criação
+  const creationDate = ticket.data_criado || ticket.data_criacao;
   const { minutes } = getTimeStatus(
-    ticket.data_criado, 
+    creationDate, 
     settings.warningTimeMinutes, 
     settings.criticalTimeMinutes
   );
   
   // Obtenha a contagem de tempo formatada
-  const timeDisplay = formatTimeSince(ticket.data_criado);
+  const timeDisplay = formatTimeSince(creationDate || '');
 
   const handleClose = () => {
     setIsVisible(false);
@@ -126,7 +127,7 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
         
         <div className="space-y-4 mb-6">
           <p className="text-lg"><strong>Cliente:</strong> {ticket.nome}</p>
-          <p><strong>Motivo:</strong> {ticket.motivo}</p>
+          <p><strong>Motivo:</strong> {ticket.motivo || "Não especificado"}</p>
           <p><strong>Setor:</strong> {ticket.setor || "Não especificado"}</p>
           <p className="text-destructive font-bold">
             Aguardando há {timeDisplay}

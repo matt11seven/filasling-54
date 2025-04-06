@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   usuario: string;
@@ -18,19 +17,31 @@ export interface Stage {
   nome: string;
   cor: string;
   numero: number;
+  numeroSistema?: number;
+  data_criado?: string;
+  data_atualizado?: string;
 }
 
 export interface Ticket {
   id: string;
-  nome_sistema: string;
-  numero_sistema: number;
   nome: string;
-  telefone: string;
-  email?: string;
-  etapa_numero: number;
-  data_criacao: string;
-  data_modificacao: string;
+  telefone?: string;
+  user_ns?: string;
+  motivo?: string;
+  setor?: string;
   atendente_id?: string;
+  email_atendente?: string;
+  nome_atendente?: string;
+  etapa_numero: number;
+  numero_sistema?: number;
+  url_imagem_atendente?: string;
+  data_criado?: string;
+  data_atualizado?: string;
+  data_saida_etapa1?: string;
+  nome_sistema?: string;
+  data_criacao?: string;
+  data_modificacao?: string;
+  email?: string;
   cpf?: string;
   obs?: string;
   numeropropriedade?: number;
@@ -41,12 +52,15 @@ export interface Agent {
   nome: string;
   email: string;
   ativo: boolean;
-  cor: string;
+  cor?: string;
+  url_imagem?: string;
+  data_criado?: string;
+  data_atualizado?: string;
 }
 
 export interface AppSettings {
   showUserNS: boolean;
-  phoneDisplayMode: 'full' | 'partial' | 'none';
+  phoneDisplayMode: 'full' | 'partial' | 'hidden' | 'none';
   warningTimeMinutes: number;
   criticalTimeMinutes: number;
   fullScreenAlertMinutes: number;

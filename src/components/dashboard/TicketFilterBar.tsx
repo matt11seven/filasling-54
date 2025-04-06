@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Select, 
@@ -36,8 +35,10 @@ const TicketFilterBar = ({
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(false);
   
-  // Get unique sectors from tickets
-  const sectors = Array.from(new Set(tickets.filter(t => t.setor).map(t => t.setor as string)));
+  // Get unique sectors from tickets (handling possible undefined values)
+  const sectors = Array.from(
+    new Set(tickets.filter(t => t.setor).map(t => t.setor as string))
+  );
   
   // Fetch agents on component mount
   useEffect(() => {

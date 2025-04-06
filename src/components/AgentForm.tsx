@@ -57,7 +57,8 @@ const AgentForm = ({ existingAgent, onSuccess, onCancel }: AgentFormProps) => {
           nome: values.nome,
           email: values.email, // This is now explicitly provided
           url_imagem: values.url_imagem,
-          ativo: true
+          ativo: true,
+          cor: "#808080" // Default color
         });
         toast.success("Atendente criado com sucesso");
       }

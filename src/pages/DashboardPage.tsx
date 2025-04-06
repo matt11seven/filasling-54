@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -35,15 +34,12 @@ const DashboardPage = () => {
   const [lastCheckTime, setLastCheckTime] = useState<number>(Date.now());
   const [lastAlertCheck, setLastAlertCheck] = useState<number>(Date.now());
   
-  // Desbloquear áudio assim que a página carregar
   useEffect(() => {
     unlockAudio();
     console.log("Dashboard page loaded - Audio unlocked for notifications");
   }, []);
   
-  // Função adicional para verificar o ranking regularmente
   useEffect(() => {
-    // Verificação inicial
     const checkPerformance = async () => {
       try {
         console.log("🏆 DashboardPage: Verificando performance para atualização do pódio");
@@ -56,7 +52,6 @@ const DashboardPage = () => {
       }
     };
     
-    // Verificar na inicialização e a cada 1 minuto
     checkPerformance();
     const performanceInterval = setInterval(checkPerformance, 1 * 60 * 1000);
     
@@ -73,7 +68,6 @@ const DashboardPage = () => {
       setTickets(ticketsData);
       setStages(stagesData);
       
-      // Force immediate check for critical tickets after data loading
       setLastAlertCheck(Date.now());
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -98,8 +92,9 @@ const DashboardPage = () => {
       const waitingTickets = tickets.filter((ticket) => ticket.etapa_numero === 1);
       
       for (const ticket of waitingTickets) {
+        const creationDate = ticket.data_criado || ticket.data_criacao;
         const timeInfo = getTimeStatus(
-          ticket.data_criado,
+          creationDate,
           settings.warningTimeMinutes,
           settings.criticalTimeMinutes
         );
@@ -114,14 +109,12 @@ const DashboardPage = () => {
       setCriticalTicket(null);
     };
     
-    // Check for critical tickets whenever tickets change or after manual checks
     checkForCriticalTickets();
     
-    // Set up regular interval check
     const intervalId = setInterval(() => {
       console.log("Interval check for critical tickets");
-      setLastAlertCheck(Date.now()); // Force a re-check
-    }, 15000); // Check more frequently (15 seconds)
+      setLastAlertCheck(Date.now());
+    }, 15000);
     
     return () => {
       clearInterval(intervalId);
@@ -142,10 +135,8 @@ const DashboardPage = () => {
   };
   
   const handleDismissAllAlerts = () => {
-    // Only dismiss currently waiting tickets (etapa_numero === 1)
     const currentWaitingTickets = tickets.filter(ticket => ticket.etapa_numero === 1);
     
-    // Create a new set with all currently dismissed alerts plus all current waiting tickets
     const newDismissed = new Set(dismissedAlerts);
     currentWaitingTickets.forEach(ticket => newDismissed.add(ticket.id));
     
@@ -164,9 +155,6 @@ const DashboardPage = () => {
   const handleTicketCreated = () => {
     setNewTicketDialogOpen(false);
     loadData();
-    
-    // Não precisamos tocar o som aqui, pois o evento Supabase já disparará
-    // o som de notificação com volume máximo
   };
 
   return (

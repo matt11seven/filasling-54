@@ -23,8 +23,10 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange 
   const currentStage = stages.find((stage) => stage.numero === ticket.etapa_numero);
   
   // Calculate time status - always from creation time regardless of stage
+  // Handle both data_criado and data_criacao for compatibility
+  const creationDate = ticket.data_criado || ticket.data_criacao;
   const timeInfo = getTimeStatus(
-    ticket.data_criado,
+    creationDate,
     warningTimeMinutes,
     criticalTimeMinutes
   );
@@ -51,7 +53,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange 
   // Calculate waiting time if the ticket has been attended to
   const getWaitingTimeInfo = () => {
     if (ticket.data_saida_etapa1 && ticket.etapa_numero !== 1) {
-      const waitStart = new Date(ticket.data_criado);
+      const waitStart = new Date(creationDate || '');
       const waitEnd = new Date(ticket.data_saida_etapa1);
       const waitTimeMs = waitEnd.getTime() - waitStart.getTime();
       
@@ -102,7 +104,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange 
               <h3 className="font-semibold text-lg">{ticket.nome}</h3>
               {ticket.telefone && (
                 <p className="text-sm text-muted-foreground">
-                  {formatPhoneDisplay(ticket.telefone, phoneDisplayMode)}
+                  {formatPhoneDisplay(ticket.telefone, phoneDisplayMode || 'hidden')}
                 </p>
               )}
             </div>
@@ -114,7 +116,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange 
                 <Avatar className="w-8 h-8">
                   <AvatarImage src={ticket.url_imagem_atendente} />
                   <AvatarFallback>
-                    {getInitials(ticket.nome_atendente || ticket.email_atendente)}
+                    {getInitials(ticket.nome_atendente || ticket.email_atendente || '')}
                   </AvatarFallback>
                 </Avatar>
               </div>
@@ -135,14 +137,12 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange 
           )}
           
           {/* Optional UserNS display based on settings */}
-          {showUserNS && (
+          {showUserNS && ticket.user_ns && (
             <div className="mb-2">
               <p className="text-sm font-medium">ID:</p>
               <p className="text-sm">{ticket.user_ns}</p>
             </div>
           )}
-          
-          {/* Removed "Número no Sistema" display section */}
           
           {/* Waiting time info */}
           {waitingTimeInfo && (
@@ -169,7 +169,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange 
                   : undefined
               }
             >
-              {formatTimeSince(ticket.data_criado)}
+              {formatTimeSince(creationDate || '')}
             </span>
           </div>
         </CardContent>
