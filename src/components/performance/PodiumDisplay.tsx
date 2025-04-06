@@ -67,7 +67,7 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 overflow-hidden">
-        <div className="relative h-[455px] flex flex-col items-center"> {/* Increased from 350px to 455px (30% increase) */}
+        <div className="relative h-[591px] flex flex-col items-center"> {/* Increased from 455px to 591px (additional 30% increase) */}
           <div className="absolute inset-0 w-full h-full">
             <img
               src="/lovable-uploads/350936d9-7ff3-4576-8d44-60ad09497263.png"
