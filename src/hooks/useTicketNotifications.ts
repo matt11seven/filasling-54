@@ -63,14 +63,16 @@ export const useTicketNotifications = (
           // Use the toast.info without a data property for now
           toast.info('Novo atendimento na fila!', {
             duration: 5000,
-            important: true
+            important: true,
+            data: { type: 'newTicket' } // Adicionar marcador de tipo para identificação no Toaster
           });
           
-          // Play notification sound at maximum volume (100%)
+          // Play notification sound at GUARANTEED maximum volume (100%)
           // Use direct playSound method for maximum volume
           unlockAudio();
+          // IMPORTANTE: Forçar volume para 1.0 (100%) independentemente da configuração do usuário
           playSound(settings.notificationSound, 1.0, false);
-          console.log(`🔊 Playing notification sound at maximum volume (100%)`);
+          console.log(`🔊 Playing notification sound at FORCED maximum volume (100%)`);
           
           // Update the ticket list
           onTicketChange();

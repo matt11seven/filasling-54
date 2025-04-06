@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -116,27 +117,34 @@ export function Toaster() {
       newToasts.forEach(toast => {
         processedToastIds.current.add(toast.id)
         
-        // Better detection for new ticket notifications
+        // Detecção aprimorada para notificações de novos tickets
+        // Verifica tanto a descrição quanto o tipo nos dados personalizados
         const isNewTicketNotification = 
           (toast.description && String(toast.description).includes("Novo atendimento na fila")) || 
           (toast.data && typeof toast.data === 'object' && 'type' in toast.data && toast.data.type === 'newTicket');
         
         if (isNewTicketNotification) {
-          console.log("🔔 New ticket toast detected, playing notification sound at maximum volume"); 
+          console.log("🔔 New ticket toast detected, playing notification sound at FORCED maximum volume"); 
           
           // Ensure audio is unlocked
           unlockAudio();
           
           // Use a slight delay to ensure UI rendering doesn't block audio
           setTimeout(() => {
-            // Use the proper event type but override volume to 100%
-            // Use either playSoundByEventType with forced volume or direct playSound
+            // SEMPRE usar volume 100% para notificações de novo ticket
+            // independentemente da configuração do usuário
             const success = playSound(settings.notificationSound, 1.0, false);
             
             if (success) {
-              console.log(`✅ Playing notification sound: ${settings.notificationSound} at maximum volume (100%)`);
+              console.log(`✅ Playing notification sound: ${settings.notificationSound} at FORCED maximum volume (100%)`);
             } else {
               console.error(`❌ Failed to play notification sound: ${settings.notificationSound}`);
+              
+              // Tentar novamente após um curto atraso
+              setTimeout(() => {
+                unlockAudio();
+                playSound(settings.notificationSound, 1.0, false);
+              }, 300);
             }
           }, 100);
         }

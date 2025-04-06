@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +18,7 @@ import { Stage, Ticket } from "@/types";
 import { toast } from "sonner";
 import { getAttendantPerformance } from "@/services/performance";
 import { useRankingStore } from "@/services/ranking";
+import { unlockAudio } from "@/services/notificationService";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -32,6 +34,12 @@ const DashboardPage = () => {
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [lastCheckTime, setLastCheckTime] = useState<number>(Date.now());
   const [lastAlertCheck, setLastAlertCheck] = useState<number>(Date.now());
+  
+  // Desbloquear áudio assim que a página carregar
+  useEffect(() => {
+    unlockAudio();
+    console.log("Dashboard page loaded - Audio unlocked for notifications");
+  }, []);
   
   // Função adicional para verificar o ranking regularmente
   useEffect(() => {
@@ -156,6 +164,9 @@ const DashboardPage = () => {
   const handleTicketCreated = () => {
     setNewTicketDialogOpen(false);
     loadData();
+    
+    // Não precisamos tocar o som aqui, pois o evento Supabase já disparará
+    // o som de notificação com volume máximo
   };
 
   return (
