@@ -69,20 +69,42 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 overflow-hidden">
-        <div className="relative h-[300px] flex flex-col items-center">
+        <div className="relative h-[320px] flex flex-col items-center">
           {/* Imagem do pódio como plano de fundo */}
           <div className="absolute inset-0 w-full h-full">
             <img
-              src="/lovable-uploads/ab7b1c8b-c2b0-4647-a74a-a249401f03a8.png"
+              src="/lovable-uploads/cd0ba56c-c89b-4d68-8448-712a4eef5b6c.png"
               alt="Pódio"
               className="object-cover w-full h-full"
             />
           </div>
           
           {/* Avatares dos participantes */}
-          <div className="flex justify-center items-start pt-4 gap-20 md:gap-28 relative z-10 mt-4">
-            {/* 2º Lugar - Agora à esquerda do 1º lugar */}
-            <div className="flex flex-col items-center mt-16">
+          <div className="relative z-10 w-full h-full flex items-start justify-center">
+            {/* 1º Lugar - Centro */}
+            <div className="absolute top-[70px] flex flex-col items-center">
+              {podiumPositions[0] ? (
+                <>
+                  <Avatar className="w-20 h-20 border-3 border-yellow-500 mb-1 z-10 bg-white shadow-lg first-place-glow">
+                    <AvatarImage src={podiumPositions[0].url_imagem} alt={podiumPositions[0].nome} />
+                    <AvatarFallback>{getInitials(podiumPositions[0].nome)}</AvatarFallback>
+                  </Avatar>
+                  <div className="text-sm font-medium text-center bg-green-900 px-3 py-1 rounded-lg opacity-90 shadow-md">
+                    {podiumPositions[0].nome.split(' ')[0]}
+                    <div className="text-xs text-green-300">
+                      {podiumPositions[0].tempo_medio_formatado}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center opacity-60">
+                  <span className="text-gray-500 font-bold">1</span>
+                </div>
+              )}
+            </div>
+
+            {/* 2º Lugar - Esquerda */}
+            <div className="absolute top-[130px] left-[25%] flex flex-col items-center">
               {podiumPositions[1] ? (
                 <>
                   <Avatar className="w-16 h-16 border-2 border-gray-400 mb-1 z-10 bg-white">
@@ -95,9 +117,6 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
                       {podiumPositions[1].tempo_medio_formatado}
                     </div>
                   </div>
-                  <div className="text-xs font-bold mt-1 bg-gray-800/70 px-2 py-0.5 rounded-full">
-                    2º LUGAR
-                  </div>
                 </>
               ) : (
                 <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center opacity-60">
@@ -106,33 +125,8 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            {/* 1º Lugar - Centro e mais alto */}
-            <div className="flex flex-col items-center">
-              {podiumPositions[0] ? (
-                <>
-                  <Avatar className="w-20 h-20 border-3 border-yellow-500 mb-1 z-10 bg-white shadow-lg first-place-glow">
-                    <AvatarImage src={podiumPositions[0].url_imagem} alt={podiumPositions[0].nome} />
-                    <AvatarFallback>{getInitials(podiumPositions[0].nome)}</AvatarFallback>
-                  </Avatar>
-                  <div className="text-sm font-medium text-center bg-green-900 px-3 py-0.5 rounded-lg opacity-90 shadow-md">
-                    {podiumPositions[0].nome.split(' ')[0]}
-                    <div className="text-xs text-green-300">
-                      {podiumPositions[0].tempo_medio_formatado}
-                    </div>
-                  </div>
-                  <div className="text-xs font-bold mt-1 bg-yellow-500/90 px-2 py-0.5 rounded-full text-black">
-                    1º LUGAR
-                  </div>
-                </>
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center opacity-60">
-                  <span className="text-gray-500 font-bold">1</span>
-                </div>
-              )}
-            </div>
-
-            {/* 3º Lugar - Agora à direita do 1º lugar */}
-            <div className="flex flex-col items-center mt-24">
+            {/* 3º Lugar - Direita */}
+            <div className="absolute top-[130px] right-[25%] flex flex-col items-center">
               {podiumPositions[2] ? (
                 <>
                   <Avatar className="w-14 h-14 border-2 border-amber-700 mb-1 z-10 bg-white">
@@ -144,9 +138,6 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
                     <div className="text-xs text-amber-200">
                       {podiumPositions[2].tempo_medio_formatado}
                     </div>
-                  </div>
-                  <div className="text-xs font-bold mt-1 bg-amber-700/80 px-2 py-0.5 rounded-full">
-                    3º LUGAR
                   </div>
                 </>
               ) : (

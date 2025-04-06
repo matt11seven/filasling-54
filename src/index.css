@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -82,7 +83,7 @@
   
   /* Efeito de brilho para o primeiro lugar */
   .first-place-glow {
-    box-shadow: 0 0 15px #FFD700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
     animation: pulsate-glow 2s infinite;
   }
 }
@@ -99,6 +100,17 @@
   }
   100% {
     box-shadow: 0 0 0 15px rgba(255, 215, 0, 0);
+  }
+}
+
+@keyframes scale-in {
+  from { 
+    transform: scale(0.8); 
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1); 
+    opacity: 1; 
   }
 }
 
@@ -133,5 +145,9 @@
   
   .animate-fade-in {
     animation: fade-in 0.3s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out;
   }
 }
