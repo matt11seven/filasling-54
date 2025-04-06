@@ -6,7 +6,7 @@ import { Ticket, Stage } from "@/types";
 interface TicketCardRowProps {
   ticket: Ticket;
   stages: Stage[];
-  onStatusChange: (ticketId: string, newStageNumber: number) => void;
+  onStatusChange: (ticketId: string, newStageNumber: number, systemNumber?: number) => void;
 }
 
 const TicketCardRow: React.FC<TicketCardRowProps> = ({ ticket, stages, onStatusChange }) => {

@@ -11,7 +11,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 interface TicketCardProps {
   ticket: Ticket;
   stages: Stage[];
-  onStatusChange?: (ticketId: string, newStageNumber: number) => void;
+  onStatusChange?: (ticketId: string, newStageNumber: number, systemNumber?: number) => void;
 }
 
 const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange }) => {
@@ -139,6 +139,14 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, stages, onStatusChange 
             <div className="mb-2">
               <p className="text-sm font-medium">ID:</p>
               <p className="text-sm">{ticket.user_ns}</p>
+            </div>
+          )}
+          
+          {/* Display system number if available */}
+          {ticket.numero_sistema !== null && ticket.numero_sistema !== undefined && (
+            <div className="mb-2">
+              <p className="text-sm font-medium">Número no Sistema:</p>
+              <p className="text-sm">{ticket.numero_sistema}</p>
             </div>
           )}
           

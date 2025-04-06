@@ -20,6 +20,7 @@ export interface Stage {
   numero: number;
   nome: string;
   cor: string;
+  numeroSistema?: number;
   data_criado: string;
   data_atualizado: string;
 }
@@ -35,6 +36,7 @@ export interface Ticket {
   email_atendente: string;
   nome_atendente?: string;
   etapa_numero: number;
+  numero_sistema?: number;
   url_imagem_atendente?: string;
   data_criado: string;
   data_atualizado: string;

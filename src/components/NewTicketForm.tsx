@@ -24,7 +24,8 @@ const ticketSchema = z.object({
   user_ns: z.string().min(2, { message: "ID do usuário é obrigatório" }),
   motivo: z.string().min(5, { message: "Descrição do motivo é obrigatória" }),
   setor: z.string().optional(),
-  email_atendente: z.string().email({ message: "Email inválido" })
+  email_atendente: z.string().email({ message: "Email inválido" }),
+  numero_sistema: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
 });
 
 type FormValues = z.infer<typeof ticketSchema>;
@@ -44,7 +45,8 @@ const NewTicketForm = ({ onTicketCreated }: NewTicketFormProps) => {
       user_ns: "",
       motivo: "",
       setor: "",
-      email_atendente: ""
+      email_atendente: "",
+      numero_sistema: undefined,
     }
   });
 
@@ -60,7 +62,8 @@ const NewTicketForm = ({ onTicketCreated }: NewTicketFormProps) => {
         motivo: values.motivo,
         setor: values.setor,
         email_atendente: values.email_atendente,
-        etapa_numero: 1 // Start with status "Aguardando"
+        etapa_numero: 1, // Start with status "Aguardando"
+        numero_sistema: values.numero_sistema,
       };
       
       await createTicket(newTicketData);
@@ -108,7 +111,7 @@ const NewTicketForm = ({ onTicketCreated }: NewTicketFormProps) => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
             name="user_ns"
@@ -131,6 +134,26 @@ const NewTicketForm = ({ onTicketCreated }: NewTicketFormProps) => {
                 <FormLabel>Setor</FormLabel>
                 <FormControl>
                   <Input placeholder="Setor ou departamento" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="numero_sistema"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Número no Sistema</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder="Número do sistema externo" 
+                    {...field} 
+                    value={field.value || ''}
+                    onChange={e => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -111,6 +111,7 @@ export type Database = {
           motivo: string
           nome: string
           nome_atendente: string | null
+          numero_sistema: number | null
           setor: string | null
           telefone: string | null
           url_imagem_atendente: string | null
@@ -127,6 +128,7 @@ export type Database = {
           motivo: string
           nome: string
           nome_atendente?: string | null
+          numero_sistema?: number | null
           setor?: string | null
           telefone?: string | null
           url_imagem_atendente?: string | null
@@ -143,6 +145,7 @@ export type Database = {
           motivo?: string
           nome?: string
           nome_atendente?: string | null
+          numero_sistema?: number | null
           setor?: string | null
           telefone?: string | null
           url_imagem_atendente?: string | null

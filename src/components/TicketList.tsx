@@ -51,9 +51,18 @@ const TicketList = ({ tickets, stages, onTicketChange }: TicketListProps) => {
   }, []);
 
   // Update ticket status
-  const handleStatusChange = async (ticketId: string, newStageNumber: number) => {
+  const handleStatusChange = async (ticketId: string, newStageNumber: number, systemNumber?: number) => {
     try {
-      await updateTicket(ticketId, { etapa_numero: newStageNumber });
+      const updateData: Partial<Ticket> = { 
+        etapa_numero: newStageNumber
+      };
+      
+      // If systemNumber is provided, update that field as well
+      if (systemNumber !== undefined) {
+        updateData.numero_sistema = systemNumber;
+      }
+      
+      await updateTicket(ticketId, updateData);
       toast.success("Ticket status updated successfully");
     } catch (error) {
       console.error("Error updating ticket status:", error);

@@ -13,7 +13,7 @@ interface StageSelectorProps {
   stages: Stage[];
   currentStage: number;
   ticket: Ticket;
-  onStageChange: (ticketId: string, stageNumber: number) => Promise<void>;
+  onStageChange: (ticketId: string, stageNumber: number, systemNumber?: number) => Promise<void>;
 }
 
 const StageSelector = ({
@@ -28,7 +28,15 @@ const StageSelector = ({
     try {
       setIsLoading(true);
       const newStageNumber = parseInt(value, 10);
-      await onStageChange(ticket.id, newStageNumber);
+      
+      // Find the corresponding stage to get numeroSistema
+      const selectedStage = stages.find(s => s.numero === newStageNumber);
+      
+      await onStageChange(
+        ticket.id, 
+        newStageNumber,
+        selectedStage?.numeroSistema
+      );
     } catch (error) {
       console.error("Failed to update stage:", error);
     } finally {
@@ -69,6 +77,11 @@ const StageSelector = ({
                 style={{ backgroundColor: stage.cor }}
               />
               {stage.nome}
+              {stage.numeroSistema && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  (Sistema: {stage.numeroSistema})
+                </span>
+              )}
             </SelectItem>
           ))}
       </SelectContent>
