@@ -55,8 +55,8 @@ export const useTicketNotifications = (
         (payload) => {
           console.log('🔔 New ticket detected! Payload:', payload);
           
-          // Play sound directly with notification toast - this is the key notification trigger!
           // Using toast.info displays the notification and triggers the sound in Toaster component
+          // The notification sound will be handled by the Toaster component using the configured sound
           toast.info('Novo atendimento na fila!', {
             duration: 5000, // Longer duration to ensure notification is seen
             important: true // Mark as important to ensure it's shown

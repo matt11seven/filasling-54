@@ -1,16 +1,104 @@
-
+import * as React from "react"
+import * as ToastPrimitives from "@radix-ui/react-toast"
+import { cva, type VariantProps } from "class-variance-authority"
+import { X } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/components/ui/toast"
 import { useEffect, useRef } from "react"
 import { playSound, unlockAudio } from "@/services/notificationService"
 import { useSettings } from "@/contexts/SettingsContext"
+
+const ToastProvider = ToastPrimitives.Provider
+
+const toastVariants = cva(
+  "group w-full rounded-md border p-4 text-sm shadow-sm transition-all",
+  {
+    variants: {
+      variant: {
+        default: "bg-background text-foreground",
+        destructive: "bg-destructive text-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+const Toast = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Root>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
+    VariantProps<typeof toastVariants>
+>(({ className, variant, ...props }, ref) => {
+  return (
+    <ToastPrimitives.Root
+      ref={ref}
+      className={cn(toastVariants({ variant }), className)}
+      {...props}
+    />
+  )
+})
+Toast.displayName = ToastPrimitives.Root.displayName
+
+const ToastAction = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Action>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Action
+    ref={ref}
+    className={cn(
+      "ml-auto flex h-10 items-center justify-center rounded-md px-2 text-sm font-medium ring-offset-background transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+      className
+    )}
+    {...props}
+  />
+))
+ToastAction.displayName = ToastPrimitives.Action.displayName
+
+const ToastClose = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Close>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Close>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Close
+    ref={ref}
+    className={cn(
+      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      className
+    )}
+    toast-close=""
+    {...props}
+  >
+    <X className="h-4 w-4" />
+  </ToastPrimitives.Close>
+))
+ToastClose.displayName = ToastPrimitives.Close.displayName
+
+const ToastTitle = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Title>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Title
+    ref={ref}
+    className={cn("text-lg font-semibold", className)}
+    {...props}
+  />
+))
+ToastTitle.displayName = ToastPrimitives.Title.displayName
+
+const ToastDescription = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitives.Description>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitives.Description
+    ref={ref}
+    className={cn("text-sm", className)}
+    {...props}
+  />
+))
+ToastDescription.displayName = ToastPrimitives.Description.displayName
+
+type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
+type ToastActionElement = React.ReactElement<typeof ToastAction>
 
 export function Toaster() {
   const { toasts } = useToast()
@@ -36,12 +124,14 @@ export function Toaster() {
           // Unlock audio context first to ensure it can play
           unlockAudio()
           
-          // Use the user's configured volume setting (ensure it's fully applied)
-          const volume = settings.soundVolume || 0.5 // Default to 0.5 if not defined
-          console.log(`🔊 Using volume for notification: ${volume} (from settings)`)
+          // Get the configured notification sound and volume from settings
+          const soundType = settings.notificationSound || "notificacao"
+          const volume = settings.soundVolume || 0.5
           
-          // CRITICAL: Play the sound with a more direct approach for notification
-          playNotificationSound("notificacao", volume)
+          console.log(`🔈 Playing notification sound: ${soundType} with volume: ${volume}`)
+          
+          // Play the sound directly using the configured sound type and volume
+          playSound(soundType, volume, false)
         }
       })
       
@@ -58,60 +148,6 @@ export function Toaster() {
       }
     }
   }, [toasts, settings])
-
-  // Dedicated function for playing notification sounds
-  const playNotificationSound = (soundName: string, volume: number) => {
-    console.log(`🎵 Attempting to play notification sound: ${soundName} with volume ${volume}`)
-    
-    // Ensure audio is unlocked
-    unlockAudio()
-    
-    // Get the proper path
-    const soundPath = soundName.includes('/') ? soundName : `/sounds/${soundName}.mp3`
-    console.log(`🎵 Using sound path: ${soundPath}`)
-    
-    // Create a new audio element directly
-    const audio = new Audio(soundPath)
-    
-    // IMPORTANT: Ensure volume is exactly as configured, with no reduction
-    audio.volume = Math.min(1, Math.max(0, volume)) // Ensure volume is between 0 and 1
-    console.log(`🔊 Set audio volume to: ${audio.volume}`)
-    
-    // Set attributes for mobile playback
-    audio.setAttribute('playsinline', 'true')
-    audio.setAttribute('preload', 'auto')
-    
-    // Log events for debugging
-    audio.addEventListener('play', () => console.log(`▶️ Sound ${soundName} started playing with volume ${audio.volume}`))
-    audio.addEventListener('playing', () => console.log(`✅ Sound ${soundName} is now playing with volume ${audio.volume}`))
-    audio.addEventListener('error', (e) => console.error(`❌ Error playing sound ${soundName}:`, e))
-    
-    // Force loading before playing
-    audio.load()
-    
-    // Play with promise handling
-    const playPromise = audio.play().catch(error => {
-      console.error(`❌ Failed to play ${soundName}:`, error)
-      
-      // If autoplay was prevented, try again after a short delay
-      if (error.name === 'NotAllowedError') {
-        console.warn('⚠️ Autoplay prevented. Trying again...')
-        
-        setTimeout(() => {
-          unlockAudio()
-          audio.play().catch(e => console.error(`Retry failed for ${soundName}:`, e))
-        }, 300)
-      }
-    })
-    
-    // Try again with delay to ensure it plays
-    setTimeout(() => {
-      const retryAudio = new Audio(soundPath)
-      retryAudio.volume = Math.min(1, Math.max(0, volume))
-      console.log(`🔊 Retry with volume: ${retryAudio.volume}`)
-      retryAudio.play().catch(e => console.log('Scheduled retry - ignoring if already playing:', e))
-    }, 500)
-  }
 
   return (
     <ToastProvider>
@@ -132,4 +168,16 @@ export function Toaster() {
       <ToastViewport />
     </ToastProvider>
   )
+}
+
+export {
+  type ToastProps,
+  type ToastActionElement,
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+  ToastAction,
 }
