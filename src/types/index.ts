@@ -5,64 +5,56 @@ export interface User {
   isAdmin?: boolean;
 }
 
+export interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}
+
+export interface Stage {
+  id: string;
+  nome: string;
+  cor: string;
+  numero: number;
+}
+
+export interface Ticket {
+  id: string;
+  nome_sistema: string;
+  numero_sistema: number;
+  nome: string;
+  telefone: string;
+  email?: string;
+  etapa_numero: number;
+  data_criacao: string;
+  data_modificacao: string;
+  atendente_id?: string;
+  cpf?: string;
+  obs?: string;
+  numeropropriedade?: number;
+}
+
 export interface Agent {
   id: string;
   nome: string;
   email: string;
   ativo: boolean;
-  url_imagem?: string;
-  data_criado: string;
-  data_atualizado: string;
-}
-
-export interface Stage {
-  id: string;
-  numero: number;
-  nome: string;
   cor: string;
-  numeroSistema?: number;
-  data_criado: string;
-  data_atualizado: string;
-}
-
-export interface Ticket {
-  id: string;
-  nome: string;
-  telefone?: string;
-  user_ns: string;
-  motivo: string;
-  setor?: string;
-  atendente_id?: string;
-  email_atendente: string;
-  nome_atendente?: string;
-  etapa_numero: number;
-  numero_sistema?: number;
-  url_imagem_atendente?: string;
-  data_criado: string;
-  data_atualizado: string;
-  data_saida_etapa1?: string;
 }
 
 export interface AppSettings {
   showUserNS: boolean;
-  phoneDisplayMode: 'full' | 'partial' | 'hidden';
+  phoneDisplayMode: 'full' | 'partial' | 'none';
   warningTimeMinutes: number;
   criticalTimeMinutes: number;
   fullScreenAlertMinutes: number;
   soundVolume: number;
-  // Remove the single soundType property
-  // soundType: string;
-  // Add individual sound properties for different events
   notificationSound: string;
   alertSound: string;
   podiumSound: string;
   firstPlaceSound: string;
 }
 
-export interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-}
+export * from './auth';
