@@ -33,10 +33,11 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     // Use the getAudio helper to get a proper Audio instance
     const newAudio = getAudio(soundType);
     
-    // Configure the audio - IMPORTANT: preserve exact volume without reduction
+    // CRITICAL FIX: Ensure volume is exactly as requested without any modification
+    // For notification sounds, this should be 1.0 (100%)
     const exactVolume = Math.max(0, Math.min(1, volume)); // Ensure volume is between 0 and 1
     newAudio.volume = exactVolume;
-    console.log(`🔊 Audio volume set to: ${newAudio.volume} (from requested: ${volume})`);
+    console.log(`🔊 Audio volume explicitly set to: ${newAudio.volume} (from requested: ${volume})`);
     
     newAudio.loop = loop;
     
@@ -47,6 +48,12 @@ export const playSound = (soundType: string = "notification", volume: number = 0
     // Add event listeners to track success/failure
     newAudio.addEventListener('playing', () => {
       console.log(`✅ Sound '${soundType}' started playing successfully with volume ${newAudio.volume}`);
+      
+      // Double-check the volume is correct after playing starts
+      if (newAudio.volume !== exactVolume) {
+        console.warn(`⚠️ Volume changed after play started. Forcing back to ${exactVolume}`);
+        newAudio.volume = exactVolume;
+      }
     });
     
     newAudio.addEventListener('error', (e) => {
@@ -73,6 +80,13 @@ export const playSound = (soundType: string = "notification", volume: number = 0
       // Handle success/failure of the play attempt
       playPromise.then(() => {
         console.log(`✅ Sound '${soundType}' play promise resolved successfully with volume ${newAudio.volume}`);
+        
+        // Ensure volume is still correct after promise resolves
+        if (newAudio.volume !== exactVolume) {
+          console.warn(`⚠️ Volume changed after promise. Forcing back to ${exactVolume}`);
+          newAudio.volume = exactVolume;
+        }
+        
         return true;
       }).catch((error) => {
         console.error(`❌ Error playing sound '${soundType}':`, error);
@@ -83,6 +97,7 @@ export const playSound = (soundType: string = "notification", volume: number = 0
           // Try to unlock audio after error and play again
           setTimeout(() => {
             unlockAudio();
+            newAudio.volume = exactVolume; // Ensure volume is still correct
             newAudio.play().catch(e => console.warn(`Retry play error for ${soundType}:`, e));
           }, 200);
         }

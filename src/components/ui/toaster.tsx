@@ -117,11 +117,11 @@ export function Toaster() {
       newToasts.forEach(toast => {
         processedToastIds.current.add(toast.id)
         
-        // Detecção aprimorada para notificações de novos tickets
-        // Verifica tanto a descrição quanto o tipo nos dados personalizados
+        // Improved detection for new ticket notifications
+        // Check title, description, and id
         const isNewTicketNotification = 
           (toast.description && String(toast.description).includes("Novo atendimento na fila")) || 
-          (toast.data && typeof toast.data === 'object' && 'type' in toast.data && toast.data.type === 'newTicket');
+          (toast.id === 'new-ticket-notification');
         
         if (isNewTicketNotification) {
           console.log("🔔 New ticket toast detected, playing notification sound at FORCED maximum volume"); 

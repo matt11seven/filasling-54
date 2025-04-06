@@ -60,11 +60,11 @@ export const useTicketNotifications = (
         (payload) => {
           console.log('🔔 New ticket detected! Payload:', payload);
           
-          // Use the toast.info without a data property for now
+          // Fixed: Use a custom id to identify this toast in the Toaster component
           toast.info('Novo atendimento na fila!', {
             duration: 5000,
             important: true,
-            data: { type: 'newTicket' } // Adicionar marcador de tipo para identificação no Toaster
+            id: 'new-ticket-notification' // Use id instead of data property
           });
           
           // Play notification sound at GUARANTEED maximum volume (100%)

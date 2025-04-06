@@ -16,7 +16,9 @@ export const startAlertNotification = (soundType: string, volume: number, interv
   }
   
   // First play immediately
-  const success = playSound(soundType, volume, false);
+  // Force 100% volume for critical alerts
+  const actualVolume = volume >= 0.9 ? 1.0 : volume; // If volume is already high (≥90%), force to 100%
+  const success = playSound(soundType, actualVolume, false);
   
   // Request notification permission if needed for background alerts
   if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
@@ -31,7 +33,7 @@ export const startAlertNotification = (soundType: string, volume: number, interv
     const handleVisibilityChange = () => {
       if (document.hidden && notificationInterval) {
         // When tab becomes hidden, play sound immediately to ensure it starts in background
-        playSound(soundType, volume, false);
+        playSound(soundType, actualVolume, false);
       }
     };
     
@@ -39,10 +41,10 @@ export const startAlertNotification = (soundType: string, volume: number, interv
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     notificationInterval = setInterval(() => {
-      playSound(soundType, volume, false);
+      playSound(soundType, actualVolume, false);
     }, intervalSeconds * 1000);
     
-    console.log(`🔔 Started alert notification with sound: ${soundType}, volume: ${volume}, interval: ${intervalSeconds}s`);
+    console.log(`🔔 Started alert notification with sound: ${soundType}, volume: ${actualVolume}, interval: ${intervalSeconds}s`);
     return true;
   }
   

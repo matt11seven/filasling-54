@@ -94,10 +94,17 @@ export const playSoundByEventType = (
       }
     }
     
-    // Use volume from settings or provided volume
-    const soundVolume = volume !== undefined ? volume : (
+    // IMPORTANT FIX: For notification type, ALWAYS use 100% volume regardless of settings
+    // This ensures new ticket notifications are always at maximum volume
+    let soundVolume = volume !== undefined ? volume : (
       settings.soundVolume !== undefined ? settings.soundVolume : 0.5
     );
+    
+    // For notification type specifically, always force 100% volume
+    if (eventType === "notification") {
+      console.log("📢 Notification event detected: FORCING 100% volume regardless of settings");
+      soundVolume = 1.0; // Force to maximum
+    }
     
     console.log(`playSoundByEventType: Final config - Sound: ${soundType}, Volume: ${soundVolume}, Loop: ${loop}`);
     
