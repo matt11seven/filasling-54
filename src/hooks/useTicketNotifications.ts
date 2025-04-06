@@ -62,7 +62,7 @@ export const useTicketNotifications = (
           toast.info('Novo atendimento na fila!', {
             duration: 5000,
             important: true,
-            // Now properly typed through the module augmentation
+            // Use a standard type that's compatible with our augmentations
             data: { type: 'newTicket' }
           });
           

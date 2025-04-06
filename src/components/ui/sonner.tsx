@@ -11,7 +11,8 @@ import "sonner"
 
 // Then augment the module
 declare module "sonner" {
-  interface ExternalToast {
+  // Use interface merging instead of redefining the interface
+  interface Toast {
     data?: Record<string, unknown>;
   }
 }

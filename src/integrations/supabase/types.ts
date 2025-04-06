@@ -47,6 +47,7 @@ export type Database = {
           id: string
           nome: string
           numero: number
+          numeroSistema: number | null
         }
         Insert: {
           cor: string
@@ -55,6 +56,7 @@ export type Database = {
           id?: string
           nome: string
           numero: number
+          numeroSistema?: number | null
         }
         Update: {
           cor?: string
@@ -63,6 +65,7 @@ export type Database = {
           id?: string
           nome?: string
           numero?: number
+          numeroSistema?: number | null
         }
         Relationships: []
       }
