@@ -4,8 +4,8 @@ import { Ticket } from "@/types";
 import { useSettings } from "@/contexts/SettingsContext";
 import { 
   stopAlertNotification,
+  startAlertNotification,
   unlockAudio,
-  playSoundByEventType,
   playSound
 } from "@/services/notificationService";
 import { toast } from "sonner";
@@ -72,7 +72,7 @@ export const useTicketNotifications = (
           unlockAudio();
           // IMPORTANTE: Forçar volume para 1.0 (100%) independentemente da configuração do usuário
           playSound(settings.notificationSound, 1.0, false);
-          console.log(`🔊 Playing notification sound at FORCED maximum volume (100%)`);
+          console.log(`🔊 Playing notification sound: ${settings.notificationSound} at FORCED maximum volume (100%)`);
           
           // Update the ticket list
           onTicketChange();

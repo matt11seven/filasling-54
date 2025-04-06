@@ -42,10 +42,7 @@ export const useAudioSetup = () => {
       // Preload sounds again to make sure they're cached
       preloadSounds();
       
-      // Play a test sound with very low volume to ensure the audio context is running
-      const testAudio = new Audio("/sounds/notificacao.mp3");
-      testAudio.volume = 0.01; // Almost silent
-      testAudio.play().catch(e => console.log("Silent test audio play failed:", e));
+      // Removed silent test sound play that was causing issues
       
       // Debug current state after interaction
       console.log("After interaction audio state:", debugAudioSystems());

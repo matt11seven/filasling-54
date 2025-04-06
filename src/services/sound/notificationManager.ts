@@ -3,6 +3,7 @@ import { playSound, stopSound } from './soundPlayer';
 import { unlockAudio } from './soundCore';
 
 let notificationInterval: NodeJS.Timeout | null = null;
+let visibilityChangeHandler: ((event: Event) => void) | null = null;
 
 // Set up a repeating notification
 export const startAlertNotification = (soundType: string, volume: number, intervalSeconds: number = 10) => {
@@ -29,16 +30,16 @@ export const startAlertNotification = (soundType: string, volume: number, interv
   
   // Then set up interval only if first play was successful
   if (success) {
-    // Setup visibility change handler for minimized window
-    const handleVisibilityChange = () => {
+    // Setup visibility change handler for minimized window - store reference to remove it later
+    visibilityChangeHandler = () => {
       if (document.hidden && notificationInterval) {
         // When tab becomes hidden, play sound immediately to ensure it starts in background
         playSound(soundType, actualVolume, false);
       }
     };
     
-    // Listen for visibility changes
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Listen for visibility changes with stored handler reference
+    document.addEventListener('visibilitychange', visibilityChangeHandler);
     
     notificationInterval = setInterval(() => {
       playSound(soundType, actualVolume, false);
@@ -56,8 +57,13 @@ export const stopAlertNotification = () => {
   if (notificationInterval) {
     clearInterval(notificationInterval);
     notificationInterval = null;
-    // Remove visibility change handler
-    document.removeEventListener('visibilitychange', () => {});
+    
+    // Remove visibility change handler if it exists
+    if (visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', visibilityChangeHandler);
+      visibilityChangeHandler = null;
+    }
+    
     console.log("🔕 Alert notification stopped");
     return true;
   }
