@@ -92,12 +92,12 @@ const SoundTester = ({
         );
       }
     } else {
-      toast.success(`Som de ${getSoundLabel(soundKey)} reproduzido`);
+      toast.success(`Som de ${getSoundName(soundKey)} reproduzido`);
       setAudioPermissionGranted(true);
     }
   };
 
-  const getSoundLabel = (key: string): string => {
+  const getSoundName = (key: string): string => {
     switch(key) {
       case "notificationSound": return "Novo Atendimento";
       case "alertSound": return "Alerta de Atraso";
@@ -122,7 +122,7 @@ const SoundTester = ({
           {isPlayingSound === "notificationSound" ? (
             <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
-            <>Atendimento <Play className="h-3 w-3 ml-1" /></>
+            <>Novo Atendimento <Play className="h-3 w-3 ml-1" /></>
           )}
         </Button>
         
@@ -137,7 +137,7 @@ const SoundTester = ({
           {isPlayingSound === "alertSound" ? (
             <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
-            <>Alerta <Play className="h-3 w-3 ml-1" /></>
+            <>Alerta de Atraso <Play className="h-3 w-3 ml-1" /></>
           )}
         </Button>
         
@@ -152,7 +152,7 @@ const SoundTester = ({
           {isPlayingSound === "podiumSound" ? (
             <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
-            <>Pódio <Play className="h-3 w-3 ml-1" /></>
+            <>Entrada no Pódio <Play className="h-3 w-3 ml-1" /></>
           )}
         </Button>
         
@@ -167,7 +167,7 @@ const SoundTester = ({
           {isPlayingSound === "firstPlaceSound" ? (
             <>Tocando... <span className="animate-ping absolute right-2">🔊</span></>
           ) : (
-            <>1º Lugar <Play className="h-3 w-3 ml-1" /></>
+            <>Primeiro Lugar <Play className="h-3 w-3 ml-1" /></>
           )}
         </Button>
         
