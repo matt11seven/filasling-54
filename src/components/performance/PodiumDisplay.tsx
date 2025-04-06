@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Medal } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { AttendantPerformance } from "@/services/performance";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,23 +68,35 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
           Pódio de Atendimento
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center">
+      <CardContent className="p-0 overflow-hidden">
+        <div className="relative h-[300px] flex flex-col items-center">
+          {/* Imagem do pódio como plano de fundo */}
+          <div className="absolute inset-0 w-full h-full">
+            <img
+              src="/lovable-uploads/ab7b1c8b-c2b0-4647-a74a-a249401f03a8.png"
+              alt="Pódio"
+              className="object-cover w-full h-full"
+            />
+          </div>
+          
           {/* Avatares dos participantes */}
-          <div className="flex justify-center items-end gap-16 md:gap-20 mb-2 relative z-10">
-            {/* 2º Lugar */}
-            <div className="flex flex-col items-center absolute left-0 md:left-10 lg:left-24 bottom-2">
+          <div className="flex justify-center items-start pt-4 gap-20 md:gap-28 relative z-10 mt-4">
+            {/* 2º Lugar - Agora à esquerda do 1º lugar */}
+            <div className="flex flex-col items-center mt-16">
               {podiumPositions[1] ? (
                 <>
                   <Avatar className="w-16 h-16 border-2 border-gray-400 mb-1 z-10 bg-white">
                     <AvatarImage src={podiumPositions[1].url_imagem} alt={podiumPositions[1].nome} />
                     <AvatarFallback>{getInitials(podiumPositions[1].nome)}</AvatarFallback>
                   </Avatar>
-                  <div className="text-sm font-medium text-center bg-gray-800 px-2 py-0.5 rounded-lg opacity-80">
+                  <div className="text-sm font-medium text-center bg-gray-800 px-2 py-0.5 rounded-lg opacity-90 shadow-md">
                     {podiumPositions[1].nome.split(' ')[0]}
                     <div className="text-xs text-gray-300">
                       {podiumPositions[1].tempo_medio_formatado}
                     </div>
+                  </div>
+                  <div className="text-xs font-bold mt-1 bg-gray-800/70 px-2 py-0.5 rounded-full">
+                    2º LUGAR
                   </div>
                 </>
               ) : (
@@ -94,19 +106,22 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            {/* 1º Lugar */}
-            <div className="flex flex-col items-center absolute top-[-80px] mx-auto left-0 right-0">
+            {/* 1º Lugar - Centro e mais alto */}
+            <div className="flex flex-col items-center">
               {podiumPositions[0] ? (
                 <>
-                  <Avatar className="w-20 h-20 border-3 border-yellow-500 mb-1 z-10 bg-white shadow-lg">
+                  <Avatar className="w-20 h-20 border-3 border-yellow-500 mb-1 z-10 bg-white shadow-lg first-place-glow">
                     <AvatarImage src={podiumPositions[0].url_imagem} alt={podiumPositions[0].nome} />
                     <AvatarFallback>{getInitials(podiumPositions[0].nome)}</AvatarFallback>
                   </Avatar>
-                  <div className="text-sm font-medium text-center bg-green-900 px-2 py-0.5 rounded-lg opacity-90">
+                  <div className="text-sm font-medium text-center bg-green-900 px-3 py-0.5 rounded-lg opacity-90 shadow-md">
                     {podiumPositions[0].nome.split(' ')[0]}
                     <div className="text-xs text-green-300">
                       {podiumPositions[0].tempo_medio_formatado}
                     </div>
+                  </div>
+                  <div className="text-xs font-bold mt-1 bg-yellow-500/90 px-2 py-0.5 rounded-full text-black">
+                    1º LUGAR
                   </div>
                 </>
               ) : (
@@ -116,19 +131,22 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
               )}
             </div>
 
-            {/* 3º Lugar */}
-            <div className="flex flex-col items-center absolute right-0 md:right-10 lg:right-24 bottom-2">
+            {/* 3º Lugar - Agora à direita do 1º lugar */}
+            <div className="flex flex-col items-center mt-24">
               {podiumPositions[2] ? (
                 <>
                   <Avatar className="w-14 h-14 border-2 border-amber-700 mb-1 z-10 bg-white">
                     <AvatarImage src={podiumPositions[2].url_imagem} alt={podiumPositions[2].nome} />
                     <AvatarFallback>{getInitials(podiumPositions[2].nome)}</AvatarFallback>
                   </Avatar>
-                  <div className="text-sm font-medium text-center bg-amber-900 px-2 py-0.5 rounded-lg opacity-80">
+                  <div className="text-sm font-medium text-center bg-amber-900 px-2 py-0.5 rounded-lg opacity-90 shadow-md">
                     {podiumPositions[2].nome.split(' ')[0]}
                     <div className="text-xs text-amber-200">
                       {podiumPositions[2].tempo_medio_formatado}
                     </div>
+                  </div>
+                  <div className="text-xs font-bold mt-1 bg-amber-700/80 px-2 py-0.5 rounded-full">
+                    3º LUGAR
                   </div>
                 </>
               ) : (
@@ -137,15 +155,6 @@ const PodiumDisplay = ({ attendants, isLoading }: PodiumDisplayProps) => {
                 </div>
               )}
             </div>
-          </div>
-          
-          {/* Imagem do pódio como background */}
-          <div className="relative w-full h-[300px] flex justify-center">
-            <img
-              src="/lovable-uploads/ab7b1c8b-c2b0-4647-a74a-a249401f03a8.png"
-              alt="Pódio"
-              className="object-contain max-h-full max-w-full"
-            />
           </div>
         </div>
       </CardContent>
