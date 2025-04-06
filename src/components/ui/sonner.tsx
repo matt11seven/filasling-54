@@ -6,7 +6,10 @@ type ToasterProps = React.ComponentProps<typeof Sonner> & {
   // Add extended props here if needed
 }
 
-// Use proper module augmentation syntax without redefining the interface
+// Import sonner first to ensure proper module augmentation
+import "sonner"
+
+// Then augment the module
 declare module "sonner" {
   interface ExternalToast {
     data?: Record<string, unknown>;

@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -9,7 +10,8 @@ import { playSound, unlockAudio, playSoundByEventType } from "@/services/notific
 import { useSettings } from "@/contexts/SettingsContext"
 import { ToastViewport } from "@/components/ui/toast"
 
-import "sonner";
+// Import sonner first for type augmentation
+import "sonner"
 
 const ToastProvider = ToastPrimitives.Provider
 
@@ -115,23 +117,37 @@ export function Toaster() {
       newToasts.forEach(toast => {
         processedToastIds.current.add(toast.id)
         
-        const description = String(toast.description || "")
+        // Better detection for new ticket notifications
         const isNewTicketNotification = 
-          (description.includes("Novo atendimento na fila") || 
-          (toast.data && typeof toast.data === 'object' && 'type' in toast.data && toast.data.type === 'newTicket'));
+          (toast.description && String(toast.description).includes("Novo atendimento na fila")) || 
+          (toast.data && typeof toast.data === 'object' && 'type' in toast.data && toast.data.type === 'newTicket');
         
         if (isNewTicketNotification) {
-          console.log("🔔 New ticket toast detected, playing notification sound using user settings:", settings);
+          console.log("🔔 New ticket toast detected, playing notification sound using configured settings:", 
+            {
+              sound: settings.notificationSound,
+              volume: settings.soundVolume
+            }
+          );
           
+          // Ensure audio is unlocked
           unlockAudio();
           
+          // Use a slight delay to ensure UI rendering doesn't block audio
           setTimeout(() => {
-            playSoundByEventType("notification", settings, settings.soundVolume, false);
-            console.log(`Playing notification sound: ${settings.notificationSound} at volume ${settings.soundVolume}`);
+            // Use the proper event type to get the correct sound
+            const success = playSoundByEventType("notification", settings);
+            
+            if (success) {
+              console.log(`✅ Playing notification sound: ${settings.notificationSound} at volume ${settings.soundVolume}`);
+            } else {
+              console.error(`❌ Failed to play notification sound: ${settings.notificationSound}`);
+            }
           }, 100);
         }
-      })
+      });
       
+      // Cleanup old toast IDs to prevent memory leaks
       if (processedToastIds.current.size > 100) {
         const idsToKeep = toasts.map(t => t.id)
         const newProcessedIds = new Set<string>()

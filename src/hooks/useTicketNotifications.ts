@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-// Import sonner to ensure TypeScript recognizes the augmented types
+// Import sonner first to enable type augmentation
 import "sonner";
 
 export const useTicketNotifications = (
