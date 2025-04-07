@@ -11,12 +11,6 @@ services:
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - DB_TYPE=${DB_TYPE:-postgresdb}
-      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST:-db}
-      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER:-postgres}
-      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD:-postgres}
-      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE:-slingfila}
-      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT:-5432}
     depends_on:
       - db
 
@@ -24,9 +18,9 @@ services:
     image: postgres:14-alpine
     restart: always
     environment:
-      - POSTGRES_USER=${DB_POSTGRESDB_USER:-postgres}
-      - POSTGRES_PASSWORD=${DB_POSTGRESDB_PASSWORD:-postgres}
-      - POSTGRES_DB=${DB_POSTGRESDB_DATABASE:-slingfila}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-slingfila}
     ports:
       - "5432:5432"
     volumes:
