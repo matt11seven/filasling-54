@@ -6,11 +6,17 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
 import AuthFooter from "@/components/auth/AuthFooter";
+import { Button } from "@/components/ui/button";
+import { Database, RefreshCw } from "lucide-react";
+import { testDatabaseConnection, getConnectionConfig } from "@/services/connectionTest";
+import { toast } from "sonner";
 
 const LoginPage = () => {
   const { isAuthenticated } = useAuth();
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [showApprovalInfo, setShowApprovalInfo] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const navigate = useNavigate();
 
   // Se o usuário já estiver autenticado, redirecione para o dashboard
@@ -26,6 +32,26 @@ const LoginPage = () => {
   const handleSignupSuccess = () => {
     setShowApprovalInfo(true);
     setIsSigningUp(false);
+  };
+  
+  // Testar conexão com o banco de dados
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    try {
+      const success = await testDatabaseConnection();
+      if (success) {
+        toast.success("Conexão com o banco de dados estabelecida com sucesso!");
+      } else {
+        toast.error("Falha ao conectar ao banco de dados. Verifique as configurações.");
+      }
+    } finally {
+      setIsTesting(false);
+    }
+  };
+  
+  // Mostrar/esconder diagnósticos
+  const toggleDiagnostics = () => {
+    setShowDiagnostics(!showDiagnostics);
   };
 
   return (
@@ -58,6 +84,39 @@ const LoginPage = () => {
           </CardContent>
           <CardFooter className="flex-col">
             <AuthFooter />
+            
+            {/* Botões de teste de conexão */}
+            <div className="mt-4 w-full space-y-2">
+              <Button 
+                onClick={handleTestConnection}
+                variant="outline"
+                size="sm"
+                className="text-sm w-full flex items-center gap-2"
+                disabled={isTesting}
+              >
+                <Database className="h-4 w-4" />
+                {isTesting ? "Testando conexão..." : "Testar Conexão com Banco"}
+              </Button>
+              
+              <Button 
+                onClick={toggleDiagnostics}
+                variant="ghost"
+                size="sm"
+                className="text-xs mt-1 w-full"
+              >
+                {showDiagnostics ? "Esconder Diagnósticos" : "Mostrar Diagnósticos"}
+              </Button>
+            </div>
+            
+            {/* Diagnósticos de conexão */}
+            {showDiagnostics && (
+              <div className="mt-3 p-3 bg-secondary rounded-md text-xs font-mono text-left w-full overflow-auto max-h-48">
+                <h3 className="font-bold mb-1 text-muted-foreground">Diagnóstico de Conexão:</h3>
+                <pre className="whitespace-pre-wrap break-all text-muted-foreground">
+                  {JSON.stringify(getConnectionConfig(), null, 2)}
+                </pre>
+              </div>
+            )}
           </CardFooter>
         </Card>
       </div>
