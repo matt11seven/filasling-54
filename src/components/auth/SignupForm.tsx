@@ -3,8 +3,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { signupUser } from "@/services/auth";
 import { InfoIcon, Loader } from "lucide-react";
 import {
   Form,
@@ -48,34 +47,9 @@ const SignupForm = ({ onSwitchMode, onSignupSuccess }: SignupFormProps) => {
       setErrorMessage(null);
       
       // Criar conta
-      const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-      });
-
-      if (error) {
-        console.error("Erro ao criar conta:", error.message);
-        setErrorMessage(error.message || "Erro ao criar conta");
-        return;
-      }
-
-      if (data) {
-        // Tentamos criar o registro na tabela login caso ainda não exista
-        const { error: loginError } = await supabase
-          .from('login')
-          .insert([
-            { 
-              usuario: values.email,
-              senha: 'hash-não-usado', // A senha real é gerenciada pelo Supabase Auth
-              ativo: false // Novo usuário começa como inativo
-            }
-          ]);
-        
-        if (loginError && !loginError.message.includes('duplicate')) {
-          console.error("Erro ao adicionar usuário à tabela login:", loginError);
-        }
-
-        toast.success("Conta criada com sucesso! Aguardando aprovação do administrador.");
+      const success = await signupUser(values.email, values.password);
+      
+      if (success) {
         onSignupSuccess();
       }
     } catch (error) {

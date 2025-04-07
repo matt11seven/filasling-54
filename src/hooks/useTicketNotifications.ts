@@ -8,8 +8,8 @@ import {
   unlockAudio,
   playSound
 } from "@/services/notificationService";
+import { setupTicketNotifications, setupTicketStatusChanges } from "@/services/notificationSystem";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 // Import sonner first to ensure proper type augmentation
 import "sonner";
@@ -42,107 +42,31 @@ export const useTicketNotifications = (
     };
   }, [tickets, alertActive, settings]);
 
-  // Set up realtime subscription for tickets table
+  // Set up notifications for new tickets and status changes
   useEffect(() => {
-    console.log('Setting up realtime subscription for tickets...');
+    console.log('Setting up notifications for tickets...');
     console.log('📢 DEBUG: Current notification sound setting:', settings.notificationSound);
     
     // Immediately unlock audio to prepare for potential sounds
     unlockAudio();
     
-    // Teste de reprodução do som no início (apenas para depuração)
+    // Test sound system with a very quiet beep
     console.log('🔊 Testing sound system with a silent test');
-    playSound('beep', 0.01, false);  // Volume muito baixo, quase inaudível
+    playSound('beep', 0.01, false);
     
-    const channel = supabase
-      .channel('public:tickets')
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'tickets' 
-        }, 
-        (payload) => {
-          console.log('🔔 New ticket detected! Payload:', payload);
-          console.log('🛎️ DEBUG: About to create toast notification for new ticket');
-          
-          // Fixed: Use a custom id to identify this toast in the Toaster component
-          toast.info('Novo atendimento na fila!', {
-            duration: 5000,
-            important: true,
-            id: 'new-ticket-notification' // Use id instead of data property
-          });
-          
-          console.log('🚨 DEBUG: Created toast with id "new-ticket-notification"');
-          
-          // Try multiple sound options to ensure one works
-          unlockAudio();
-          
-          // Primeiro tenta com a configuração do usuário
-          console.log(`🔈 Attempting to play primary notification sound: "${settings.notificationSound}"`);
-          let success = playSound(settings.notificationSound, 1.0, false);
-          
-          // Se falhar, tenta com um som fixo
-          if (!success) {
-            console.log("⚠️ Primary sound failed, trying with fixed sound 'notificacao'");
-            success = playSound('notificacao', 1.0, false);
-            
-            // Se ainda falhar, tenta com 'beep'
-            if (!success) {
-              console.log("⚠️ Second attempt failed, trying with 'beep'");
-              success = playSound('beep', 1.0, false);
-            }
-          }
-          
-          // Backup: Tenta novamente após um curto atraso
-          setTimeout(() => {
-            console.log("🕒 Delayed backup sound attempt");
-            unlockAudio();
-            playSound('beep', 1.0, false);
-          }, 500);
-          
-          // Update the ticket list
-          onTicketChange();
-        }
-      )
-      .on('postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tickets'
-        },
-        () => {
-          onTicketChange();
-        }
-      )
-      .on('postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'tickets'
-        },
-        () => {
-          onTicketChange();
-        }
-      )
-      .subscribe((status) => {
-        console.log(`Supabase channel status: ${status}`);
-        
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Successfully subscribed to ticket events!');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Error subscribing to ticket events!');
-        } else if (status === 'TIMED_OUT') {
-          console.error('⏱️ Subscription timed out!');
-        }
-      });
+    // Setup notification system for new tickets
+    const ticketNotificationCleanup = setupTicketNotifications(onTicketChange);
     
-    console.log('Realtime subscription for tickets started');
+    // Setup notification system for ticket status changes
+    const statusChangeCleanup = setupTicketStatusChanges(onTicketChange);
+    
+    console.log('Notification systems started');
 
-    // Cleanup: unsubscribe on component unmount
+    // Cleanup both systems on component unmount
     return () => {
-      console.log('Deactivating realtime subscription');
-      supabase.removeChannel(channel);
+      console.log('Deactivating notification systems');
+      ticketNotificationCleanup();
+      statusChangeCleanup();
     };
   }, [onTicketChange, settings]);
 
