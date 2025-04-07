@@ -31,25 +31,31 @@ export const register = async (
       `INSERT INTO login (
         usuario, senha, admin, ativo
       ) VALUES ($1, $2, $3, $4) RETURNING id, usuario, admin`,
-      [username, hashedPassword, isAdmin, true]
+      [username, hashedPassword, isAdmin, false] // Mudamos para false para que novos usuários aguardem aprovação
     );
 
-    toast.success("Usuário criado com sucesso");
+    if (!result || !result.rows || result.rows.length === 0) {
+      throw new Error("Falha ao criar usuário: sem resultado do banco de dados");
+    }
 
-    // Verify the row has the expected properties before treating it as LoginUser
-    const row = result.rows[0];
+    const rowData = result.rows[0];
     
-    if (!('usuario' in row && 'admin' in row)) {
-      console.error("Resultado da inserção não contém as propriedades esperadas:", row);
-      throw new Error("Erro ao criar usuário: dados inválidos");
+    if (!rowData) {
+      throw new Error("Dados de usuário inválidos após inserção");
     }
     
+    console.log("Dados retornados após cadastro:", rowData);
+    
     // Retornar os dados do usuário (sem a senha)
-    return {
-      id: String(row.id),
-      usuario: String(row.usuario),
-      isAdmin: Boolean(row.admin)
+    const newUser: User = {
+      id: rowData.id ? String(rowData.id) : '',
+      usuario: rowData.usuario ? String(rowData.usuario) : username,
+      isAdmin: rowData.admin === true
     };
+    
+    toast.success("Usuário criado com sucesso. Aguardando aprovação do administrador.");
+    
+    return newUser;
   } catch (error) {
     return handleServiceError(error, "Erro ao registrar usuário");
   }
