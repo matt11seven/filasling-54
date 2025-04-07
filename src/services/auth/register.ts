@@ -46,9 +46,9 @@ export const register = async (
     
     // Retornar os dados do usuário (sem a senha)
     return {
-      id: row.id,
-      usuario: row.usuario,
-      isAdmin: row.admin
+      id: String(row.id),
+      usuario: String(row.usuario),
+      isAdmin: Boolean(row.admin)
     };
   } catch (error) {
     return handleServiceError(error, "Erro ao registrar usuário");
