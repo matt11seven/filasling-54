@@ -10,8 +10,19 @@ import { toast } from "sonner";
 export const getAgents = async (): Promise<Agent[]> => {
   try {
     if (isUsingPostgresDirect) {
-      // Using direct PostgreSQL
-      const result = await query('SELECT * FROM atendentes');
+      // Using direct PostgreSQL with timeout
+      const queryPromise = query('SELECT * FROM atendentes');
+      
+      // Add timeout to prevent blocking the UI for too long
+      const timeoutPromise = new Promise<{rows: any[]}>((resolve) => {
+        setTimeout(() => {
+          console.warn("Timeout ao buscar agentes do PostgreSQL");
+          resolve({ rows: [] });
+        }, 5000);
+      });
+      
+      // Use Promise.race to ensure it doesn't block for too long
+      const result = await Promise.race([queryPromise, timeoutPromise]);
       return result.rows || [];
     } else {
       // Using Supabase
@@ -21,7 +32,7 @@ export const getAgents = async (): Promise<Agent[]> => {
 
       if (error) {
         console.error("Error fetching agents:", error);
-        throw new Error(error.message);
+        return []; // Return empty array instead of throwing error
       }
 
       return data || [];
@@ -29,6 +40,6 @@ export const getAgents = async (): Promise<Agent[]> => {
   } catch (error) {
     console.error("Error in getAgents:", error);
     toast.error("Erro ao carregar atendentes");
-    return [];
+    return []; // Always return at least an empty array
   }
 };

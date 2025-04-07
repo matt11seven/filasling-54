@@ -6,12 +6,32 @@ import { toast } from "sonner";
 /**
  * Deletes an agent from the database
  */
-export const deleteAgent = async (id: string): Promise<void> => {
+export const deleteAgent = async (id: string): Promise<boolean> => {
   try {
     if (isUsingPostgresDirect) {
-      // Using direct PostgreSQL
-      await query('DELETE FROM atendentes WHERE id = $1', [id]);
-      toast.success("Atendente excluído com sucesso");
+      // Using direct PostgreSQL with timeout
+      const queryPromise = query('DELETE FROM atendentes WHERE id = $1', [id]);
+      
+      // Add timeout to prevent blocking the UI for too long
+      const timeoutPromise = new Promise<boolean>((resolve) => {
+        setTimeout(() => {
+          console.warn("Timeout ao excluir agente do PostgreSQL");
+          toast.error("Timeout ao excluir atendente");
+          resolve(false);
+        }, 5000);
+      });
+      
+      // Use Promise.race to ensure it doesn't block for too long
+      const result = await Promise.race([
+        queryPromise.then(() => true), 
+        timeoutPromise
+      ]);
+      
+      if (result) {
+        toast.success("Atendente excluído com sucesso");
+        return true;
+      }
+      return false;
     } else {
       // Using Supabase
       const { error } = await supabase
@@ -21,14 +41,16 @@ export const deleteAgent = async (id: string): Promise<void> => {
 
       if (error) {
         console.error("Error deleting agent:", error);
-        throw new Error(error.message);
+        toast.error("Erro ao excluir atendente");
+        return false;
       }
 
       toast.success("Atendente excluído com sucesso");
+      return true;
     }
   } catch (error) {
     console.error("Error in deleteAgent:", error);
     toast.error("Erro ao excluir atendente");
-    throw error;
+    return false;
   }
 };

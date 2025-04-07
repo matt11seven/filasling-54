@@ -26,7 +26,9 @@ function getPool(): Pool | null {
         user: postgresConfig.user,
         password: postgresConfig.password,
         database: postgresConfig.database,
-        port: parseInt(postgresConfig.port, 10)
+        port: parseInt(postgresConfig.port, 10),
+        // Adicionar timeout para não bloquear a renderização por muito tempo
+        connectionTimeoutMillis: 5000
       });
       
       // Adicionar listener para erros de conexão
@@ -46,7 +48,9 @@ function getPool(): Pool | null {
 export async function query(text: string, params: any[] = []) {
   const currentPool = getPool();
   if (!currentPool) {
-    throw new Error('PostgreSQL direto não está configurado');
+    console.warn('PostgreSQL direto não está disponível, operação não executada:', { text });
+    // Retornar um resultado vazio em vez de lançar erro
+    return { rows: [], rowCount: 0 };
   }
   
   try {
@@ -57,7 +61,8 @@ export async function query(text: string, params: any[] = []) {
     return res;
   } catch (error) {
     console.error('Erro ao executar consulta:', error);
-    throw error;
+    // Retornar um resultado vazio em vez de lançar erro
+    return { rows: [], rowCount: 0 };
   }
 }
 

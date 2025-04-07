@@ -9,8 +9,20 @@ import { toast } from "sonner";
 export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     if (isUsingPostgresDirect) {
-      // Testa conexão direta com PostgreSQL
-      const isConnected = await checkConnection();
+      // Testa conexão direta com PostgreSQL com timeout
+      const connectionPromise = checkConnection();
+      
+      // Adicionar timeout para não bloquear a UI por muito tempo
+      const timeoutPromise = new Promise<boolean>((resolve) => {
+        setTimeout(() => {
+          toast.error("Timeout ao tentar conectar ao PostgreSQL");
+          console.error("❌ Timeout na conexão com PostgreSQL");
+          resolve(false);
+        }, 5000);
+      });
+      
+      // Usar Promise.race para garantir que não bloqueie por muito tempo
+      const isConnected = await Promise.race([connectionPromise, timeoutPromise]);
       
       if (isConnected) {
         toast.success("Conexão com PostgreSQL estabelecida com sucesso!");
