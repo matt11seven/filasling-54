@@ -7,6 +7,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { stopAlertNotification, playSound, unlockAudio, debugAudioSystems, playSoundByEventType } from "@/services/notificationService";
 import { X } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface FullscreenAlertProps {
   ticket: Ticket;
@@ -90,6 +91,16 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
   
   // Obtenha a contagem de tempo formatada
   const timeDisplay = formatTimeSince(creationDate || '');
+  
+  // Gerar iniciais para o avatar fallback
+  const getInitials = (name: string): string => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   const handleClose = () => {
     setIsVisible(false);
@@ -132,6 +143,26 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
           <p className="text-destructive font-bold">
             Aguardando há {timeDisplay}
           </p>
+          
+          {(ticket.nome_atendente || ticket.email_atendente) && (
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <p className="font-semibold mb-2">Atendente Responsável:</p>
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={ticket.url_imagem_atendente} alt={ticket.nome_atendente || ''} />
+                  <AvatarFallback>{getInitials(ticket.nome_atendente || ticket.email_atendente)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  {ticket.nome_atendente && (
+                    <p className="font-medium">{ticket.nome_atendente}</p>
+                  )}
+                  {ticket.email_atendente && (
+                    <p className="text-sm text-muted-foreground">{ticket.email_atendente}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-between gap-2">
