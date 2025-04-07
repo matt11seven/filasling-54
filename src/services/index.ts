@@ -5,3 +5,5 @@ export * from './stages';
 export * from './agents';
 export * from './auth';
 export * from './connectionTest';
+export * from './performance';
+export * from './notificationSystem';

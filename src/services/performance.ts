@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { query } from '@/integrations/postgres/client';
 import { toast } from "sonner";
 
 export interface AttendantPerformance {
@@ -23,28 +23,28 @@ export interface StrikeData {
 // Função para obter o ranking dos atendentes mais rápidos
 export const getAttendantPerformance = async (): Promise<AttendantPerformance[]> => {
   try {
-    const { data, error } = await supabase
-      .from('tickets')
-      .select(`
+    const result = await query(`
+      SELECT 
         atendente_id,
         nome_atendente,
         email_atendente,
         url_imagem_atendente,
         data_criado,
         data_saida_etapa1
-      `)
-      .not('data_saida_etapa1', 'is', null)
-      .not('atendente_id', 'is', null);
+      FROM tickets
+      WHERE data_saida_etapa1 IS NOT NULL
+      AND atendente_id IS NOT NULL
+    `);
 
-    if (error) {
-      console.error("Erro ao obter dados de desempenho:", error);
-      throw new Error(error.message);
+    if (!result || !result.rows) {
+      console.error("Erro ao obter dados de desempenho: resultado inválido");
+      return [];
     }
 
     // Agrupar por atendente e calcular tempo médio
     const attendantMap = new Map();
     
-    data.forEach(ticket => {
+    result.rows.forEach(ticket => {
       const id = ticket.atendente_id;
       const startTime = new Date(ticket.data_criado).getTime();
       const endTime = new Date(ticket.data_saida_etapa1).getTime();
@@ -68,7 +68,7 @@ export const getAttendantPerformance = async (): Promise<AttendantPerformance[]>
     });
     
     // Converter para array e calcular médias
-    const result = Array.from(attendantMap.values()).map(item => {
+    const result2 = Array.from(attendantMap.values()).map(item => {
       const tempo_medio_segundos = Math.round(item.totalTime / item.count);
       
       // Formatar o tempo médio
@@ -93,7 +93,7 @@ export const getAttendantPerformance = async (): Promise<AttendantPerformance[]>
     });
     
     // Ordenar por tempo médio (mais rápido primeiro)
-    return result.sort((a, b) => a.tempo_medio_segundos - b.tempo_medio_segundos);
+    return result2.sort((a, b) => a.tempo_medio_segundos - b.tempo_medio_segundos);
   } catch (error) {
     console.error("Erro ao processar dados de desempenho:", error);
     toast.error("Erro ao carregar dados de desempenho");
@@ -104,11 +104,9 @@ export const getAttendantPerformance = async (): Promise<AttendantPerformance[]>
 // Função para obter tickets em atraso por atendente
 export const getAttendantStrikes = async (criticalTimeMinutes: number): Promise<StrikeData[]> => {
   try {
-    // Obter tickets que estão na etapa 1 (aguardando) há mais tempo que o limite crítico
-    const now = new Date();
-    const { data, error } = await supabase
-      .from('tickets')
-      .select(`
+    // Obter tickets que estão na etapa 1 (aguardando)
+    const result = await query(`
+      SELECT
         id,
         atendente_id,
         nome_atendente,
@@ -116,19 +114,21 @@ export const getAttendantStrikes = async (criticalTimeMinutes: number): Promise<
         url_imagem_atendente,
         data_criado,
         etapa_numero
-      `)
-      .eq('etapa_numero', 1);
+      FROM tickets
+      WHERE etapa_numero = 1
+    `);
 
-    if (error) {
-      console.error("Erro ao obter dados de strikes:", error);
-      throw new Error(error.message);
+    if (!result || !result.rows) {
+      console.error("Erro ao obter dados de strikes: resultado inválido");
+      return [];
     }
     
     // Filtrar tickets em atraso e agrupar por atendente
     const attendantMap = new Map();
+    const now = new Date();
     const criticalTimeMs = criticalTimeMinutes * 60 * 1000;
     
-    data.forEach(ticket => {
+    result.rows.forEach(ticket => {
       const ticketTime = new Date(ticket.data_criado).getTime();
       const elapsedTime = now.getTime() - ticketTime;
       
