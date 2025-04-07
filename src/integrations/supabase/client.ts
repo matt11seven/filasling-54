@@ -7,9 +7,9 @@ import type { Database } from './types';
 const isBrowser = typeof window !== 'undefined';
 
 // Define valores para ambientes de desenvolvimento e produção
-let supabaseUrl: string;
-let supabaseKey: string;
-let usePostgresDirect = false;
+let supabaseUrl: string = '';
+let supabaseKey: string = '';
+let usePostgresDirect = true; // Por padrão, usar PostgreSQL direto
 
 // Função para limpar o cache de conexão
 export function resetConnectionCache() {
@@ -17,72 +17,51 @@ export function resetConnectionCache() {
   // Limpa qualquer cache armazenado em localStorage
   if (isBrowser) {
     localStorage.removeItem('db_connection_info');
+    localStorage.removeItem('supabase.auth.token');
   }
 }
 
 try {
-  // Always disable direct PostgreSQL in browser environments
+  // Always prioritize PostgreSQL in browser environments too
   if (isBrowser) {
-    console.log("Executando no navegador - desativando PostgreSQL direto");
-    usePostgresDirect = false;
+    console.log("Executando no navegador - PostgreSQL direto será priorizado");
     
     // Verificar se temos informações em localStorage para evitar conexão com banco antigo
     const cachedConnection = localStorage.getItem('db_connection_info');
     if (cachedConnection) {
       const connection = JSON.parse(cachedConnection);
-      console.log("Usando informações de conexão em cache:", connection.url);
+      console.log("Limpando informações de conexão em cache:", connection.url);
+      localStorage.removeItem('db_connection_info');
     }
   }
-  // Only check PostgreSQL direct config in Node.js environment
-  else if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
+  
+  // Verificar se temos configuração para PostgreSQL direto
+  if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
       DB_POSTGRESDB_HOST_PLACEHOLDER !== "DB_POSTGRESDB_HOST_PLACEHOLDER" && 
       DB_POSTGRESDB_HOST_PLACEHOLDER !== "") {
-    console.log("Configuração detectada para PostgreSQL direto (EasyPanel)");
+    console.log("Configuração detectada para PostgreSQL direto");
     usePostgresDirect = true;
-    // Não configuramos supabaseUrl/Key porque vamos usar PostgreSQL direto
   } 
-  // Caso não tenha PostgreSQL configurado, tenta usar Supabase
+  // Caso não tenha PostgreSQL configurado, tenta usar Supabase como fallback
   else if (typeof SUPABASE_URL_PLACEHOLDER !== 'undefined' && 
       SUPABASE_URL_PLACEHOLDER !== "SUPABASE_URL_PLACEHOLDER" && 
       SUPABASE_URL_PLACEHOLDER !== "") {
-    // Usa valores do ambiente para Supabase
-    console.log("Usando configuração do Supabase");
+    // Usa valores do ambiente para Supabase apenas como fallback
+    console.log("Usando Supabase apenas como fallback");
     supabaseUrl = SUPABASE_URL_PLACEHOLDER;
     supabaseKey = SUPABASE_ANON_KEY_PLACEHOLDER;
     
-    // Armazenar em cache para futura referência
-    if (isBrowser) {
-      localStorage.setItem('db_connection_info', JSON.stringify({
-        type: 'supabase',
-        url: supabaseUrl,
-        timestamp: new Date().toISOString()
-      }));
-    }
+    // Não armazenar em cache para evitar problemas futuros
   } 
-  // Fallback para ambiente de desenvolvimento
   else {
-    // Valores de desenvolvimento hardcoded do Supabase
-    console.log("Usando configuração de desenvolvimento do Supabase");
-    supabaseUrl = "https://cfhjwvibgiierhvaafrd.supabase.co";
-    supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaGp3dmliZ2lpZXJodmFhZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODI1NjcsImV4cCI6MjA1OTM1ODU2N30.3GvW0fV610dUXnQgF08XhT5EPKIwHoyfAQRgCSGN4EM";
-    
-    // Armazenar em cache para futura referência
-    if (isBrowser) {
-      localStorage.setItem('db_connection_info', JSON.stringify({
-        type: 'supabase_dev',
-        url: supabaseUrl,
-        timestamp: new Date().toISOString()
-      }));
-    }
+    // Mensagem de erro se não tiver configuração válida
+    console.log("ATENÇÃO: Nenhuma configuração de banco detectada. Configure as variáveis de ambiente para PostgreSQL.");
+    usePostgresDirect = true;
   }
 } catch (error) {
   console.error("Erro ao carregar configurações de banco de dados:", error);
-  console.log("Usando configuração de fallback para continuar a execução da aplicação");
-  
-  // Valores de fallback para garantir que a aplicação continue
-  supabaseUrl = "https://cfhjwvibgiierhvaafrd.supabase.co";
-  supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaGp3dmliZ2lpZXJodmFhZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODI1NjcsImV4cCI6MjA1OTM1ODU2N30.3GvW0fV610dUXnQgF08XhT5EPKIwHoyfAQRgCSGN4EM";
-  usePostgresDirect = false;
+  console.log("Usando PostgreSQL direto como fallback");
+  usePostgresDirect = true;
 }
 
 // Exporta a indicação se estamos usando PostgreSQL direto
@@ -98,25 +77,17 @@ export const postgresConfig = {
   port: typeof DB_POSTGRESDB_PORT_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PORT_PLACEHOLDER : '5432'
 };
 
-// Ensure we have valid Supabase credentials before creating the client
-if (!supabaseUrl) {
-  supabaseUrl = "https://cfhjwvibgiierhvaafrd.supabase.co";
-}
-if (!supabaseKey) {
-  supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaGp3dmliZ2lpZXJodmFhZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODI1NjcsImV4cCI6MjA1OTM1ODU2N30.3GvW0fV610dUXnQgF08XhT5EPKIwHoyfAQRgCSGN4EM";
-}
-
-// Cria cliente do Supabase com tratamento de erro
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+// Criar cliente Supabase apenas como fallback (sem chaves hardcoded)
+export const supabase = createClient<Database>(
+  supabaseUrl || 'https://placeholder-url.supabase.co', 
+  supabaseKey || 'placeholder-key'
+);
 
 // Adiciona log para identificar qual modo está sendo usado
-console.log(`Modo de conexão: ${usePostgresDirect ? 'PostgreSQL Direto' : 'Supabase'}`);
-console.log("Configuração de banco:", usePostgresDirect ? {
+console.log(`Modo de conexão: ${usePostgresDirect ? 'PostgreSQL Direto' : 'Supabase (fallback)'}`);
+console.log("Configuração de banco:", {
   host: postgresConfig.host,
   user: postgresConfig.user,
   database: postgresConfig.database,
   port: postgresConfig.port
-} : {
-  supabaseUrl: supabaseUrl,
-  timestamp: new Date().toISOString()
 });

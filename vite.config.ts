@@ -37,9 +37,9 @@ export default defineConfig(({ mode }) => ({
     DB_POSTGRESDB_DATABASE_PLACEHOLDER: JSON.stringify("DB_POSTGRESDB_DATABASE_PLACEHOLDER"),
     DB_POSTGRESDB_PORT_PLACEHOLDER: JSON.stringify("DB_POSTGRESDB_PORT_PLACEHOLDER"),
     
-    // Add polyfill for process.env
-    "process.env": JSON.stringify({}),
-    global: "window",
+    // Melhor polyfill para process.env
+    "process.env": "{}",
+    "global": "globalThis",
   },
   optimizeDeps: {
     esbuildOptions: {

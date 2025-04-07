@@ -29,24 +29,21 @@ const Index = () => {
             console.log("Limpando caches para nova versão");
             toast.info("Nova versão detectada, atualizando...");
             
-            // Limpar outros caches que poderiam afetar a conexão
+            // Limpar outros caches relacionados à conexão
+            localStorage.removeItem('db_connection_info');
             localStorage.removeItem('supabase.auth.token');
-            
-            // Forçar recarga da página para garantir que tudo está atualizado
-            // Comentado porque pode causar loop infinito se mal implementado
-            // window.location.reload();
           }
         }
         
         // Usando setTimeout para garantir que o redirecionamento não bloqueie a renderização
         const redirectTimer = setTimeout(() => {
           navigate('/dashboard');
-        }, 1500); // Increased from 100ms to 1500ms to give more time for initialization
+        }, 1500); // Mantido em 1500ms para dar tempo à inicialização
         
         return () => clearTimeout(redirectTimer);
       } catch (error) {
         console.error("Error during initialization:", error);
-        // Even if there's an error, we still want to navigate to dashboard
+        // Mesmo com erro, ainda redirecionamos para o dashboard
         setTimeout(() => {
           navigate('/dashboard');
         }, 1500);

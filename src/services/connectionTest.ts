@@ -38,10 +38,10 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
         return false;
       }
     } else {
-      // No caso do Supabase, podemos testar com uma consulta simples
-      toast.info("Usando Supabase em vez de PostgreSQL direto");
-      console.log("ℹ️ Modo Supabase ativo");
-      return true;
+      // No caso do Supabase (fallback), mostramos uma mensagem diferente
+      toast.error("PostgreSQL direto não configurado. Configure as variáveis de ambiente.");
+      console.error("⚠️ PostgreSQL direto não configurado");
+      return false;
     }
   } catch (error) {
     console.error("Erro ao testar conexão:", error);
@@ -54,7 +54,7 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
  * Retorna uma string com o modo de conexão atual
  */
 export const getConnectionMode = (): string => {
-  return isUsingPostgresDirect ? "PostgreSQL Direto" : "Supabase";
+  return isUsingPostgresDirect ? "PostgreSQL Direto" : "Supabase (fallback)";
 };
 
 /**
