@@ -6,7 +6,7 @@ import { toast } from "sonner";
 export const getAgents = async (): Promise<Agent[]> => {
   try {
     const result = await query("SELECT * FROM atendentes");
-    return result.rows || [];
+    return (result.rows || []) as Agent[];
   } catch (error) {
     console.error("Error fetching agents:", error);
     toast.error("Erro ao carregar atendentes");
@@ -25,7 +25,7 @@ export const getAgentById = async (id: string): Promise<Agent | undefined> => {
       return undefined;
     }
 
-    return result.rows[0];
+    return result.rows[0] as Agent;
   } catch (error) {
     console.error("Error fetching agent:", error);
     toast.error("Erro ao carregar atendente");
@@ -44,7 +44,7 @@ export const getAgentByEmail = async (email: string): Promise<Agent | undefined>
       return undefined;
     }
 
-    return result.rows[0];
+    return result.rows[0] as Agent;
   } catch (error) {
     console.error("Error fetching agent by email:", error);
     return undefined;
@@ -68,7 +68,7 @@ export const createAgent = async (agent: Omit<Agent, "id" | "data_criado" | "dat
     );
 
     toast.success("Atendente criado com sucesso");
-    return result.rows[0];
+    return result.rows[0] as Agent;
   } catch (error) {
     console.error("Error creating agent:", error);
     toast.error("Erro ao criar atendente");
@@ -107,7 +107,7 @@ export const updateAgent = async (id: string, updates: Partial<Agent>): Promise<
     );
 
     toast.success("Atendente atualizado com sucesso");
-    return result.rows[0];
+    return result.rows[0] as Agent;
   } catch (error) {
     console.error("Error updating agent:", error);
     toast.error("Erro ao atualizar atendente");

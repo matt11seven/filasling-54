@@ -44,7 +44,7 @@ export const getAttendantPerformance = async (): Promise<AttendantPerformance[]>
     // Agrupar por atendente e calcular tempo médio
     const attendantMap = new Map();
     
-    result.rows.forEach(ticket => {
+    result.rows.forEach((ticket: any) => {
       const id = ticket.atendente_id;
       const startTime = new Date(ticket.data_criado).getTime();
       const endTime = new Date(ticket.data_saida_etapa1).getTime();
@@ -128,7 +128,7 @@ export const getAttendantStrikes = async (criticalTimeMinutes: number): Promise<
     const now = new Date();
     const criticalTimeMs = criticalTimeMinutes * 60 * 1000;
     
-    result.rows.forEach(ticket => {
+    result.rows.forEach((ticket: any) => {
       const ticketTime = new Date(ticket.data_criado).getTime();
       const elapsedTime = now.getTime() - ticketTime;
       

@@ -5,12 +5,15 @@ import { toast } from "sonner";
 
 export const getStages = async (): Promise<Stage[]> => {
   try {
-    const result = await query(
-      `SELECT * FROM etapas 
-       ORDER BY numero ASC`
-    );
-
-    return result.rows || [];
+    console.log("Fetching stages...");
+    const result = await query(`
+      SELECT id, nome, numero, cor, data_criado, data_atualizado, numero_sistema
+      FROM etapas
+      ORDER BY numero ASC
+    `);
+    
+    console.log("Stages result:", result);
+    return (result.rows || []) as Stage[];
   } catch (error) {
     console.error("Error fetching stages:", error);
     toast.error("Erro ao carregar etapas");
@@ -18,42 +21,24 @@ export const getStages = async (): Promise<Stage[]> => {
   }
 };
 
-export const updateStage = async (id: string, updates: Partial<Stage>): Promise<Stage> => {
+export const getStageById = async (id: string): Promise<Stage | undefined> => {
   try {
-    // Construct the SET part of the SQL query dynamically
-    const fields: string[] = [];
-    const values: any[] = [];
-    let paramCounter = 1;
-    
-    // Add each update field to the query
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value !== undefined) {
-        fields.push(`${key} = $${paramCounter++}`);
-        values.push(value);
-      }
-    });
-    
-    // Add update timestamp
-    fields.push(`data_atualizado = NOW()`);
-    
-    // Add the id to the values array
-    values.push(id);
-    
-    // Execute the update query
     const result = await query(
-      `UPDATE etapas 
-       SET ${fields.join(', ')} 
-       WHERE id = $${paramCounter} 
-       RETURNING *`,
-      values
+      `SELECT id, nome, numero, cor, data_criado, data_atualizado, numero_sistema
+       FROM etapas 
+       WHERE id = $1`,
+      [id]
     );
 
-    toast.success("Etapa atualizada com sucesso");
-    return result.rows[0];
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+
+    return result.rows[0] as Stage;
   } catch (error) {
-    console.error("Error updating stage:", error);
-    toast.error("Erro ao atualizar etapa");
-    throw error;
+    console.error("Error fetching stage:", error);
+    toast.error("Erro ao carregar etapa");
+    return undefined;
   }
 };
 
@@ -69,15 +54,50 @@ export const createStage = async (stage: Omit<Stage, "id" | "data_criado" | "dat
         stage.nome,
         stage.numero,
         stage.cor,
-        stage.numeroSistema
+        stage.numeroSistema || null
       ]
     );
 
     toast.success("Etapa criada com sucesso");
-    return result.rows[0];
+    return result.rows[0] as Stage;
   } catch (error) {
     console.error("Error creating stage:", error);
     toast.error("Erro ao criar etapa");
+    throw error;
+  }
+};
+
+export const updateStage = async (id: string, updates: Partial<Stage>): Promise<Stage> => {
+  try {
+    const fields: string[] = [];
+    const values: any[] = [];
+    let paramCounter = 1;
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value !== undefined) {
+        // Adjust property name for database column if needed
+        const dbKey = key === 'numeroSistema' ? 'numero_sistema' : key;
+        fields.push(`${dbKey} = $${paramCounter++}`);
+        values.push(value);
+      }
+    });
+    
+    fields.push(`data_atualizado = NOW()`);
+    values.push(id);
+    
+    const result = await query(
+      `UPDATE etapas 
+       SET ${fields.join(', ')} 
+       WHERE id = $${paramCounter} 
+       RETURNING *`,
+      values
+    );
+
+    toast.success("Etapa atualizada com sucesso");
+    return result.rows[0] as Stage;
+  } catch (error) {
+    console.error("Error updating stage:", error);
+    toast.error("Erro ao atualizar etapa");
     throw error;
   }
 };

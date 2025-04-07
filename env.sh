@@ -4,7 +4,7 @@
 echo "============================================"
 echo "Iniciando script de configuração de ambiente"
 echo "============================================"
-echo "Versão do script: 4.0"
+echo "Versão do script: 5.0"
 echo "Data de execução: $(date)"
 
 # Exibe informações do ambiente para diagnóstico
@@ -14,31 +14,31 @@ echo "- Diretório atual: $(pwd)"
 echo "- Conteúdo do diretório de arquivos estáticos:"
 ls -la /usr/share/nginx/html
 
-# Função para definir valores padrão - usando sintaxe compatível com sh
+# Função para definir valores padrão - compatível com sh no Alpine
 set_default() {
   var_name=$1
   default_value=$2
   
-  # Obter o valor atual da variável de forma compatível com sh
-  eval current_value=\$${var_name}
+  current_value=""
+  eval "current_value=\${$var_name}"
   
   if [ -z "$current_value" ]; then
     # Definir valor padrão
-    eval $var_name=\"$default_value\"
+    eval "$var_name=$default_value"
     echo "⚠️ Usando valor padrão para $var_name: $default_value"
   else
     # Exibir valor atual (exceto para senha)
     if [ "$var_name" = "DB_PASSWORD" ]; then
       echo "✅ Variável $var_name está definida: ********"
     else
-      eval echo "✅ Variável $var_name está definida: \$$var_name"
+      echo "✅ Variável $var_name está definida: $current_value"
     fi
   fi
 }
 
 # Verificar variáveis de ambiente com mensagens claras
 echo "Verificando variáveis de ambiente:"
-set_default "DB_HOST" "localhost"
+set_default "DB_HOST" "ops-aux_seridofila-db"
 set_default "DB_PORT" "5432"
 set_default "DB_USER" "postgres"
 set_default "DB_PASSWORD" "postgres"
@@ -53,11 +53,11 @@ echo "Procurando por arquivos JS para substituir placeholders..."
 JS_FILES=$(find /usr/share/nginx/html -type f -name "*.js" | wc -l)
 echo "Encontrados $JS_FILES arquivos JavaScript"
 
-# Substitui cada placeholder nos arquivos JS - IMPORTANTE: usando sintaxe correta de substituição para sh
+# Substitui cada placeholder nos arquivos JS - usando sed de forma compatível com BusyBox
 for js_file in $(find /usr/share/nginx/html -type f -name "*.js"); do
   echo "Verificando arquivo: $js_file"
   
-  # DB_HOST - importante: use sintaxe de substituição compatível com sh
+  # DB_HOST
   if grep -q "DB_HOST_PLACEHOLDER" "$js_file"; then
     echo "  - Substituindo DB_HOST_PLACEHOLDER por $DB_HOST em $js_file"
     sed -i "s|\"DB_HOST_PLACEHOLDER\"|\"$DB_HOST\"|g" "$js_file"
@@ -90,15 +90,15 @@ done
 
 echo "Variáveis de ambiente substituídas com sucesso!"
 
-# Validação rápida das substituições
+# Validação básica das substituições
 echo "Validando substituições (buscando placeholders não substituídos):"
-PLACEHOLDERS_LEFT=$(grep -r "DB_.*_PLACEHOLDER" /usr/share/nginx/html --include="*.js" | wc -l)
+PLACEHOLDERS_LEFT=$(find /usr/share/nginx/html -type f -name "*.js" -exec grep -l "DB_.*_PLACEHOLDER" {} \; | wc -l)
+
 if [ $PLACEHOLDERS_LEFT -eq 0 ]; then
   echo "✅ Todos os placeholders foram substituídos com sucesso!"
 else
-  echo "⚠️ Ainda existem $PLACEHOLDERS_LEFT placeholders não substituídos!"
-  echo "Exemplos:"
-  grep -r "DB_.*_PLACEHOLDER" /usr/share/nginx/html --include="*.js" | head -5
+  echo "⚠️ Ainda existem $PLACEHOLDERS_LEFT arquivos com placeholders não substituídos!"
+  find /usr/share/nginx/html -type f -name "*.js" -exec grep -l "DB_.*_PLACEHOLDER" {} \; | head -5
 fi
 
 echo "============================================"
@@ -113,66 +113,35 @@ echo "- Banco: ${DB_NAME}"
 # Exporta a senha para PostgreSQL
 export PGPASSWORD="${DB_PASSWORD}"
 
-# TESTE MAIS COMPLETO DE CONEXÃO 
+# TESTE DE CONEXÃO
 if command -v psql >/dev/null 2>&1; then
-  # Tenta conexão básica primeiro
+  # Tenta conexão básica 
   echo "Tentando conexão simples com o PostgreSQL..."
-  psql -h "${DB_HOST}" -U "${DB_USER}" -d "${DB_NAME}" -p "${DB_PORT}" -c "SELECT 1" >/dev/null 2>&1
-  
-  if [ $? -eq 0 ]; then
+  if psql -h "${DB_HOST}" -U "${DB_USER}" -d "${DB_NAME}" -p "${DB_PORT}" -c "SELECT 1" >/dev/null 2>&1; then
     echo "✅ Conexão com o banco de dados PostgreSQL estabelecida com sucesso!"
   else
-    # Falha na conexão - diagnosticar o problema
     echo "⚠️ Não foi possível conectar ao banco de dados PostgreSQL."
-    echo "Iniciando diagnóstico aprofundado..."
+    echo "Diagnosticando problema..."
     
-    # Teste de resolução de DNS
-    echo "Teste de DNS para ${DB_HOST}:"
-    if command -v getent >/dev/null 2>&1; then
-      getent hosts "${DB_HOST}" || echo "❌ Não foi possível resolver o hostname: ${DB_HOST}"
+    # Teste de ping para o host
+    if ping -c 1 "${DB_HOST}" >/dev/null 2>&1; then
+      echo "✅ Host ${DB_HOST} está respondendo ao ping"
     else
-      echo "Ferramenta 'getent' não disponível. Tentando nslookup..."
-      if command -v nslookup >/dev/null 2>&1; then
-        nslookup "${DB_HOST}" || echo "❌ Não foi possível resolver o hostname: ${DB_HOST}"
-      else
-        echo "❌ Ferramentas DNS não disponíveis."
-      fi
+      echo "❌ Host ${DB_HOST} não está respondendo ao ping"
     fi
     
-    # Ping para testar conectividade básica
-    echo "Testando ping para ${DB_HOST}:"
-    if command -v ping >/dev/null 2>&1; then
-      ping -c 1 "${DB_HOST}" || echo "❌ Não foi possível fazer ping para: ${DB_HOST}"
+    # Teste de porta
+    if nc -z "${DB_HOST}" "${DB_PORT}" >/dev/null 2>&1; then
+      echo "✅ Porta ${DB_PORT} está aberta no host ${DB_HOST}"
     else
-      echo "❌ Comando 'ping' não disponível."
+      echo "❌ Porta ${DB_PORT} não está acessível no host ${DB_HOST}"
     fi
     
-    # Teste detalhado de conexão ao PostgreSQL com timeout
-    echo "Tentando conexão com timeout e detalhes:"
-    # Usar -v para aumentar verbosidade
-    timeout 5 psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -U "${DB_USER}" -d "${DB_NAME}" -p "${DB_PORT}" -c "SELECT 1" || \
-      echo "❌ Conexão com timeout falhou. Verifique firewall e configurações de rede."
-    
-    # Teste de conectividade com a porta
-    echo "Teste de conectividade para ${DB_HOST}:${DB_PORT}:"
-    if command -v nc >/dev/null 2>&1; then
-      timeout 5 nc -zv "${DB_HOST}" "${DB_PORT}" || echo "❌ Porta ${DB_PORT} não está acessível via nc"
-    else
-      echo "Ferramenta 'nc' não disponível. Tentando conexão direta..."
-      timeout 5 sh -c "cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}" 2>/dev/null
-      if [ $? -eq 0 ]; then
-        echo "✅ Porta ${DB_PORT} está acessível no host ${DB_HOST}"
-      else
-        echo "❌ Porta ${DB_PORT} não está acessível no host ${DB_HOST}"
-      fi
-    fi
-    
-    echo "⚠️ Verifique suas variáveis de ambiente e a conectividade com o banco de dados."
-    echo "IMPORTANTE: A aplicação pode funcionar em modo offline/simulação, mas a funcionalidade será limitada."
+    echo "⚠️ A aplicação funcionará em modo offline/simulação."
   fi
 else
-  echo "⚠️ Cliente PostgreSQL (psql) não encontrado. Verificações de conexão ao banco de dados indisponíveis."
-  echo "IMPORTANTE: Certifique-se de que a aplicação está configurada para operar em modo offline."
+  echo "⚠️ Cliente PostgreSQL (psql) não encontrado. Verificações de conexão indisponíveis."
+  echo "⚠️ A aplicação funcionará em modo offline/simulação."
 fi
 
 echo "============================================"

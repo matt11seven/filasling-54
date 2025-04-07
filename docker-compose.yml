@@ -9,7 +9,7 @@ services:
     ports:
       - "8080:80"
     environment:
-      - DB_HOST=${DB_HOST:-db}
+      - DB_HOST=${DB_HOST:-ops-aux_seridofila-db}
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
@@ -45,6 +45,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    container_name: ops-aux_seridofila-db
 
 networks:
   app_network:
