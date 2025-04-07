@@ -3,14 +3,22 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
 // Define valores para ambientes de desenvolvimento e produção
 let supabaseUrl: string;
 let supabaseKey: string;
 let usePostgresDirect = false;
 
 try {
-  // Verifica primeiro se as variáveis de PostgreSQL direto estão configuradas
-  if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
+  // Always disable direct PostgreSQL in browser environments
+  if (isBrowser) {
+    console.log("Executando no navegador - desativando PostgreSQL direto");
+    usePostgresDirect = false;
+  }
+  // Only check PostgreSQL direct config in Node.js environment
+  else if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
       DB_POSTGRESDB_HOST_PLACEHOLDER !== "DB_POSTGRESDB_HOST_PLACEHOLDER" && 
       DB_POSTGRESDB_HOST_PLACEHOLDER !== "") {
     console.log("Configuração detectada para PostgreSQL direto (EasyPanel)");
@@ -56,10 +64,16 @@ export const postgresConfig = {
   port: typeof DB_POSTGRESDB_PORT_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PORT_PLACEHOLDER : '5432'
 };
 
+// Ensure we have valid Supabase credentials before creating the client
+if (!supabaseUrl) {
+  supabaseUrl = "https://cfhjwvibgiierhvaafrd.supabase.co";
+}
+if (!supabaseKey) {
+  supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaGp3dmliZ2lpZXJodmFhZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODI1NjcsImV4cCI6MjA1OTM1ODU2N30.3GvW0fV610dUXnQgF08XhT5EPKIwHoyfAQRgCSGN4EM";
+}
+
 // Cria cliente do Supabase com tratamento de erro
-export const supabase = !usePostgresDirect 
-  ? createClient<Database>(supabaseUrl, supabaseKey)
-  : createClient<Database>("", ""); // Cliente vazio para evitar erros de tipo
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
 // Adiciona log para identificar qual modo está sendo usado
 console.log(`Modo de conexão: ${usePostgresDirect ? 'PostgreSQL Direto' : 'Supabase'}`);

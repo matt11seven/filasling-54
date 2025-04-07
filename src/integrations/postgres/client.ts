@@ -1,12 +1,66 @@
 
-import { Pool } from 'pg';
+// Create a mock implementation for browser environments
+// This file provides a safe implementation for both Node.js and browser environments
+
+// Type definition for our minimal PostgreSQL interface
+interface PgQueryResult {
+  rows: any[];
+  rowCount: number;
+}
+
+// Mock Pool for browser environments
+class MockPool {
+  async connect() {
+    console.warn("PostgreSQL direct connection is not supported in browser environments");
+    throw new Error("PostgreSQL connection not available in browser");
+  }
+  
+  async query(text: string, params: any[] = []): Promise<PgQueryResult> {
+    console.warn("PostgreSQL query not supported in browser:", { text, params });
+    return { rows: [], rowCount: 0 };
+  }
+  
+  async end() {
+    return;
+  }
+  
+  on(event: string, callback: (err: Error) => void) {
+    // Do nothing in browser
+    return this;
+  }
+}
+
+// Safely try to import pg only in environments that support it
+let Pool: any;
+let isNodeEnvironment = false;
+
+// Check if we're in a Node-like environment
+try {
+  // This check helps determine if we're in a Node-like environment
+  isNodeEnvironment = typeof process !== 'undefined' && 
+                     Boolean(process.versions) && 
+                     Boolean(process.versions.node);
+  
+  if (isNodeEnvironment) {
+    // Only try to require pg in Node environment
+    const pg = require('pg');
+    Pool = pg.Pool;
+  } else {
+    console.log('Running in browser environment, PostgreSQL client will be mocked');
+    Pool = MockPool;
+  }
+} catch (error) {
+  console.warn('Error importing PostgreSQL module, using mock implementation:', error);
+  Pool = MockPool;
+}
+
 import { isUsingPostgresDirect, postgresConfig } from '../supabase/client';
 
 // Configurar o pool de conexões PostgreSQL
-let pool: Pool | null = null;
+let pool: any = null;
 
 // Inicializar o pool apenas quando for necessário
-function getPool(): Pool | null {
+function getPool(): any | null {
   if (!isUsingPostgresDirect) {
     console.log('PostgreSQL direto não está configurado, usando Supabase');
     return null;
@@ -21,6 +75,13 @@ function getPool(): Pool | null {
         port: parseInt(postgresConfig.port, 10)
       });
       
+      // Check if we're running in an environment that supports PostgreSQL direct connections
+      if (!isNodeEnvironment) {
+        console.warn("⚠️ Tentativa de usar PostgreSQL direto em ambiente de navegador. Usando implementação simulada.");
+        pool = new MockPool();
+        return pool;
+      }
+      
       pool = new Pool({
         host: postgresConfig.host,
         user: postgresConfig.user,
@@ -32,12 +93,13 @@ function getPool(): Pool | null {
       });
       
       // Adicionar listener para erros de conexão
-      pool.on('error', (err) => {
+      pool.on('error', (err: Error) => {
         console.error('Erro inesperado no pool do PostgreSQL:', err);
       });
     } catch (error) {
       console.error('Falha ao criar pool de conexões PostgreSQL:', error);
-      return null;
+      // Use mock pool as fallback in case of error
+      pool = new MockPool();
     }
   }
   
@@ -45,7 +107,7 @@ function getPool(): Pool | null {
 }
 
 // Função para executar consultas no PostgreSQL
-export async function query(text: string, params: any[] = []) {
+export async function query(text: string, params: any[] = []): Promise<PgQueryResult> {
   const currentPool = getPool();
   if (!currentPool) {
     console.warn('PostgreSQL direto não está disponível, operação não executada:', { text });
@@ -80,6 +142,12 @@ export async function checkConnection() {
   const currentPool = getPool();
   if (!currentPool) {
     console.log('Pool de conexões não está disponível');
+    return false;
+  }
+  
+  // In browser environment, return false immediately
+  if (!isNodeEnvironment) {
+    console.warn("PostgreSQL connection check not supported in browser environment");
     return false;
   }
   
