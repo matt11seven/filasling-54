@@ -37,7 +37,7 @@ export const register = async (
     toast.success("Usuário criado com sucesso");
 
     // Retornar os dados do usuário (sem a senha)
-    const newUser = result.rows[0] as unknown as Pick<LoginUser, 'id' | 'usuario' | 'admin'>;
+    const newUser = result.rows[0] as Pick<LoginUser, 'id' | 'usuario' | 'admin'>;
     return {
       id: newUser.id,
       usuario: newUser.usuario,

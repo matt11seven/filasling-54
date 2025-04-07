@@ -23,7 +23,7 @@ export const login = async (
       throw new Error("Usuário não encontrado");
     }
 
-    const user = result.rows[0] as unknown as LoginUser;
+    const user = result.rows[0] as LoginUser;
 
     // Verificar se o usuário está ativo
     if (!user.ativo) {

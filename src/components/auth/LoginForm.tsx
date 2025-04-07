@@ -65,20 +65,19 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
         }
         
         // Para outros usuários, verifica primeiro se existe e está ativo
-        const { isActive } = await checkUserActive(values.email);
+        const { isActive, exists } = await checkUserActive(values.email);
+        console.log(`Verificação do usuário ${values.email}:`, { isActive, exists });
           
-        // Se não tiver dados ou o usuário não estiver ativo
+        // Se o usuário não existe
+        if (!exists) {
+          setErrorMessage("Este usuário não está registrado. Por favor, crie uma conta primeiro.");
+          return;
+        }
+        
+        // Se o usuário existe mas não está ativo
         if (!isActive) {
-          // Verifica se o usuário existe e está pendente
-          const pendingCheck = await checkUserActive(values.email);
-          
-          if (pendingCheck.isActive === false) {
-            // Usuário existe mas não está ativo
-            setErrorMessage("Sua conta está aguardando aprovação do administrador.");
-            setShowApprovalInfo(true);
-          } else {
-            setErrorMessage("Este usuário não está registrado. Por favor, crie uma conta primeiro.");
-          }
+          setErrorMessage("Sua conta está aguardando aprovação do administrador.");
+          setShowApprovalInfo(true);
           return;
         }
         
