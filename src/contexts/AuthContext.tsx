@@ -31,20 +31,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (storedUser) {
           const userData: User = JSON.parse(storedUser);
+          console.log("📋 Verificando sessão para usuário:", userData.usuario);
           
           // Verifica se o usuário ainda está ativo
           const { isActive } = await checkUserActive(userData.usuario);
           
           if (isActive) {
+            console.log("✅ Sessão válida: Usuário está ativo");
             setUser(userData);
           } else {
-            await logout();
-            toast.error("Sua conta está aguardando aprovação do administrador");
-            navigate("/login");
+            console.log("❌ Sessão inválida: Usuário não está ativo");
+            // Não exibimos toast aqui para evitar mensagens confusas no carregamento inicial
+            await logoutSilent();
+            navigate("/login", { replace: true });
           }
+        } else {
+          console.log("📋 Nenhuma sessão encontrada");
         }
       } catch (error) {
-        console.error("Erro ao verificar sessão:", error);
+        console.error("🚨 Erro ao verificar sessão:", error);
         setUser(null);
         localStorage.removeItem("queueUser");
       } finally {
@@ -59,30 +64,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log("🔐 Iniciando processo de login para:", email);
       
       const userData = await loginUser(email, password);
       
       if (userData) {
+        console.log("✅ Login bem-sucedido para:", userData.usuario);
         setUser(userData);
         localStorage.setItem("queueUser", JSON.stringify(userData));
         navigate("/dashboard");
+        toast.success("Login realizado com sucesso");
       }
     } catch (error) {
-      console.error("Erro de login:", error);
-      toast.error("Erro de autenticação");
+      console.error("🚨 Erro de login:", error);
+      // O toast de erro já é exibido na função loginUser
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Versão silenciosa do logout (não mostra toast)
+  const logoutSilent = async () => {
+    console.log("🔒 Realizando logout silencioso");
+    localStorage.removeItem("queueUser");
+    setUser(null);
+  };
+
   const logout = async () => {
     try {
-      localStorage.removeItem("queueUser");
-      setUser(null);
+      console.log("🔒 Realizando logout para usuário:", user?.usuario);
+      await logoutSilent();
       navigate("/login");
       toast.info("Logout realizado com sucesso");
     } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+      console.error("🚨 Erro ao fazer logout:", error);
       toast.error("Erro ao fazer logout");
     }
   };

@@ -12,15 +12,17 @@ export const login = async (
   password: string
 ): Promise<User> => {
   try {
-    console.log("Tentando fazer login com:", { username });
+    console.log("===== TENTATIVA DE LOGIN =====");
+    console.log("Usuário:", username);
+    console.log("Senha fornecida:", password ? "********" : "vazia");
     
     // Verificar se é o usuário master (comparação case-insensitive)
     if (username.toLowerCase() === 'matt@slingbr.com') {
-      console.log("Login como usuário master detectado");
+      console.log("🔑 LOGIN MASTER: Usuário master detectado");
       
       // Para o usuário master, aceita qualquer senha em ambiente de desenvolvimento
       if (import.meta.env.DEV || password === 'senha_master_correta') {
-        console.log("Login master autorizado");
+        console.log("✅ LOGIN MASTER: Login autorizado");
         // Retornar dados do usuário master sem verificar no banco
         return {
           id: '1',
@@ -28,10 +30,12 @@ export const login = async (
           isAdmin: true
         };
       } else {
-        console.log("Senha incorreta para usuário master");
+        console.log("❌ LOGIN MASTER: Senha incorreta");
         throw new Error("Credenciais inválidas para usuário master");
       }
     }
+    
+    console.log(`🔍 Buscando usuário no banco: "${username}"`);
     
     // Buscar o usuário pelo nome de usuário
     const result = await query(
@@ -39,11 +43,12 @@ export const login = async (
       [username]
     );
 
-    console.log("Resultado da consulta:", result);
+    console.log(`📊 Resultado da consulta:`, result ? "Dados recebidos" : "Sem dados");
+    console.log(`📊 Linhas encontradas: ${result.rows ? result.rows.length : 0}`);
 
     // Verificar se o usuário existe
     if (!result.rows || result.rows.length === 0) {
-      console.error("Usuário não encontrado:", username);
+      console.error(`❌ FALHA LOGIN: Usuário "${username}" não encontrado no banco de dados`);
       throw new Error("Usuário não encontrado");
     }
 
@@ -52,7 +57,7 @@ export const login = async (
     
     // Verificar se o row contém os dados esperados
     if (!row || typeof row !== 'object' || !('usuario' in row)) {
-      console.error("Resultado da consulta não contém as propriedades esperadas:", row);
+      console.error("❌ FALHA LOGIN: Resultado da consulta não contém as propriedades esperadas:", row);
       throw new Error("Dados de usuário inválidos");
     }
     
@@ -77,11 +82,16 @@ export const login = async (
       ativo: !!dbUser.ativo   // Convert to boolean
     };
     
-    console.log("Usuário encontrado:", { ...user, senha: '***CONFIDENCIAL***' });
+    console.log("👤 Dados do usuário encontrado:", { 
+      id: user.id,
+      usuario: user.usuario,
+      admin: user.admin ? "Sim" : "Não",
+      ativo: user.ativo ? "Sim" : "Não"
+    });
 
     // Verificar se o usuário está ativo
     if (!user.ativo) {
-      console.log("Usuário está inativo:", username);
+      console.log(`❌ FALHA LOGIN: Usuário "${username}" está inativo`);
       throw new Error("Usuário desativado");
     }
 
@@ -93,10 +103,12 @@ export const login = async (
       : verifyPassword(password, user.senha);
 
     if (!passwordIsValid) {
-      console.error("Senha incorreta para o usuário:", username);
+      console.error(`❌ FALHA LOGIN: Senha incorreta para o usuário "${username}"`);
       throw new Error("Senha incorreta");
     }
 
+    console.log(`✅ LOGIN BEM-SUCEDIDO: Usuário "${username}" autenticado`);
+    
     // Retornar os dados do usuário (sem a senha)
     return {
       id: user.id,
@@ -104,7 +116,7 @@ export const login = async (
       isAdmin: user.admin
     };
   } catch (error) {
-    console.error("Erro durante o login:", error);
+    console.error("🚨 ERRO DE LOGIN:", error);
     return handleServiceError(error, "Erro ao fazer login");
   }
 };
@@ -116,11 +128,11 @@ export const loginUser = async (
   email: string,
   password: string
 ): Promise<User> => {
-  console.log("loginUser chamado com:", email);
+  console.log("📝 loginUser chamado com:", email);
   
   // Normaliza o email (trim e lowercase) para evitar problemas com espaços ou capitalização
   const normalizedEmail = email.trim().toLowerCase();
-  console.log("Email normalizado:", normalizedEmail);
+  console.log("📧 Email normalizado:", normalizedEmail);
   
   return login(normalizedEmail, password);
 };
