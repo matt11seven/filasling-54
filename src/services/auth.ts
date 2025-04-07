@@ -3,6 +3,15 @@ import { User } from "@/types";
 import { query } from "@/integrations/postgres/client";
 import { toast } from "sonner";
 
+// Interface for the user data returned from database
+interface LoginUser {
+  id: string;
+  usuario: string;
+  senha: string;
+  admin: boolean;
+  ativo: boolean;
+}
+
 // Encriptação simulada para desenvolvimento
 const _hashPassword = (password: string): string => {
   // Na produção, usaríamos bcrypt real
@@ -16,6 +25,33 @@ const _verifyPassword = (inputPassword: string, storedHash: string): boolean => 
 };
 
 /**
+ * Verifica se um usuário está ativo
+ */
+export const checkUserActive = async (email: string): Promise<{ isActive: boolean, exists: boolean }> => {
+  try {
+    // Buscar o usuário pelo email (que é o campo usuario na tabela login)
+    const result = await query(
+      "SELECT ativo FROM login WHERE usuario = $1",
+      [email]
+    );
+
+    // Se não encontrou o usuário
+    if (result.rows.length === 0) {
+      return { isActive: false, exists: false };
+    }
+
+    // Retorna se o usuário está ativo ou não
+    return { 
+      isActive: result.rows[0].ativo, 
+      exists: true 
+    };
+  } catch (error) {
+    console.error("Erro ao verificar status do usuário:", error);
+    return { isActive: false, exists: false };
+  }
+};
+
+/**
  * Função para fazer login do usuário
  */
 export const login = async (
@@ -24,7 +60,7 @@ export const login = async (
 ): Promise<User> => {
   try {
     // Buscar o usuário pelo nome de usuário
-    const result = await query(
+    const result = await query<LoginUser>(
       "SELECT id, usuario, senha, admin, ativo FROM login WHERE usuario = $1",
       [username]
     );
@@ -73,6 +109,38 @@ export const login = async (
 };
 
 /**
+ * Função para login (compatível com o AuthContext)
+ */
+export const loginUser = async (
+  email: string,
+  password: string
+): Promise<User> => {
+  return login(email, password);
+};
+
+/**
+ * Função para registrar um novo usuário
+ */
+export const signupUser = async (
+  email: string,
+  password: string,
+  isAdmin: boolean = false
+): Promise<boolean> => {
+  try {
+    await register(email, password, isAdmin);
+    toast.success("Conta criada com sucesso! Aguarde aprovação do administrador.");
+    return true;
+  } catch (error) {
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error("Erro ao criar conta");
+    }
+    return false;
+  }
+};
+
+/**
  * Função para registrar um novo usuário (em DEV)
  */
 export const register = async (
@@ -95,7 +163,7 @@ export const register = async (
     const hashedPassword = _hashPassword(password);
 
     // Inserir o novo usuário
-    const result = await query(
+    const result = await query<LoginUser>(
       `INSERT INTO login (
         usuario, senha, admin, ativo
       ) VALUES ($1, $2, $3, $4) RETURNING id, usuario, admin`,
