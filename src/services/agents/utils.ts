@@ -15,7 +15,8 @@ export const executeQuery = async <T>(
     if (isUsingPostgresDirect) {
       // Using direct PostgreSQL
       const result = await query(pgQuery, pgParams);
-      return result.rows;
+      // Fix the type mismatch - use type assertion to ensure correct return type
+      return result.rows as unknown as T;
     } else {
       // Using Supabase
       const { data, error } = await supabaseQuery();
