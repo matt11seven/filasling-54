@@ -14,16 +14,23 @@ export const login = async (
   try {
     console.log("Tentando fazer login com:", { username });
     
-    // Verificar se é o usuário master
-    if (username === 'matt@slingbr.com') {
+    // Verificar se é o usuário master (comparação case-insensitive)
+    if (username.toLowerCase() === 'matt@slingbr.com') {
       console.log("Login como usuário master detectado");
       
-      // Retornar dados do usuário master sem verificar no banco
-      return {
-        id: '1',
-        usuario: username,
-        isAdmin: true
-      };
+      // Para o usuário master, aceita qualquer senha em ambiente de desenvolvimento
+      if (import.meta.env.DEV || password === 'senha_master_correta') {
+        console.log("Login master autorizado");
+        // Retornar dados do usuário master sem verificar no banco
+        return {
+          id: '1',
+          usuario: username,
+          isAdmin: true
+        };
+      } else {
+        console.log("Senha incorreta para usuário master");
+        throw new Error("Credenciais inválidas para usuário master");
+      }
     }
     
     // Buscar o usuário pelo nome de usuário
@@ -110,5 +117,10 @@ export const loginUser = async (
   password: string
 ): Promise<User> => {
   console.log("loginUser chamado com:", email);
-  return login(email, password);
+  
+  // Normaliza o email (trim e lowercase) para evitar problemas com espaços ou capitalização
+  const normalizedEmail = email.trim().toLowerCase();
+  console.log("Email normalizado:", normalizedEmail);
+  
+  return login(normalizedEmail, password);
 };

@@ -54,6 +54,12 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
       setErrorMessage(null);
       setShowApprovalInfo(false);
 
+      // Normalizando o email para remover espaços e padronizar lowercase
+      const normalizedEmail = values.email.trim().toLowerCase();
+      
+      // Log para debug
+      console.log(`Tentando login com email: "${normalizedEmail}" (original: "${values.email}")`);
+      
       // Verifica conexão com o banco (apenas log, não exibe para o usuário)
       const status = await checkDatabaseConnection();
       console.log('Status da conexão antes do login:', status);
@@ -63,18 +69,23 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
         return;
       }
       
+      // Verificação especial para o usuário master
+      const isMasterUser = normalizedEmail === 'matt@slingbr.com';
+      console.log("É usuário master?", isMasterUser);
+      
       try {
-        // Tenta fazer login diretamente (inclusive para o usuário master)
-        await login(values.email, values.password);
+        // Tenta fazer login diretamente
+        await login(normalizedEmail, values.password);
+        console.log("Login bem-sucedido");
       } catch (error) {
         console.error("Erro durante o login:", error);
         
         // Verifica se o usuário existe e está ativo 
         // (apenas para usuários não-master que tiveram erro no login)
-        if (values.email !== 'matt@slingbr.com') {
+        if (!isMasterUser) {
           try {
-            const { isActive, exists } = await checkUserActive(values.email);
-            console.log(`Verificação do usuário ${values.email}:`, { isActive, exists });
+            const { isActive, exists } = await checkUserActive(normalizedEmail);
+            console.log(`Verificação do usuário ${normalizedEmail}:`, { isActive, exists });
             
             // Se o usuário não existe
             if (!exists) {

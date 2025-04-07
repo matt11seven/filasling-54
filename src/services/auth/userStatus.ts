@@ -6,14 +6,25 @@ import { query } from "@/integrations/postgres/client";
  */
 export const checkUserActive = async (email: string): Promise<{ isActive: boolean, exists: boolean }> => {
   try {
+    console.log(`Verificando status do usuário: ${email}`);
+    
+    // Verificação especial para o usuário master
+    if (email.toLowerCase() === 'matt@slingbr.com') {
+      console.log("Usuário master detectado na verificação de status");
+      return { isActive: true, exists: true };
+    }
+    
     // Buscar o usuário pelo email (que é o campo usuario na tabela login)
     const result = await query(
       "SELECT ativo FROM login WHERE usuario = $1",
       [email]
     );
 
+    console.log(`Resultado da consulta de status: ${JSON.stringify(result)}`);
+
     // Se não encontrou o usuário
-    if (result.rows.length === 0) {
+    if (!result.rows || result.rows.length === 0) {
+      console.log(`Usuário ${email} não encontrado`);
       return { isActive: false, exists: false };
     }
 
@@ -26,8 +37,11 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
     }
 
     // Retorna se o usuário está ativo ou não
+    const isActive = !!userRow.ativo;
+    console.log(`Status do usuário ${email}: ${isActive ? 'ativo' : 'inativo'}`);
+    
     return { 
-      isActive: !!userRow.ativo, 
+      isActive: isActive, 
       exists: true 
     };
   } catch (error) {
