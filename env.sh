@@ -4,7 +4,7 @@
 echo "============================================"
 echo "Iniciando script de configuração de ambiente"
 echo "============================================"
-echo "Versão do script: 1.2"
+echo "Versão do script: 1.3"
 echo "Data de execução: $(date)"
 
 # Exibe informações do ambiente para diagnóstico
@@ -44,7 +44,9 @@ for var in DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME; do
         ;;
     esac
   else
-    echo "✅ Variável $var está definida: ${!var}"
+    # Corrigindo o problema de substituição aqui
+    value=$(echo ${!var} | sed 's/"/\\"/g')
+    echo "✅ Variável $var está definida: $value"
   fi
 done
 
@@ -117,42 +119,40 @@ echo "- Porta: ${DB_PORT}"
 echo "- Usuário: ${DB_USER}"
 echo "- Banco: ${DB_NAME}"
 
-PGPASSWORD="${DB_PASSWORD}" psql -h "${DB_HOST}" -U "${DB_USER}" -d "${DB_NAME}" -p "${DB_PORT}" -c "SELECT 1" > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-  echo "✅ Conexão com o banco de dados PostgreSQL estabelecida com sucesso!"
-else
-  echo "⚠️ Não foi possível conectar ao banco de dados PostgreSQL."
-  echo "Iniciando diagnóstico aprofundado..."
-  
-  # Teste de resolução de DNS
-  echo "Teste de DNS para ${DB_HOST}:"
-  getent hosts "${DB_HOST}" || echo "❌ Não foi possível resolver o hostname: ${DB_HOST}"
-  
-  # Teste de conectividade com a porta
-  echo "Teste de conectividade para ${DB_HOST}:${DB_PORT}:"
-  timeout 5 bash -c "cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}" 2>/dev/null
+if command -v psql &> /dev/null; then
+  PGPASSWORD="${DB_PASSWORD}" psql -h "${DB_HOST}" -U "${DB_USER}" -d "${DB_NAME}" -p "${DB_PORT}" -c "SELECT 1" > /dev/null 2>&1
   if [ $? -eq 0 ]; then
-    echo "✅ Porta ${DB_PORT} está acessível no host ${DB_HOST}"
+    echo "✅ Conexão com o banco de dados PostgreSQL estabelecida com sucesso!"
   else
-    echo "❌ Porta ${DB_PORT} não está acessível no host ${DB_HOST}"
-  fi
-  
-  # Se o hostname tiver underscore, tenta convertê-lo para hífen
-  if [[ "${DB_HOST}" == *"_"* ]]; then
-    MODIFIED_HOST="${DB_HOST//_/-}"
-    echo "Hostname contém underscore. Tentando resolução com hífens: ${MODIFIED_HOST}"
-    getent hosts "${MODIFIED_HOST}" || echo "❌ Não foi possível resolver hostname modificado: ${MODIFIED_HOST}"
+    echo "⚠️ Não foi possível conectar ao banco de dados PostgreSQL."
+    echo "Iniciando diagnóstico aprofundado..."
     
-    # Teste de conectividade com hostname modificado
-    timeout 5 bash -c "cat < /dev/null > /dev/tcp/${MODIFIED_HOST}/${DB_PORT}" 2>/dev/null
+    # Teste de resolução de DNS
+    echo "Teste de DNS para ${DB_HOST}:"
+    getent hosts "${DB_HOST}" || echo "❌ Não foi possível resolver o hostname: ${DB_HOST}"
+    
+    # Teste de conectividade com a porta
+    echo "Teste de conectividade para ${DB_HOST}:${DB_PORT}:"
+    timeout 5 bash -c "cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}" 2>/dev/null
     if [ $? -eq 0 ]; then
-      echo "✅ Porta ${DB_PORT} está acessível no host alternativo ${MODIFIED_HOST}"
-      echo "⚠️ Considere usar o hostname com hífens (${MODIFIED_HOST}) em vez de underscores."
+      echo "✅ Porta ${DB_PORT} está acessível no host ${DB_HOST}"
+    else
+      echo "❌ Porta ${DB_PORT} não está acessível no host ${DB_HOST}"
+    fi
+    
+    # Se o hostname tiver underscore, tenta convertê-lo para hífen
+    if [[ "${DB_HOST}" == *"_"* ]]; then
+      MODIFIED_HOST="${DB_HOST//_/-}"
+      echo "Hostname contém underscore. Tentando resolução com hífens: ${MODIFIED_HOST}"
+      getent hosts "${MODIFIED_HOST}" || echo "❌ Não foi possível resolver hostname modificado: ${MODIFIED_HOST}"
       
-      # Oferece a opção de usar o hostname modificado
-      echo "Deseja usar o hostname modificado (${MODIFIED_HOST}) para esta sessão? (s/n)"
-      read -r USE_MODIFIED
-      if [[ "$USE_MODIFIED" == "s" || "$USE_MODIFIED" == "S" ]]; then
+      # Teste de conectividade com hostname modificado
+      timeout 5 bash -c "cat < /dev/null > /dev/tcp/${MODIFIED_HOST}/${DB_PORT}" 2>/dev/null
+      if [ $? -eq 0 ]; then
+        echo "✅ Porta ${DB_PORT} está acessível no host alternativo ${MODIFIED_HOST}"
+        echo "⚠️ Considere usar o hostname com hífens (${MODIFIED_HOST}) em vez de underscores."
+        
+        # Oferece a opção de usar o hostname modificado
         echo "Usando hostname modificado ${MODIFIED_HOST} para esta sessão"
         export DB_HOST="${MODIFIED_HOST}"
         
@@ -163,26 +163,30 @@ else
             sed -i "s|\"${DB_HOST//-/_}\"|\"${MODIFIED_HOST}\"|g" "$js_file"
           fi
         done
+      else
+        echo "❌ Porta ${DB_PORT} não está acessível no host alternativo ${MODIFIED_HOST}"
       fi
-    else
-      echo "❌ Porta ${DB_PORT} não está acessível no host alternativo ${MODIFIED_HOST}"
     fi
+    
+    # Testar conexão com credenciais explícitas
+    echo "Tentando conexão com parâmetros explícitos:"
+    PGPASSWORD="${DB_PASSWORD}" psql "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" -c "SELECT 1" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      echo "✅ Conexão com URI explícita funcionou! Use esta configuração em seus scripts."
+    else
+      echo "❌ Conexão com URI explícita também falhou."
+    fi
+    
+    echo "⚠️ Verifique suas variáveis de ambiente e a conectividade com o banco de dados."
+    echo "IMPORTANTE: A aplicação pode funcionar em modo offline/simulação, mas a funcionalidade será limitada."
   fi
-  
-  # Testar conexão com credenciais explícitas
-  echo "Tentando conexão com parâmetros explícitos:"
-  PGPASSWORD="${DB_PASSWORD}" psql "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" -c "SELECT 1" > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo "✅ Conexão com URI explícita funcionou! Use esta configuração em seus scripts."
-  else
-    echo "❌ Conexão com URI explícita também falhou."
-  fi
-  
-  echo "⚠️ Verifique suas variáveis de ambiente e a conectividade com o banco de dados."
-  echo "IMPORTANTE: A aplicação pode funcionar em modo offline/simulação, mas a funcionalidade será limitada."
+else
+  echo "⚠️ Cliente PostgreSQL (psql) não encontrado. Verificações de conexão ao banco de dados indisponíveis."
+  echo "IMPORTANTE: Certifique-se de que a aplicação está configurada para operar em modo offline."
 fi
 
 echo "============================================"
 echo "Configuração de ambiente concluída"
 echo "============================================"
 echo "Iniciando NGINX..."
+

@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serviço Temporariamente Indisponível</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            padding: 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+        .status {
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 5px;
+            color: #721c24;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .logo {
+            margin-bottom: 20px;
+            max-width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/lovable-uploads/4c7404d8-ef38-4ae1-b736-66ac06729fc0.png" alt="Sling Logo" class="logo">
+        <h1>Serviço Temporariamente Indisponível</h1>
+        <div class="status">
+            O servidor está temporariamente indisponível devido a manutenção ou problemas técnicos.
+        </div>
+        <p>
+            Nossos técnicos foram notificados e estão trabalhando para resolver o problema o mais rápido possível.
+        </p>
+        <div class="instructions">
+            <p><strong>O que você pode fazer:</strong></p>
+            <ul style="text-align: left;">
+                <li>Aguarde alguns minutos e tente novamente</li>
+                <li>Verifique se o banco de dados está em execução</li>
+                <li>Verifique o arquivo .env com as variáveis de ambiente</li>
+                <li>Execute o script test-db-connection.sh para diagnóstico</li>
+            </ul>
+        </div>
+        <p>
+            <a href="/" id="reload-btn" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px;">Tentar Novamente</a>
+        </p>
+    </div>
+    <script>
+        // Auto-reload after 30 seconds
+        setTimeout(function() {
+            window.location.reload();
+        }, 30000);
+        
+        // Update counter
+        let countdown = 30;
+        const interval = setInterval(function() {
+            countdown--;
+            document.getElementById('reload-btn').textContent = `Tentar Novamente (${countdown}s)`;
+            if (countdown <= 0) {
+                clearInterval(interval);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
