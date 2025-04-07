@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -64,19 +63,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      console.log("🔐 Iniciando processo de login para:", email);
+      console.log("🔐 [AuthContext] Iniciando processo de login para:", email);
+      console.log(`🔐 [AuthContext] Senha fornecida: ${password ? "preenchida" : "vazia"}`);
       
       const userData = await loginUser(email, password);
       
       if (userData) {
-        console.log("✅ Login bem-sucedido para:", userData.usuario);
+        console.log("✅ [AuthContext] Login bem-sucedido para:", userData.usuario);
         setUser(userData);
         localStorage.setItem("queueUser", JSON.stringify(userData));
         navigate("/dashboard");
         toast.success("Login realizado com sucesso");
       }
     } catch (error) {
-      console.error("🚨 Erro de login:", error);
+      console.error("🚨 [AuthContext] Erro de login:", error);
       // O toast de erro já é exibido na função loginUser
     } finally {
       setIsLoading(false);

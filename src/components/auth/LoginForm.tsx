@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -58,61 +58,69 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
       const normalizedEmail = values.email.trim().toLowerCase();
       
       // Log para debug
-      console.log(`Tentando login com email: "${normalizedEmail}" (original: "${values.email}")`);
+      console.log(`🔐 TENTATIVA DE LOGIN FORM - Email: "${normalizedEmail}" (original: "${values.email}")`);
+      console.log(`🔐 TENTATIVA DE LOGIN FORM - Senha: ${values.password ? "******** (preenchida)" : "(vazia)"}`);
       
       // Verifica conexão com o banco (apenas log, não exibe para o usuário)
       const status = await checkDatabaseConnection();
       console.log('Status da conexão antes do login:', status);
       
       if (!status.connected) {
+        console.error("❌ FALHA LOGIN: Banco de dados não conectado");
         setErrorMessage("Não foi possível conectar ao banco de dados. Por favor, tente novamente mais tarde.");
         return;
       }
       
       // Verificação especial para o usuário master
       const isMasterUser = normalizedEmail === 'matt@slingbr.com';
-      console.log("É usuário master?", isMasterUser);
+      console.log("É usuário master?", isMasterUser ? "SIM" : "NÃO");
       
       try {
+        console.log("🔐 Iniciando processo de login com credenciais fornecidas...");
         // Tenta fazer login diretamente
         await login(normalizedEmail, values.password);
-        console.log("Login bem-sucedido");
+        console.log("✅ LOGIN FORM: Login bem-sucedido!");
       } catch (error) {
-        console.error("Erro durante o login:", error);
+        console.error("❌ FALHA LOGIN FORM: Erro durante o login:", error);
         
         // Verifica se o usuário existe e está ativo 
         // (apenas para usuários não-master que tiveram erro no login)
         if (!isMasterUser) {
           try {
+            console.log(`🔍 Verificando status do usuário: ${normalizedEmail}`);
             const { isActive, exists } = await checkUserActive(normalizedEmail);
-            console.log(`Verificação do usuário ${normalizedEmail}:`, { isActive, exists });
+            console.log(`📊 Verificação do usuário ${normalizedEmail}:`, { isActive, exists });
             
             // Se o usuário não existe
             if (!exists) {
+              console.error(`❌ FALHA LOGIN FORM: Usuário ${normalizedEmail} não existe`);
               setErrorMessage("Este usuário não está registrado. Por favor, crie uma conta primeiro.");
               return;
             }
             
             // Se o usuário existe mas não está ativo
             if (!isActive) {
+              console.log(`⏳ LOGIN FORM: Usuário ${normalizedEmail} existe mas não está ativo`);
               setErrorMessage("Sua conta está aguardando aprovação do administrador.");
               setShowApprovalInfo(true);
               return;
             }
             
             // Se chegou aqui, o erro foi provavelmente na senha
+            console.error(`❌ FALHA LOGIN FORM: Senha incorreta para usuário ${normalizedEmail}`);
             setErrorMessage("Credenciais inválidas. Verifique seu email e senha.");
           } catch (checkError) {
-            console.error("Erro ao verificar status do usuário:", checkError);
+            console.error("❌ FALHA LOGIN FORM: Erro ao verificar status do usuário:", checkError);
             setErrorMessage("Erro ao verificar credenciais. Tente novamente mais tarde.");
           }
         } else {
           // Erro específico para o usuário master
+          console.error(`❌ FALHA LOGIN FORM: Credenciais inválidas para usuário master`);
           setErrorMessage("Credenciais inválidas para o usuário master.");
         }
       }
     } catch (error) {
-      console.error("Erro geral:", error);
+      console.error("❌ FALHA LOGIN FORM: Erro geral:", error);
       setErrorMessage("Ocorreu um erro no processo de autenticação");
     } finally {
       setIsLoading(false);

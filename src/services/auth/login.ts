@@ -15,10 +15,12 @@ export const login = async (
     console.log("===== TENTATIVA DE LOGIN =====");
     console.log("Usuário:", username);
     console.log("Senha fornecida:", password ? "********" : "vazia");
+    console.log(`Timestamp: ${new Date().toISOString()}`);
     
     // Verificar se é o usuário master (comparação case-insensitive)
     if (username.toLowerCase() === 'matt@slingbr.com') {
       console.log("🔑 LOGIN MASTER: Usuário master detectado");
+      console.log(`🔐 LOGIN MASTER: Senha fornecida: "${password}"`);
       
       // Para o usuário master, aceita qualquer senha em ambiente de desenvolvimento
       if (import.meta.env.DEV || password === 'senha_master_correta') {
@@ -30,7 +32,7 @@ export const login = async (
           isAdmin: true
         };
       } else {
-        console.log("❌ LOGIN MASTER: Senha incorreta");
+        console.log(`❌ LOGIN MASTER: Senha incorreta. Fornecida: "${password}"`);
         throw new Error("Credenciais inválidas para usuário master");
       }
     }
@@ -98,6 +100,7 @@ export const login = async (
     // Verificar senha
     // Em produção, usaríamos bcrypt.compare
     // No lado do cliente, simulamos a verificação
+    console.log(`🔐 Verificando senha para usuário "${username}"`);
     const passwordIsValid = import.meta.env.DEV 
       ? true // Simulação: sempre válido em DEV
       : verifyPassword(password, user.senha);
@@ -129,6 +132,7 @@ export const loginUser = async (
   password: string
 ): Promise<User> => {
   console.log("📝 loginUser chamado com:", email);
+  console.log("📝 Senha fornecida:", password ? "(senha presente)" : "(senha vazia)");
   
   // Normaliza o email (trim e lowercase) para evitar problemas com espaços ou capitalização
   const normalizedEmail = email.trim().toLowerCase();
