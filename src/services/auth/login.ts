@@ -28,16 +28,36 @@ export const login = async (
       throw new Error("Usuário não encontrado");
     }
 
-    // Use a safer type assertion with appropriate property checks
+    // Get the row data
     const row = result.rows[0];
     
     // Verificar se o row contém os dados esperados
-    if (!row || !('usuario' in row)) {
+    if (!row || typeof row !== 'object' || !('usuario' in row)) {
       console.error("Resultado da consulta não contém as propriedades esperadas:", row);
       throw new Error("Dados de usuário inválidos");
     }
     
-    const user = row as LoginUser;
+    // Define a temporary interface for the actual row data
+    interface DbUserRow {
+      id: string;
+      usuario: string;
+      senha?: string;
+      admin?: boolean;
+      ativo?: boolean;
+    }
+    
+    // Safely convert to our temporary type
+    const dbUser = row as DbUserRow;
+    
+    // Then construct a proper LoginUser object with defaults for missing properties
+    const user: LoginUser = {
+      id: dbUser.id || '',
+      usuario: dbUser.usuario || '',
+      senha: dbUser.senha || '',
+      admin: !!dbUser.admin,  // Convert to boolean
+      ativo: !!dbUser.ativo   // Convert to boolean
+    };
+    
     console.log("Usuário encontrado:", { ...user, senha: '***CONFIDENCIAL***' });
 
     // Verificação adicional para o usuário master
