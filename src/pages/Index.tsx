@@ -5,12 +5,14 @@ import { resetConnectionCache, postgresConfig } from '@/integrations/supabase/cl
 import { toast } from 'sonner';
 import { testDatabaseConnection, getConnectionConfig } from '@/services/connectionTest';
 import { Button } from '@/components/ui/button';
+import { Database, RefreshCw } from 'lucide-react';
 
 // This page just redirects to dashboard
 const Index = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   
   useEffect(() => {
     const init = async () => {
@@ -41,7 +43,7 @@ const Index = () => {
         // Usando setTimeout para garantir que o redirecionamento não bloqueie a renderização
         const redirectTimer = setTimeout(() => {
           navigate('/dashboard');
-        }, 1500); // Mantido em 1500ms para dar tempo à inicialização
+        }, 3000); // Aumentado para 3000ms para dar tempo ao usuário ver os botões
         
         return () => clearTimeout(redirectTimer);
       } catch (error) {
@@ -49,7 +51,7 @@ const Index = () => {
         // Mesmo com erro, ainda redirecionamos para o dashboard
         setTimeout(() => {
           navigate('/dashboard');
-        }, 1500);
+        }, 3000);
       } finally {
         setIsLoading(false);
       }
@@ -70,11 +72,16 @@ const Index = () => {
   
   // Testar conexão com o banco de dados
   const handleTestConnection = async () => {
-    const success = await testDatabaseConnection();
-    if (success) {
-      toast.success("Conexão com o banco de dados estabelecida com sucesso!");
-    } else {
-      toast.error("Falha ao conectar ao banco de dados. Verifique as configurações.");
+    setIsTesting(true);
+    try {
+      const success = await testDatabaseConnection();
+      if (success) {
+        toast.success("Conexão com o banco de dados estabelecida com sucesso!");
+      } else {
+        toast.error("Falha ao conectar ao banco de dados. Verifique as configurações.");
+      }
+    } finally {
+      setIsTesting(false);
     }
   };
   
@@ -94,20 +101,23 @@ const Index = () => {
       <p className="mt-4 text-gray-500">Carregando aplicação...</p>
       
       <div className="mt-8 flex flex-col gap-3">
-        {/* Adicionar botão para testar conexão */}
+        {/* Botão para testar conexão - agora mais evidente */}
         <Button 
           onClick={handleTestConnection}
-          variant="outline"
-          className="text-sm"
+          variant="default"
+          size="lg"
+          className="text-md flex items-center gap-2 py-6 px-8 animate-pulse-slow"
+          disabled={isTesting}
         >
-          Testar Conexão com Banco
+          <Database className="h-5 w-5" />
+          {isTesting ? "Testando conexão..." : "Testar Conexão com Banco"}
         </Button>
         
         {/* Botão para diagnósticos */}
         <Button 
           onClick={toggleDiagnostics}
           variant="secondary"
-          className="text-sm"
+          className="text-sm mt-2"
         >
           {showDiagnostics ? "Esconder Diagnósticos" : "Mostrar Diagnósticos"}
         </Button>
@@ -118,6 +128,7 @@ const Index = () => {
           variant="destructive"
           className="text-sm"
         >
+          <RefreshCw className="h-4 w-4 mr-2" />
           Limpar Cache
         </Button>
       </div>

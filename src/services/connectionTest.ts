@@ -25,7 +25,10 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
     if (postgresConfig.host === "DB_POSTGRESDB_HOST_PLACEHOLDER" || 
         !postgresConfig.host || 
         postgresConfig.host === "") {
-      toast.error("Configuração de banco inválida: host não definido");
+      toast.error("Configuração de banco inválida: host não definido", {
+        description: "Verifique se as variáveis de ambiente estão configuradas corretamente no seu .env",
+        duration: 10000
+      });
       console.error("❌ Configuração inválida: HOST não está definido corretamente");
       console.error("Valores recebidos:", postgresConfig);
       return false;
@@ -33,7 +36,9 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
     
     if (isUsingPostgresDirect) {
       // Mostrar toast informativo antes de iniciar o teste
-      toast.info(`Testando conexão com PostgreSQL (${postgresConfig.host})...`);
+      toast.info(`Testando conexão com PostgreSQL (${postgresConfig.host})...`, {
+        duration: 3000
+      });
       
       // Testa conexão direta com PostgreSQL com timeout
       const connectionPromise = checkConnection();
@@ -41,41 +46,58 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
       // Adicionar timeout para não bloquear a UI por muito tempo
       const timeoutPromise = new Promise<boolean>((resolve) => {
         setTimeout(() => {
-          toast.error(`Timeout ao tentar conectar ao PostgreSQL (${postgresConfig.host})`);
+          toast.error(`Timeout ao tentar conectar ao PostgreSQL (${postgresConfig.host})`, {
+            description: "Verifique se o servidor PostgreSQL está em execução e acessível",
+            duration: 10000
+          });
           console.error(`❌ Timeout na conexão com PostgreSQL ${postgresConfig.host}:${postgresConfig.port}`);
           resolve(false);
-        }, 5000);
+        }, 8000); // Aumentando o timeout para 8 segundos
       });
       
       // Usar Promise.race para garantir que não bloqueie por muito tempo
       const isConnected = await Promise.race([connectionPromise, timeoutPromise]);
       
       if (isConnected) {
-        toast.success(`Conexão com PostgreSQL estabelecida com sucesso! (${postgresConfig.host})`);
+        toast.success(`Conexão com PostgreSQL estabelecida com sucesso! (${postgresConfig.host})`, {
+          description: "O banco de dados está acessível e respondendo corretamente",
+          duration: 5000
+        });
         console.log(`✅ Conexão com PostgreSQL ${postgresConfig.host} funcionando`);
         return true;
       } else {
-        toast.error(`Falha ao conectar ao PostgreSQL (${postgresConfig.host})`);
+        toast.error(`Falha ao conectar ao PostgreSQL (${postgresConfig.host})`, {
+          description: "Verifique as credenciais, firewall e se o servidor está em execução",
+          duration: 10000
+        });
         console.error(`❌ Falha na conexão com PostgreSQL ${postgresConfig.host}:${postgresConfig.port}`);
         
         // Verificar configurações para diagnóstico
         if (postgresConfig.host === "db") {
           console.warn("⚠️ Você está usando 'db' como hostname. Se estiver fora do contêiner Docker, isso não vai funcionar.");
           console.warn("⚠️ Utilize o IP ou hostname real do servidor PostgreSQL.");
-          toast.error("Hostname 'db' não resolve fora do Docker. Use IP ou hostname real.");
+          toast.error("Hostname 'db' não resolve fora do Docker. Use IP ou hostname real.", {
+            duration: 10000
+          });
         }
         
         return false;
       }
     } else {
       // No caso do Supabase (fallback), mostramos uma mensagem diferente
-      toast.error("PostgreSQL direto não configurado. Configure as variáveis de ambiente.");
+      toast.error("PostgreSQL direto não configurado. Configure as variáveis de ambiente.", {
+        description: "Adicione as variáveis DB_POSTGRESDB_HOST, DB_POSTGRESDB_USER, etc. no seu .env",
+        duration: 10000
+      });
       console.error("⚠️ PostgreSQL direto não configurado");
       return false;
     }
   } catch (error) {
     console.error("Erro ao testar conexão:", error);
-    toast.error("Erro ao testar conexão com o banco de dados");
+    toast.error("Erro ao testar conexão com o banco de dados", {
+      description: `Erro: ${error instanceof Error ? error.message : String(error)}`,
+      duration: 10000
+    });
     return false;
   }
 };
