@@ -1,10 +1,10 @@
 
-#!/bin/bash
+#!/bin/sh
 
 echo "============================================"
 echo "Iniciando script de configuração de ambiente"
 echo "============================================"
-echo "Versão do script: 2.0"
+echo "Versão do script: 3.0"
 echo "Data de execução: $(date)"
 
 # Exibe informações do ambiente para diagnóstico
@@ -16,17 +16,19 @@ ls -la /usr/share/nginx/html
 
 # Função para definir valores padrão
 set_default() {
-  local var_name=$1
-  local default_value=$2
+  var_name=$1
+  default_value=$2
   
-  if [ -z "${!var_name}" ]; then
-    eval "$var_name=$default_value"
+  eval current_value=\$${var_name}
+  
+  if [ -z "$current_value" ]; then
+    eval $var_name=$default_value
     echo "⚠️ Usando valor padrão para $var_name: $default_value"
   else
     if [ "$var_name" = "DB_PASSWORD" ]; then
       echo "✅ Variável $var_name está definida: ********"
     else
-      echo "✅ Variável $var_name está definida: ${!var_name}"
+      eval echo "✅ Variável $var_name está definida: \$$var_name"
     fi
   fi
 }
@@ -43,7 +45,7 @@ echo "============================================"
 echo "Substituindo placeholders nas variáveis de ambiente"
 echo "============================================"
 
-# Substitui as variáveis de ambiente nos arquivos JavaScript
+# Busca todos os arquivos JS
 echo "Procurando por arquivos JS para substituir placeholders..."
 JS_FILES=$(find /usr/share/nginx/html -type f -name "*.js" | wc -l)
 echo "Encontrados $JS_FILES arquivos JavaScript"
@@ -105,8 +107,11 @@ echo "- Porta: ${DB_PORT}"
 echo "- Usuário: ${DB_USER}"
 echo "- Banco: ${DB_NAME}"
 
-if command -v psql &> /dev/null; then
-  PGPASSWORD="${DB_PASSWORD}" psql -h "${DB_HOST}" -U "${DB_USER}" -d "${DB_NAME}" -p "${DB_PORT}" -c "SELECT 1" > /dev/null 2>&1
+# Usando PGPASSWORD para evitar problemas de interpolação
+export PGPASSWORD="${DB_PASSWORD}"
+
+if command -v psql >/dev/null 2>&1; then
+  psql -h "${DB_HOST}" -U "${DB_USER}" -d "${DB_NAME}" -p "${DB_PORT}" -c "SELECT 1" >/dev/null 2>&1
   if [ $? -eq 0 ]; then
     echo "✅ Conexão com o banco de dados PostgreSQL estabelecida com sucesso!"
   else
@@ -119,7 +124,7 @@ if command -v psql &> /dev/null; then
     
     # Teste de conectividade com a porta
     echo "Teste de conectividade para ${DB_HOST}:${DB_PORT}:"
-    timeout 5 bash -c "cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}" 2>/dev/null
+    timeout 5 sh -c "cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}" 2>/dev/null
     if [ $? -eq 0 ]; then
       echo "✅ Porta ${DB_PORT} está acessível no host ${DB_HOST}"
     else
