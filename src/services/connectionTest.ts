@@ -44,6 +44,15 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
         duration: 3000
       });
       
+      // Verificar se o hostname contém underscores
+      if (postgresConfig.host.includes("_")) {
+        console.warn("⚠️ O hostname contém underscores (_): " + postgresConfig.host);
+        toast.warning("Hostname contém underscores (_)", {
+          description: "Em alguns ambientes, hostnames com underscores podem causar problemas de resolução DNS. Se a conexão falhar, tente usar o endereço IP em vez do nome do host.",
+          duration: 15000
+        });
+      }
+      
       // Testa conexão direta com PostgreSQL com timeout
       const connectionPromise = checkConnection();
       
@@ -60,7 +69,7 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
           });
           console.error(`❌ Timeout na conexão com PostgreSQL ${postgresConfig.host}:${postgresConfig.port}`);
           resolve(false);
-        }, 10000); // Aumentando o timeout para 10 segundos
+        }, 12000); // Aumentando o timeout para 12 segundos
       });
       
       // Usar Promise.race para garantir que não bloqueie por muito tempo
@@ -89,6 +98,7 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
           console.warn("⚠️ O hostname contém underscores (_). Verifique se o DNS resolve corretamente esse formato.");
           console.warn("⚠️ Em alguns ambientes, hostnames com underscores podem causar problemas de resolução DNS.");
           toast.error("Hostname contém underscores (_) que podem causar problemas de resolução DNS.", {
+            description: "Tente substituir o nome do host pelo endereço IP diretamente no arquivo .env",
             duration: 10000
           });
         }

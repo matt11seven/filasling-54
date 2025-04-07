@@ -111,6 +111,13 @@ function getPool(): any | null {
         return pool;
       }
       
+      // Verificar se o hostname contém underscores e alertar
+      if (postgresConfig.host.includes('_')) {
+        console.warn("⚠️ ATENÇÃO: O hostname do PostgreSQL contém underscores: " + postgresConfig.host);
+        console.warn("⚠️ Em alguns ambientes, isso pode causar problemas de resolução DNS.");
+        console.warn("⚠️ Se a conexão falhar, tente substituir por endereço IP diretamente.");
+      }
+      
       pool = new Pool({
         host: postgresConfig.host,
         user: postgresConfig.user,
@@ -118,7 +125,7 @@ function getPool(): any | null {
         database: postgresConfig.database,
         port: parseInt(postgresConfig.port, 10),
         // Adicionar timeout para não bloquear a renderização por muito tempo
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 8000, // Aumentado para 8 segundos
         // Adicionar log para diagnóstico de problemas de conexão
         log: (...args: any[]) => {
           console.log('PostgreSQL log:', ...args);

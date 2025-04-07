@@ -10,6 +10,70 @@ echo "Banco de dados: ${DB_POSTGRESDB_DATABASE:-não definido}"
 echo "Usuário do banco: ${DB_POSTGRESDB_USER:-não definido}"
 echo "Senha definida: ${DB_POSTGRESDB_PASSWORD:+sim}"
 
+# Verificar se o hostname contém underscores (que podem causar problemas de DNS)
+if [[ "$DB_POSTGRESDB_HOST" == *"_"* ]]; then
+    echo "⚠️ ATENÇÃO: O hostname do banco de dados contém underscores: $DB_POSTGRESDB_HOST"
+    echo "⚠️ Isso pode causar problemas de resolução DNS em alguns ambientes."
+    
+    # Tentar resolver o hostname para IP usando diferentes métodos
+    echo "Tentando resolver o hostname para endereço IP..."
+    
+    IP_RESOLVED=""
+    
+    # Método 1: usando dig
+    if command -v dig &> /dev/null; then
+        echo "Tentando resolver usando dig..."
+        IP_DIG=$(dig +short "$DB_POSTGRESDB_HOST" 2>/dev/null | head -1)
+        if [ ! -z "$IP_DIG" ]; then
+            IP_RESOLVED=$IP_DIG
+            echo "✅ Endereço IP resolvido usando dig: $IP_RESOLVED"
+        fi
+    fi
+    
+    # Método 2: usando host
+    if [ -z "$IP_RESOLVED" ] && command -v host &> /dev/null; then
+        echo "Tentando resolver usando host..."
+        IP_HOST=$(host "$DB_POSTGRESDB_HOST" 2>/dev/null | grep "has address" | head -1 | awk '{print $4}')
+        if [ ! -z "$IP_HOST" ]; then
+            IP_RESOLVED=$IP_HOST
+            echo "✅ Endereço IP resolvido usando host: $IP_RESOLVED"
+        fi
+    fi
+    
+    # Método 3: usando getent
+    if [ -z "$IP_RESOLVED" ] && command -v getent &> /dev/null; then
+        echo "Tentando resolver usando getent..."
+        IP_GETENT=$(getent hosts "$DB_POSTGRESDB_HOST" 2>/dev/null | awk '{print $1}' | head -1)
+        if [ ! -z "$IP_GETENT" ]; then
+            IP_RESOLVED=$IP_GETENT
+            echo "✅ Endereço IP resolvido usando getent: $IP_RESOLVED"
+        fi
+    fi
+    
+    # Método 4: usando nslookup
+    if [ -z "$IP_RESOLVED" ] && command -v nslookup &> /dev/null; then
+        echo "Tentando resolver usando nslookup..."
+        IP_NSLOOKUP=$(nslookup "$DB_POSTGRESDB_HOST" 2>/dev/null | grep "Address:" | tail -1 | awk '{print $2}')
+        if [ ! -z "$IP_NSLOOKUP" ]; then
+            IP_RESOLVED=$IP_NSLOOKUP
+            echo "✅ Endereço IP resolvido usando nslookup: $IP_RESOLVED"
+        fi
+    fi
+    
+    # Se conseguiu resolver, sugere usar o IP diretamente
+    if [ ! -z "$IP_RESOLVED" ]; then
+        echo "✅ Hostname resolvido para o IP: $IP_RESOLVED"
+        echo "Recomendação: Considere usar o endereço IP diretamente no arquivo .env para evitar problemas de DNS."
+        
+        # Opcionalmente, você pode substituir automaticamente o hostname pelo IP
+        # Descomente a linha abaixo para ativar essa funcionalidade
+        # DB_POSTGRESDB_HOST=$IP_RESOLVED
+        # echo "Host do banco substituído automaticamente pelo IP: $DB_POSTGRESDB_HOST"
+    else
+        echo "❌ Não foi possível resolver o hostname para um IP. Isso pode causar problemas de conexão."
+    fi
+fi
+
 # Testar conexão com o banco antes de substituir variáveis
 if [ ! -z "$DB_POSTGRESDB_HOST" ] && [ ! -z "$DB_POSTGRESDB_USER" ]; then
     echo "Testando conexão com o banco de dados PostgreSQL..."

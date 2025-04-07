@@ -7,7 +7,7 @@ import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
 import AuthFooter from "@/components/auth/AuthFooter";
 import { Button } from "@/components/ui/button";
-import { Database, RefreshCw, Server } from "lucide-react";
+import { Database, RefreshCw, Server, Wifi, WifiOff } from "lucide-react";
 import { testDatabaseConnection, getConnectionConfig, resetConnection } from "@/services/connectionTest";
 import { toast } from "sonner";
 
@@ -17,6 +17,7 @@ const LoginPage = () => {
   const [showApprovalInfo, setShowApprovalInfo] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'success' | 'error'>('unknown');
   const navigate = useNavigate();
 
   // Se o usuário já estiver autenticado, redirecione para o dashboard
@@ -39,10 +40,11 @@ const LoginPage = () => {
     setIsTesting(true);
     try {
       const success = await testDatabaseConnection();
+      setConnectionStatus(success ? 'success' : 'error');
       if (success) {
         toast.success("Conexão com o banco de dados estabelecida com sucesso!");
       } else {
-        toast.error("Falha ao conectar ao banco de dados. Verifique as configurações.");
+        toast.error("Falha ao conectar ao banco de dados. Verifique as configurações e o console para mais detalhes.");
       }
     } finally {
       setIsTesting(false);
@@ -53,6 +55,7 @@ const LoginPage = () => {
   const handleResetConnection = () => {
     resetConnection();
     setShowDiagnostics(true);
+    setConnectionStatus('unknown');
     toast.info("Conexão com banco reiniciada. Clique em Testar Conexão para verificar novamente.");
   };
   
@@ -92,13 +95,34 @@ const LoginPage = () => {
           <CardFooter className="flex-col">
             <AuthFooter />
             
+            {/* Status de conexão */}
+            {connectionStatus !== 'unknown' && (
+              <div className={`mt-2 w-full p-2 rounded-md text-center text-sm font-medium ${
+                connectionStatus === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}>
+                {connectionStatus === 'success' ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Wifi className="h-4 w-4" />
+                    <span>Conectado ao banco de dados</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <WifiOff className="h-4 w-4" />
+                    <span>Problema de conexão com o banco</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Botões de teste de conexão */}
             <div className="mt-4 w-full space-y-2">
               <Button 
                 onClick={handleTestConnection}
-                variant="outline"
+                variant={connectionStatus === 'error' ? "destructive" : "outline"}
                 size="sm"
-                className="text-sm w-full flex items-center gap-2"
+                className={`text-sm w-full flex items-center gap-2 ${
+                  connectionStatus === 'error' ? 'animate-pulse' : ''
+                }`}
                 disabled={isTesting}
               >
                 <Database className="h-4 w-4" />
@@ -134,6 +158,18 @@ const LoginPage = () => {
                 <pre className="whitespace-pre-wrap break-all text-muted-foreground">
                   {JSON.stringify(getConnectionConfig(), null, 2)}
                 </pre>
+              </div>
+            )}
+            
+            {/* Ajuda sobre hostname com underscores */}
+            {showDiagnostics && connectionStatus === 'error' && (
+              <div className="mt-2 p-2 bg-amber-100 rounded-md text-amber-800 text-xs">
+                <p className="font-medium">Possível problema com hostname contendo underscores (_):</p>
+                <p className="mt-1">
+                  O hostname "{getConnectionConfig()['host']}" contém underscores, o que pode causar problemas 
+                  de resolução DNS em alguns ambientes. Considere usar o endereço IP do servidor PostgreSQL 
+                  diretamente no arquivo .env.
+                </p>
               </div>
             )}
           </CardFooter>

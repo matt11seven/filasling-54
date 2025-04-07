@@ -39,7 +39,17 @@ try {
   if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
       DB_POSTGRESDB_HOST_PLACEHOLDER !== "DB_POSTGRESDB_HOST_PLACEHOLDER" && 
       DB_POSTGRESDB_HOST_PLACEHOLDER !== "") {
-    console.log("Configuração detectada para PostgreSQL direto");
+    
+    // Log detalhado das configurações encontradas
+    console.log("Configuração detectada para PostgreSQL direto:", {
+      host: DB_POSTGRESDB_HOST_PLACEHOLDER,
+      port: DB_POSTGRESDB_PORT_PLACEHOLDER,
+      user: DB_POSTGRESDB_USER_PLACEHOLDER,
+      database: DB_POSTGRESDB_DATABASE_PLACEHOLDER,
+      hasPassword: Boolean(DB_POSTGRESDB_PASSWORD_PLACEHOLDER),
+      hostType: typeof DB_POSTGRESDB_HOST_PLACEHOLDER
+    });
+    
     usePostgresDirect = true;
   } 
   // Caso não tenha PostgreSQL configurado, tenta usar Supabase como fallback
@@ -91,3 +101,10 @@ console.log("Configuração de banco:", {
   database: postgresConfig.database,
   port: postgresConfig.port
 });
+
+// Verificar se o hostname contém underscores
+if (postgresConfig.host.includes('_')) {
+  console.warn("⚠️ O hostname do PostgreSQL contém underscores (_): " + postgresConfig.host);
+  console.warn("⚠️ Em alguns ambientes, isso pode causar problemas de resolução DNS.");
+  console.warn("⚠️ Se a conexão falhar, considere usar o endereço IP do servidor diretamente.");
+}
