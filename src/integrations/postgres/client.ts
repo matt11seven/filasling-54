@@ -92,6 +92,21 @@ function getPool(): any | null {
       // Check if we're running in an environment that supports PostgreSQL direct connections
       if (!isNodeEnvironment) {
         console.warn("⚠️ Tentativa de usar PostgreSQL direto em ambiente de navegador. Usando implementação simulada.");
+        console.warn("⚠️ No navegador, conexões diretas com PostgreSQL não são possíveis por questões de segurança!");
+        console.warn("⚠️ Valores de conexão que estão sendo usados:", {
+          host: postgresConfig.host || "não definido",
+          port: postgresConfig.port || "não definido",
+          database: postgresConfig.database || "não definido",
+          user: postgresConfig.user || "não definido"
+        });
+        pool = new MockPool();
+        return pool;
+      }
+      
+      // Verificar se as configurações são válidas antes de tentar conectar
+      if (!postgresConfig.host || postgresConfig.host === "DB_POSTGRESDB_HOST_PLACEHOLDER") {
+        console.error("❌ Host do PostgreSQL não está definido corretamente!");
+        console.error("Valores de conexão recebidos:", postgresConfig);
         pool = new MockPool();
         return pool;
       }
@@ -103,13 +118,20 @@ function getPool(): any | null {
         database: postgresConfig.database,
         port: parseInt(postgresConfig.port, 10),
         // Adicionar timeout para não bloquear a renderização por muito tempo
-        connectionTimeoutMillis: 5000
+        connectionTimeoutMillis: 5000,
+        // Adicionar log para diagnóstico de problemas de conexão
+        log: (...args: any[]) => {
+          console.log('PostgreSQL log:', ...args);
+        }
       });
       
       // Adicionar listener para erros de conexão
       pool.on('error', (err: Error) => {
         console.error('Erro inesperado no pool do PostgreSQL:', err);
       });
+      
+      // Log informativo sobre tentativa de conexão
+      console.log(`Tentando conectar ao PostgreSQL em ${postgresConfig.host}:${postgresConfig.port}/${postgresConfig.database} como ${postgresConfig.user}`);
     } catch (error) {
       console.error('Falha ao criar pool de conexões PostgreSQL:', error);
       // Use mock pool as fallback in case of error
@@ -172,6 +194,12 @@ export async function checkConnection() {
     return true;
   } catch (error) {
     console.error('Falha ao conectar ao PostgreSQL:', error);
+    console.error('Detalhes de configuração:', {
+      host: postgresConfig.host,
+      port: postgresConfig.port,
+      database: postgresConfig.database,
+      user: postgresConfig.user
+    });
     return false;
   }
 }

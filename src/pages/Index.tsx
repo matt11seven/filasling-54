@@ -1,13 +1,16 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { resetConnectionCache } from '@/integrations/supabase/client';
+import { resetConnectionCache, postgresConfig } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { testDatabaseConnection, getConnectionConfig } from '@/services/connectionTest';
+import { Button } from '@/components/ui/button';
 
 // This page just redirects to dashboard
 const Index = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   
   useEffect(() => {
     const init = async () => {
@@ -64,6 +67,21 @@ const Index = () => {
       window.location.reload();
     }, 1000);
   };
+  
+  // Testar conexão com o banco de dados
+  const handleTestConnection = async () => {
+    const success = await testDatabaseConnection();
+    if (success) {
+      toast.success("Conexão com o banco de dados estabelecida com sucesso!");
+    } else {
+      toast.error("Falha ao conectar ao banco de dados. Verifique as configurações.");
+    }
+  };
+  
+  // Mostrar/esconder diagnósticos
+  const toggleDiagnostics = () => {
+    setShowDiagnostics(!showDiagnostics);
+  };
 
   // Renderizar um fallback enquanto redireciona
   return (
@@ -75,13 +93,54 @@ const Index = () => {
       />
       <p className="mt-4 text-gray-500">Carregando aplicação...</p>
       
-      {/* Adicionar botão de reset para emergências */}
-      <button 
-        onClick={handleResetCache}
-        className="mt-8 text-xs text-gray-400 hover:text-gray-600 px-3 py-1 rounded-md border border-gray-200 hover:border-gray-300"
-      >
-        Limpar Cache
-      </button>
+      <div className="mt-8 flex flex-col gap-3">
+        {/* Adicionar botão para testar conexão */}
+        <Button 
+          onClick={handleTestConnection}
+          variant="outline"
+          className="text-sm"
+        >
+          Testar Conexão com Banco
+        </Button>
+        
+        {/* Botão para diagnósticos */}
+        <Button 
+          onClick={toggleDiagnostics}
+          variant="secondary"
+          className="text-sm"
+        >
+          {showDiagnostics ? "Esconder Diagnósticos" : "Mostrar Diagnósticos"}
+        </Button>
+        
+        {/* Adicionar botão de reset para emergências */}
+        <Button 
+          onClick={handleResetCache}
+          variant="destructive"
+          className="text-sm"
+        >
+          Limpar Cache
+        </Button>
+      </div>
+      
+      {/* Mostrar configurações de diagnóstico */}
+      {showDiagnostics && (
+        <div className="mt-6 p-4 bg-gray-100 rounded-md text-xs font-mono text-left w-full max-w-md">
+          <h3 className="font-bold mb-2">Diagnóstico de Conexão:</h3>
+          <pre className="whitespace-pre-wrap break-all">
+            {JSON.stringify(getConnectionConfig(), null, 2)}
+          </pre>
+          <h3 className="font-bold mt-4 mb-2">Variáveis de Ambiente Raw:</h3>
+          <pre className="whitespace-pre-wrap break-all">
+            {JSON.stringify({
+              DB_TYPE_RAW: typeof DB_TYPE_PLACEHOLDER !== 'undefined' ? DB_TYPE_PLACEHOLDER : 'undefined',
+              DB_HOST_RAW: typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_HOST_PLACEHOLDER : 'undefined',
+              DB_USER_RAW: typeof DB_POSTGRESDB_USER_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_USER_PLACEHOLDER : 'undefined',
+              DB_DATABASE_RAW: typeof DB_POSTGRESDB_DATABASE_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_DATABASE_PLACEHOLDER : 'undefined',
+              DB_PORT_RAW: typeof DB_POSTGRESDB_PORT_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PORT_PLACEHOLDER : 'undefined',
+            }, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 };

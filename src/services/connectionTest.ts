@@ -1,5 +1,5 @@
 
-import { isUsingPostgresDirect, resetConnectionCache } from "@/integrations/supabase/client";
+import { isUsingPostgresDirect, resetConnectionCache, postgresConfig } from "@/integrations/supabase/client";
 import { checkConnection, resetPool } from "@/integrations/postgres/client";
 import { toast } from "sonner";
 
@@ -12,15 +12,37 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
     resetConnectionCache();
     resetPool();
     
+    // Exibir informações de configuração no console para diagnóstico
+    console.log("Testando conexão com as seguintes configurações:", {
+      modo: isUsingPostgresDirect ? "PostgreSQL Direto" : "Supabase (fallback)",
+      host: postgresConfig.host,
+      port: postgresConfig.port,
+      database: postgresConfig.database,
+      user: postgresConfig.user
+    });
+    
+    // Verificar se a configuração parece válida
+    if (postgresConfig.host === "DB_POSTGRESDB_HOST_PLACEHOLDER" || 
+        !postgresConfig.host || 
+        postgresConfig.host === "") {
+      toast.error("Configuração de banco inválida: host não definido");
+      console.error("❌ Configuração inválida: HOST não está definido corretamente");
+      console.error("Valores recebidos:", postgresConfig);
+      return false;
+    }
+    
     if (isUsingPostgresDirect) {
+      // Mostrar toast informativo antes de iniciar o teste
+      toast.info(`Testando conexão com PostgreSQL (${postgresConfig.host})...`);
+      
       // Testa conexão direta com PostgreSQL com timeout
       const connectionPromise = checkConnection();
       
       // Adicionar timeout para não bloquear a UI por muito tempo
       const timeoutPromise = new Promise<boolean>((resolve) => {
         setTimeout(() => {
-          toast.error("Timeout ao tentar conectar ao PostgreSQL");
-          console.error("❌ Timeout na conexão com PostgreSQL");
+          toast.error(`Timeout ao tentar conectar ao PostgreSQL (${postgresConfig.host})`);
+          console.error(`❌ Timeout na conexão com PostgreSQL ${postgresConfig.host}:${postgresConfig.port}`);
           resolve(false);
         }, 5000);
       });
@@ -29,12 +51,20 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
       const isConnected = await Promise.race([connectionPromise, timeoutPromise]);
       
       if (isConnected) {
-        toast.success("Conexão com PostgreSQL estabelecida com sucesso!");
-        console.log("✅ Conexão com PostgreSQL funcionando");
+        toast.success(`Conexão com PostgreSQL estabelecida com sucesso! (${postgresConfig.host})`);
+        console.log(`✅ Conexão com PostgreSQL ${postgresConfig.host} funcionando`);
         return true;
       } else {
-        toast.error("Falha ao conectar ao PostgreSQL");
-        console.error("❌ Falha na conexão com PostgreSQL");
+        toast.error(`Falha ao conectar ao PostgreSQL (${postgresConfig.host})`);
+        console.error(`❌ Falha na conexão com PostgreSQL ${postgresConfig.host}:${postgresConfig.port}`);
+        
+        // Verificar configurações para diagnóstico
+        if (postgresConfig.host === "db") {
+          console.warn("⚠️ Você está usando 'db' como hostname. Se estiver fora do contêiner Docker, isso não vai funcionar.");
+          console.warn("⚠️ Utilize o IP ou hostname real do servidor PostgreSQL.");
+          toast.error("Hostname 'db' não resolve fora do Docker. Use IP ou hostname real.");
+        }
+        
         return false;
       }
     } else {
@@ -55,6 +85,21 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
  */
 export const getConnectionMode = (): string => {
   return isUsingPostgresDirect ? "PostgreSQL Direto" : "Supabase (fallback)";
+};
+
+/**
+ * Retorna as configurações de conexão atuais (para diagnóstico)
+ */
+export const getConnectionConfig = (): object => {
+  // Omitir a senha por segurança
+  return {
+    type: postgresConfig.type,
+    host: postgresConfig.host,
+    port: postgresConfig.port,
+    database: postgresConfig.database,
+    user: postgresConfig.user,
+    hasPassword: Boolean(postgresConfig.password),
+  };
 };
 
 /**
