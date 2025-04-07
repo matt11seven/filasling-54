@@ -7,3 +7,4 @@ export * from './auth';
 export * from './connectionTest';
 export * from './performance';
 export * from './notificationSystem';
+export * from './mockData';

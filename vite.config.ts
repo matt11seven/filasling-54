@@ -27,5 +27,16 @@ export default defineConfig(({ mode }) => ({
     DB_USER_PLACEHOLDER: JSON.stringify("DB_USER_PLACEHOLDER"),
     DB_PASSWORD_PLACEHOLDER: JSON.stringify("DB_PASSWORD_PLACEHOLDER"),
     DB_NAME_PLACEHOLDER: JSON.stringify("DB_NAME_PLACEHOLDER"),
+    // Polyfill for Node.js process in the browser
+    'process.env': JSON.stringify({}),
+    'process.env.NODE_ENV': JSON.stringify(mode),
+    'process.platform': JSON.stringify('browser'),
+    'process.version': JSON.stringify(''),
+    'process': JSON.stringify({
+      env: {},
+      platform: 'browser',
+      version: '',
+      nextTick: (cb: any) => setTimeout(cb, 0)
+    })
   }
 }));

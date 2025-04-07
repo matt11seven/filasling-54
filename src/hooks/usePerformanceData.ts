@@ -8,6 +8,7 @@ import {
   AttendantPerformance, 
   StrikeData 
 } from "@/services/performance";
+import { getMockPerformanceData, getMockStrikesData } from "@/services/mockData";
 
 export const usePerformanceData = () => {
   const { settings } = useSettings();
@@ -16,20 +17,35 @@ export const usePerformanceData = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState<AttendantPerformance[]>([]);
   const [strikesData, setStrikesData] = useState<StrikeData[]>([]);
+  
+  const isDevelopment = import.meta.env.DEV;
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [performance, strikes] = await Promise.all([
-        getAttendantPerformance(),
-        getAttendantStrikes(settings.criticalTimeMinutes)
-      ]);
-      
-      setPerformanceData(performance);
-      setStrikesData(strikes);
-      
-      // Atualizar o ranking no store global para gerar notificações
-      updateRanking(performance, settings);
+      if (isDevelopment) {
+        // Use mock data in development environment
+        const performance = getMockPerformanceData();
+        const strikes = getMockStrikesData();
+        
+        setPerformanceData(performance);
+        setStrikesData(strikes);
+        
+        // Update ranking store
+        updateRanking(performance, settings);
+      } else {
+        // Use real API in production
+        const [performance, strikes] = await Promise.all([
+          getAttendantPerformance(),
+          getAttendantStrikes(settings.criticalTimeMinutes)
+        ]);
+        
+        setPerformanceData(performance);
+        setStrikesData(strikes);
+        
+        // Update ranking store
+        updateRanking(performance, settings);
+      }
     } catch (error) {
       console.error("Erro ao carregar dados de desempenho:", error);
     } finally {

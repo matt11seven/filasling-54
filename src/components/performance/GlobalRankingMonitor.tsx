@@ -1,6 +1,7 @@
 
 import { useEffect, useRef } from "react";
 import { getAttendantPerformance } from "@/services/performance";
+import { getMockPerformanceData } from "@/services/mockData";
 import { useRankingStore } from "@/services/ranking";
 import { useSettings } from "@/contexts/SettingsContext";
 import PodiumConfetti from "./PodiumConfetti";
@@ -12,15 +13,26 @@ const GlobalRankingMonitor = () => {
   const { settings } = useSettings();
   const { updateRanking, showConfetti, confettiType, clearCelebration } = useRankingStore();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isDevelopment = import.meta.env.DEV;
 
   useEffect(() => {
     // Função para carregar dados de ranking
     const loadRankingData = async () => {
       try {
         console.log("🏆 GlobalRankingMonitor: Buscando dados de desempenho...");
-        const performance = await getAttendantPerformance();
-        if (performance.length > 0) {
+        
+        let performance;
+        if (isDevelopment) {
+          // Use mock data in development
+          performance = getMockPerformanceData();
+          console.log(`🏆 GlobalRankingMonitor: Usando dados de teste com ${performance.length} atendentes`);
+        } else {
+          // Use real data in production
+          performance = await getAttendantPerformance();
           console.log(`🏆 GlobalRankingMonitor: Atualizando ranking com ${performance.length} atendentes`);
+        }
+        
+        if (performance.length > 0) {
           updateRanking(performance, settings);
         }
       } catch (error) {
