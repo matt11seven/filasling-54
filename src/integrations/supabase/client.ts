@@ -11,11 +11,27 @@ let supabaseUrl: string;
 let supabaseKey: string;
 let usePostgresDirect = false;
 
+// Função para limpar o cache de conexão
+export function resetConnectionCache() {
+  console.log("Resetando cache de conexão do banco de dados");
+  // Limpa qualquer cache armazenado em localStorage
+  if (isBrowser) {
+    localStorage.removeItem('db_connection_info');
+  }
+}
+
 try {
   // Always disable direct PostgreSQL in browser environments
   if (isBrowser) {
     console.log("Executando no navegador - desativando PostgreSQL direto");
     usePostgresDirect = false;
+    
+    // Verificar se temos informações em localStorage para evitar conexão com banco antigo
+    const cachedConnection = localStorage.getItem('db_connection_info');
+    if (cachedConnection) {
+      const connection = JSON.parse(cachedConnection);
+      console.log("Usando informações de conexão em cache:", connection.url);
+    }
   }
   // Only check PostgreSQL direct config in Node.js environment
   else if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
@@ -33,6 +49,15 @@ try {
     console.log("Usando configuração do Supabase");
     supabaseUrl = SUPABASE_URL_PLACEHOLDER;
     supabaseKey = SUPABASE_ANON_KEY_PLACEHOLDER;
+    
+    // Armazenar em cache para futura referência
+    if (isBrowser) {
+      localStorage.setItem('db_connection_info', JSON.stringify({
+        type: 'supabase',
+        url: supabaseUrl,
+        timestamp: new Date().toISOString()
+      }));
+    }
   } 
   // Fallback para ambiente de desenvolvimento
   else {
@@ -40,6 +65,15 @@ try {
     console.log("Usando configuração de desenvolvimento do Supabase");
     supabaseUrl = "https://cfhjwvibgiierhvaafrd.supabase.co";
     supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaGp3dmliZ2lpZXJodmFhZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODI1NjcsImV4cCI6MjA1OTM1ODU2N30.3GvW0fV610dUXnQgF08XhT5EPKIwHoyfAQRgCSGN4EM";
+    
+    // Armazenar em cache para futura referência
+    if (isBrowser) {
+      localStorage.setItem('db_connection_info', JSON.stringify({
+        type: 'supabase_dev',
+        url: supabaseUrl,
+        timestamp: new Date().toISOString()
+      }));
+    }
   }
 } catch (error) {
   console.error("Erro ao carregar configurações de banco de dados:", error);
@@ -82,4 +116,7 @@ console.log("Configuração de banco:", usePostgresDirect ? {
   user: postgresConfig.user,
   database: postgresConfig.database,
   port: postgresConfig.port
-} : "Usando Supabase");
+} : {
+  supabaseUrl: supabaseUrl,
+  timestamp: new Date().toISOString()
+});

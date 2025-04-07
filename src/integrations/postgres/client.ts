@@ -59,6 +59,19 @@ import { isUsingPostgresDirect, postgresConfig } from '../supabase/client';
 // Configurar o pool de conexões PostgreSQL
 let pool: any = null;
 
+// Função para resetar o pool de conexões
+export function resetPool() {
+  if (pool) {
+    console.log('Fechando pool de conexões PostgreSQL para reinicialização');
+    try {
+      pool.end();
+    } catch (error) {
+      console.error('Erro ao fechar pool:', error);
+    }
+    pool = null;
+  }
+}
+
 // Inicializar o pool apenas quando for necessário
 function getPool(): any | null {
   if (!isUsingPostgresDirect) {
@@ -72,7 +85,8 @@ function getPool(): any | null {
         host: postgresConfig.host,
         user: postgresConfig.user,
         database: postgresConfig.database,
-        port: parseInt(postgresConfig.port, 10)
+        port: parseInt(postgresConfig.port, 10),
+        timestamp: new Date().toISOString()
       });
       
       // Check if we're running in an environment that supports PostgreSQL direct connections

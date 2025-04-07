@@ -1,6 +1,6 @@
 
-import { isUsingPostgresDirect } from "@/integrations/supabase/client";
-import { checkConnection } from "@/integrations/postgres/client";
+import { isUsingPostgresDirect, resetConnectionCache } from "@/integrations/supabase/client";
+import { checkConnection, resetPool } from "@/integrations/postgres/client";
 import { toast } from "sonner";
 
 /**
@@ -8,6 +8,10 @@ import { toast } from "sonner";
  */
 export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
+    // Limpar cache de conexão primeiro
+    resetConnectionCache();
+    resetPool();
+    
     if (isUsingPostgresDirect) {
       // Testa conexão direta com PostgreSQL com timeout
       const connectionPromise = checkConnection();
@@ -51,4 +55,13 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
  */
 export const getConnectionMode = (): string => {
   return isUsingPostgresDirect ? "PostgreSQL Direto" : "Supabase";
+};
+
+/**
+ * Reinicia a conexão com o banco de dados
+ */
+export const resetConnection = (): void => {
+  resetConnectionCache();
+  resetPool();
+  toast.info("Conexão com banco de dados reiniciada");
 };

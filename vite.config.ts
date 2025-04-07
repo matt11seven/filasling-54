@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+// Gerar uma versão baseada no timestamp atual
+const appVersion = new Date().toISOString().replace(/[^0-9]/g, '').substring(0, 14);
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -19,6 +22,9 @@ export default defineConfig(({ mode }) => ({
     port: 8080
   },
   define: {
+    // Versão da aplicação para controle de cache
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
+    
     // Placeholders para variáveis de ambiente do Supabase
     SUPABASE_URL_PLACEHOLDER: JSON.stringify("SUPABASE_URL_PLACEHOLDER"),
     SUPABASE_ANON_KEY_PLACEHOLDER: JSON.stringify("SUPABASE_ANON_KEY_PLACEHOLDER"),
