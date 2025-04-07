@@ -137,32 +137,25 @@ const FullscreenAlert = ({ ticket, onClose, onDismissAll }: FullscreenAlertProps
         </div>
         
         <div className="space-y-4 mb-6">
+          {(ticket.nome_atendente || ticket.url_imagem_atendente) && (
+            <div className="flex items-center gap-2 mb-1">
+              {ticket.url_imagem_atendente && (
+                <Avatar className="w-6 h-6">
+                  <AvatarImage src={ticket.url_imagem_atendente} alt={ticket.nome_atendente || ''} />
+                  <AvatarFallback>{getInitials(ticket.nome_atendente || '')}</AvatarFallback>
+                </Avatar>
+              )}
+              {ticket.nome_atendente && (
+                <span className="text-sm font-medium">Atendente: {ticket.nome_atendente}</span>
+              )}
+            </div>
+          )}
           <p className="text-lg"><strong>Cliente:</strong> {ticket.nome}</p>
           <p><strong>Motivo:</strong> {ticket.motivo || "Não especificado"}</p>
           <p><strong>Setor:</strong> {ticket.setor || "Não especificado"}</p>
           <p className="text-destructive font-bold">
             Aguardando há {timeDisplay}
           </p>
-          
-          {(ticket.nome_atendente || ticket.email_atendente) && (
-            <div className="border-t border-gray-200 pt-4 mt-4">
-              <p className="font-semibold mb-2">Atendente Responsável:</p>
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={ticket.url_imagem_atendente} alt={ticket.nome_atendente || ''} />
-                  <AvatarFallback>{getInitials(ticket.nome_atendente || ticket.email_atendente)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  {ticket.nome_atendente && (
-                    <p className="font-medium">{ticket.nome_atendente}</p>
-                  )}
-                  {ticket.email_atendente && (
-                    <p className="text-sm text-muted-foreground">{ticket.email_atendente}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
         
         <div className="flex justify-between gap-2">
