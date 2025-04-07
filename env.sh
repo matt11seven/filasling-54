@@ -4,7 +4,7 @@
 echo "============================================"
 echo "Iniciando script de configuração de ambiente"
 echo "============================================"
-echo "Versão do script: 1.4"
+echo "Versão do script: 1.5"
 echo "Data de execução: $(date)"
 
 # Exibe informações do ambiente para diagnóstico
@@ -44,10 +44,18 @@ for var in DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME; do
         ;;
     esac
   else
-    # Corrigindo o problema de substituição aqui
-    # Usar método mais compatível com shells diferentes
-    CURRENT_VALUE=$(eval echo \$${var})
-    echo "✅ Variável $var está definida: $CURRENT_VALUE"
+    # Abordagem super simples para evitar problemas de substituição
+    if [ "$var" = "DB_HOST" ]; then
+      echo "✅ Variável DB_HOST está definida: $DB_HOST"
+    elif [ "$var" = "DB_PORT" ]; then
+      echo "✅ Variável DB_PORT está definida: $DB_PORT"
+    elif [ "$var" = "DB_USER" ]; then
+      echo "✅ Variável DB_USER está definida: $DB_USER"
+    elif [ "$var" = "DB_PASSWORD" ]; then
+      echo "✅ Variável DB_PASSWORD está definida: ********"
+    elif [ "$var" = "DB_NAME" ]; then
+      echo "✅ Variável DB_NAME está definida: $DB_NAME"
+    fi
   fi
 done
 

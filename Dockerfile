@@ -21,6 +21,9 @@ RUN apk add --no-cache bash postgresql-client gettext curl
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Copy custom error page
+COPY ./usr/share/nginx/html/custom_50x.html /usr/share/nginx/html/custom_50x.html
+
 # Add nginx config
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
