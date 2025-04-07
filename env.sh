@@ -4,7 +4,7 @@
 echo "============================================"
 echo "Iniciando script de configuração de ambiente"
 echo "============================================"
-echo "Versão do script: 1.1"
+echo "Versão do script: 1.2"
 echo "Data de execução: $(date)"
 
 # Exibe informações do ambiente para diagnóstico
@@ -19,8 +19,32 @@ echo "Verificando variáveis de ambiente:"
 for var in DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME; do
   if [ -z "${!var}" ]; then
     echo "⚠️ ALERTA: A variável $var não está definida!"
+    
+    # Valores padrão se não estiverem definidos
+    case "$var" in
+      DB_HOST)
+        export DB_HOST="localhost"
+        echo "⚠️ Usando valor padrão para DB_HOST: localhost"
+        ;;
+      DB_PORT)
+        export DB_PORT="5432"
+        echo "⚠️ Usando valor padrão para DB_PORT: 5432"
+        ;;
+      DB_USER)
+        export DB_USER="postgres"
+        echo "⚠️ Usando valor padrão para DB_USER: postgres"
+        ;;
+      DB_PASSWORD)
+        export DB_PASSWORD="postgres"
+        echo "⚠️ Usando valor padrão para DB_PASSWORD: postgres"
+        ;;
+      DB_NAME)
+        export DB_NAME="slingfila"
+        echo "⚠️ Usando valor padrão para DB_NAME: slingfila"
+        ;;
+    esac
   else
-    echo "✅ Variável $var está definida"
+    echo "✅ Variável $var está definida: ${!var}"
   fi
 done
 
@@ -33,11 +57,43 @@ echo "Procurando por arquivos JS para substituir placeholders..."
 JS_FILES=$(find /usr/share/nginx/html -type f -name "*.js" | wc -l)
 echo "Encontrados $JS_FILES arquivos JavaScript"
 
-find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"DB_HOST_PLACEHOLDER\"|\"${DB_HOST}\"|g" {} \;
-find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"DB_USER_PLACEHOLDER\"|\"${DB_USER}\"|g" {} \;
-find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"DB_PASSWORD_PLACEHOLDER\"|\"${DB_PASSWORD}\"|g" {} \;
-find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"DB_NAME_PLACEHOLDER\"|\"${DB_NAME}\"|g" {} \;
-find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"DB_PORT_PLACEHOLDER\"|\"${DB_PORT}\"|g" {} \;
+# Função para registrar cada substituição
+log_replacement() {
+  local placeholder=$1
+  local value=$2
+  local file=$3
+  
+  echo "  - Substituindo $placeholder em $file"
+}
+
+# Executa as substituições com logs aprimorados
+for js_file in $(find /usr/share/nginx/html -type f -name "*.js"); do
+  # Verificando cada arquivo para placeholders
+  if grep -q "DB_HOST_PLACEHOLDER" "$js_file"; then
+    log_replacement "DB_HOST_PLACEHOLDER" "$DB_HOST" "$js_file"
+    sed -i "s|\"DB_HOST_PLACEHOLDER\"|\"${DB_HOST}\"|g" "$js_file"
+  fi
+  
+  if grep -q "DB_USER_PLACEHOLDER" "$js_file"; then
+    log_replacement "DB_USER_PLACEHOLDER" "$DB_USER" "$js_file"
+    sed -i "s|\"DB_USER_PLACEHOLDER\"|\"${DB_USER}\"|g" "$js_file"
+  fi
+  
+  if grep -q "DB_PASSWORD_PLACEHOLDER" "$js_file"; then
+    log_replacement "DB_PASSWORD_PLACEHOLDER" "********" "$js_file"
+    sed -i "s|\"DB_PASSWORD_PLACEHOLDER\"|\"${DB_PASSWORD}\"|g" "$js_file"
+  fi
+  
+  if grep -q "DB_NAME_PLACEHOLDER" "$js_file"; then
+    log_replacement "DB_NAME_PLACEHOLDER" "$DB_NAME" "$js_file"
+    sed -i "s|\"DB_NAME_PLACEHOLDER\"|\"${DB_NAME}\"|g" "$js_file"
+  fi
+  
+  if grep -q "DB_PORT_PLACEHOLDER" "$js_file"; then
+    log_replacement "DB_PORT_PLACEHOLDER" "$DB_PORT" "$js_file"
+    sed -i "s|\"DB_PORT_PLACEHOLDER\"|\"${DB_PORT}\"|g" "$js_file"
+  fi
+done
 
 echo "Variáveis de ambiente substituídas com sucesso!"
 
@@ -66,7 +122,7 @@ if [ $? -eq 0 ]; then
   echo "✅ Conexão com o banco de dados PostgreSQL estabelecida com sucesso!"
 else
   echo "⚠️ Não foi possível conectar ao banco de dados PostgreSQL."
-  echo "Iniciando diagnóstico..."
+  echo "Iniciando diagnóstico aprofundado..."
   
   # Teste de resolução de DNS
   echo "Teste de DNS para ${DB_HOST}:"
@@ -92,9 +148,34 @@ else
     if [ $? -eq 0 ]; then
       echo "✅ Porta ${DB_PORT} está acessível no host alternativo ${MODIFIED_HOST}"
       echo "⚠️ Considere usar o hostname com hífens (${MODIFIED_HOST}) em vez de underscores."
+      
+      # Oferece a opção de usar o hostname modificado
+      echo "Deseja usar o hostname modificado (${MODIFIED_HOST}) para esta sessão? (s/n)"
+      read -r USE_MODIFIED
+      if [[ "$USE_MODIFIED" == "s" || "$USE_MODIFIED" == "S" ]]; then
+        echo "Usando hostname modificado ${MODIFIED_HOST} para esta sessão"
+        export DB_HOST="${MODIFIED_HOST}"
+        
+        # Refaz a substituição nos arquivos JS
+        for js_file in $(find /usr/share/nginx/html -type f -name "*.js"); do
+          if grep -q "\"${DB_HOST//-/_}\"" "$js_file"; then
+            echo "Substituindo hostname com underscore pelo modificado em $js_file"
+            sed -i "s|\"${DB_HOST//-/_}\"|\"${MODIFIED_HOST}\"|g" "$js_file"
+          fi
+        done
+      fi
     else
       echo "❌ Porta ${DB_PORT} não está acessível no host alternativo ${MODIFIED_HOST}"
     fi
+  fi
+  
+  # Testar conexão com credenciais explícitas
+  echo "Tentando conexão com parâmetros explícitos:"
+  PGPASSWORD="${DB_PASSWORD}" psql "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" -c "SELECT 1" > /dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    echo "✅ Conexão com URI explícita funcionou! Use esta configuração em seus scripts."
+  else
+    echo "❌ Conexão com URI explícita também falhou."
   fi
   
   echo "⚠️ Verifique suas variáveis de ambiente e a conectividade com o banco de dados."
