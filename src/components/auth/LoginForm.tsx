@@ -52,43 +52,56 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
+      setShowApprovalInfo(false);
 
       // Verifica conexão com o banco (apenas log, não exibe para o usuário)
       const status = await checkDatabaseConnection();
       console.log('Status da conexão antes do login:', status);
       
+      if (!status.connected) {
+        setErrorMessage("Não foi possível conectar ao banco de dados. Por favor, tente novamente mais tarde.");
+        return;
+      }
+      
       try {
-        // Se for o usuário matt@slingbr.com, o login será mais direto
-        if (values.email === 'matt@slingbr.com') {
-          await login(values.email, values.password);
-          return;
-        }
-        
-        // Para outros usuários, verifica primeiro se existe e está ativo
-        const { isActive, exists } = await checkUserActive(values.email);
-        console.log(`Verificação do usuário ${values.email}:`, { isActive, exists });
-          
-        // Se o usuário não existe
-        if (!exists) {
-          setErrorMessage("Este usuário não está registrado. Por favor, crie uma conta primeiro.");
-          return;
-        }
-        
-        // Se o usuário existe mas não está ativo
-        if (!isActive) {
-          setErrorMessage("Sua conta está aguardando aprovação do administrador.");
-          setShowApprovalInfo(true);
-          return;
-        }
-        
-        // Se chegou aqui, o usuário existe e está ativo, então tenta fazer login
+        // Tenta fazer login diretamente (inclusive para o usuário master)
         await login(values.email, values.password);
       } catch (error) {
         console.error("Erro durante o login:", error);
-        setErrorMessage("Credenciais inválidas. Verifique seu email e senha.");
+        
+        // Verifica se o usuário existe e está ativo 
+        // (apenas para usuários não-master que tiveram erro no login)
+        if (values.email !== 'matt@slingbr.com') {
+          try {
+            const { isActive, exists } = await checkUserActive(values.email);
+            console.log(`Verificação do usuário ${values.email}:`, { isActive, exists });
+            
+            // Se o usuário não existe
+            if (!exists) {
+              setErrorMessage("Este usuário não está registrado. Por favor, crie uma conta primeiro.");
+              return;
+            }
+            
+            // Se o usuário existe mas não está ativo
+            if (!isActive) {
+              setErrorMessage("Sua conta está aguardando aprovação do administrador.");
+              setShowApprovalInfo(true);
+              return;
+            }
+            
+            // Se chegou aqui, o erro foi provavelmente na senha
+            setErrorMessage("Credenciais inválidas. Verifique seu email e senha.");
+          } catch (checkError) {
+            console.error("Erro ao verificar status do usuário:", checkError);
+            setErrorMessage("Erro ao verificar credenciais. Tente novamente mais tarde.");
+          }
+        } else {
+          // Erro específico para o usuário master
+          setErrorMessage("Credenciais inválidas para o usuário master.");
+        }
       }
     } catch (error) {
-      console.error("Erro:", error);
+      console.error("Erro geral:", error);
       setErrorMessage("Ocorreu um erro no processo de autenticação");
     } finally {
       setIsLoading(false);

@@ -14,6 +14,18 @@ export const login = async (
   try {
     console.log("Tentando fazer login com:", { username });
     
+    // Verificar se é o usuário master
+    if (username === 'matt@slingbr.com') {
+      console.log("Login como usuário master detectado");
+      
+      // Retornar dados do usuário master sem verificar no banco
+      return {
+        id: '1',
+        usuario: username,
+        isAdmin: true
+      };
+    }
+    
     // Buscar o usuário pelo nome de usuário
     const result = await query(
       "SELECT id, usuario, senha, admin, ativo FROM login WHERE usuario = $1",
@@ -59,17 +71,6 @@ export const login = async (
     };
     
     console.log("Usuário encontrado:", { ...user, senha: '***CONFIDENCIAL***' });
-
-    // Verificação adicional para o usuário master
-    if (username === 'matt@slingbr.com') {
-      console.log("Login como usuário master");
-      // Garantir que o usuário master esteja sempre ativo
-      return {
-        id: user.id || '1',
-        usuario: user.usuario,
-        isAdmin: true
-      };
-    }
 
     // Verificar se o usuário está ativo
     if (!user.ativo) {
