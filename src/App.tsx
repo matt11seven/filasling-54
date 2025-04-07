@@ -20,8 +20,8 @@ function App() {
   const [queryClient] = useState(() => new QueryClient());
   
   return (
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
         <TooltipProvider>
           <AuthProvider>
             <SettingsProvider>
@@ -39,8 +39,8 @@ function App() {
             </SettingsProvider>
           </AuthProvider>
         </TooltipProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 

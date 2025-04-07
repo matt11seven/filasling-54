@@ -5,8 +5,17 @@ import { toast } from "sonner";
 import { AuthContextType, User } from "@/types";
 import { checkUserActive, loginUser } from "@/services/auth";
 
-// Criando o contexto com um valor inicial undefined
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Criando o contexto com um valor inicial
+const defaultContextValue: AuthContextType = {
+  user: null,
+  login: async () => {},
+  logout: async () => {},
+  isLoading: false,
+  isAuthenticated: false
+};
+
+// Usando o valor padrão no createContext
+const AuthContext = createContext<AuthContextType>(defaultContextValue);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -97,7 +106,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 // Hook personalizado para acessar o contexto
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth deve ser usado dentro de um AuthProvider");
   }
   return context;
