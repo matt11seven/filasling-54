@@ -21,8 +21,10 @@ export const getDatabaseConfig = () => {
         password: DB_PASSWORD_PLACEHOLDER,
         database: DB_NAME_PLACEHOLDER
       };
+      
+      console.log('[DB Config] Configurações de banco obtidas de placeholders');
     } catch (e) {
-      console.error('[DB Config] Erro ao acessar variáveis:', e);
+      console.error('[DB Config] Erro ao acessar variáveis de placeholders:', e);
       // Fallback para valores padrão caso os placeholders não estejam definidos
       config = {
         host: "localhost",
@@ -155,10 +157,19 @@ export const checkDatabaseConnection = async (): Promise<ConnectionStatus> => {
         }
       };
     } else {
-      // Em produção, assumimos que o env.sh já testou a conexão
+      // Em produção, verifique as informações para diagnóstico
+      const isEasypanelEnv = config.host.includes('_') && !config.host.includes('localhost');
+      
+      // Fornecer informações específicas para ambientes comuns
+      let envSpecificInfo = '';
+      if (isEasypanelEnv) {
+        envSpecificInfo = `Detectado ambiente possível de Easypanel (host: ${config.host}). ` + 
+                         `Certifique-se de que o serviço de banco de dados está funcionando e acessível.`;
+      }
+      
       return {
         connected: true,
-        message: "Variáveis de ambiente para conexão com o banco de dados encontradas.",
+        message: `Variáveis de ambiente para conexão com o banco de dados encontradas. ${envSpecificInfo}`,
         diagnostics: {
           env: import.meta.env.MODE,
           config: {
@@ -168,6 +179,7 @@ export const checkDatabaseConnection = async (): Promise<ConnectionStatus> => {
             user: config.user,
             password: '********',
           },
+          possibleEasypanelEnv: isEasypanelEnv,
           timestamp: new Date().toISOString()
         }
       };

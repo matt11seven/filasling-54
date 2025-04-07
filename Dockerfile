@@ -15,13 +15,20 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Install necessary packages for our scripts
-RUN apk add --no-cache bash postgresql-client gettext curl
+# Install necessary packages for our scripts and diagnostics
+RUN apk add --no-cache \
+    bash \
+    postgresql-client \
+    gettext \
+    curl \
+    iputils \
+    bind-tools \
+    netcat-openbsd
 
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy custom error page (ensure it exists first)
+# Copy custom error page
 COPY ./usr/share/nginx/html/custom_50x.html /usr/share/nginx/html/custom_50x.html
 
 # Add nginx config
