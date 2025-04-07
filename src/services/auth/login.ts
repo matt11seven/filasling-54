@@ -23,7 +23,16 @@ export const login = async (
       throw new Error("Usuário não encontrado");
     }
 
-    const user = result.rows[0] as LoginUser;
+    // Use a safer type assertion with appropriate property checks
+    const row = result.rows[0];
+    
+    // Verify the row has the expected properties before treating it as LoginUser
+    if (!('usuario' in row && 'senha' in row && 'admin' in row && 'ativo' in row)) {
+      console.error("Resultado da consulta não contém as propriedades esperadas:", row);
+      throw new Error("Dados de usuário inválidos");
+    }
+    
+    const user = row as LoginUser;
 
     // Verificar se o usuário está ativo
     if (!user.ativo) {

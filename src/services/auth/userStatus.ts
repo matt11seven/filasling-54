@@ -17,8 +17,13 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
       return { isActive: false, exists: false };
     }
 
-    // Usamos type assertion para garantir que o resultado tem a estrutura esperada
-    const userRow = result.rows[0] as { ativo: boolean };
+    // Verificamos se o resultado tem a propriedade esperada
+    const userRow = result.rows[0];
+    
+    if (!('ativo' in userRow)) {
+      console.error("Resultado da consulta não contém a propriedade 'ativo':", userRow);
+      return { isActive: false, exists: true };
+    }
 
     // Retorna se o usuário está ativo ou não
     return { 

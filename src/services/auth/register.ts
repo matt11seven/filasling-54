@@ -36,12 +36,19 @@ export const register = async (
 
     toast.success("Usuário criado com sucesso");
 
+    // Verify the row has the expected properties before treating it as LoginUser
+    const row = result.rows[0];
+    
+    if (!('usuario' in row && 'admin' in row)) {
+      console.error("Resultado da inserção não contém as propriedades esperadas:", row);
+      throw new Error("Erro ao criar usuário: dados inválidos");
+    }
+    
     // Retornar os dados do usuário (sem a senha)
-    const newUser = result.rows[0] as Pick<LoginUser, 'id' | 'usuario' | 'admin'>;
     return {
-      id: newUser.id,
-      usuario: newUser.usuario,
-      isAdmin: newUser.admin
+      id: row.id,
+      usuario: row.usuario,
+      isAdmin: row.admin
     };
   } catch (error) {
     return handleServiceError(error, "Erro ao registrar usuário");
