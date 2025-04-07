@@ -21,6 +21,25 @@ export function resetConnectionCache() {
   }
 }
 
+// Função para normalizar hostname que contém underscore
+export function normalizeHostname(hostname: string): string {
+  // Se o hostname contém underscores, exibe um aviso
+  if (hostname && hostname.includes('_')) {
+    console.warn(`⚠️ Hostname contém underscores: ${hostname}`);
+    console.warn("⚠️ Tentando normalizar hostname para compatibilidade DNS");
+    
+    // Em alguns ambientes, podemos tentar substituir underscore por hífen
+    // Esta é uma tentativa, não uma solução garantida
+    // const normalizedHostname = hostname.replace(/_/g, '-');
+    // console.warn(`⚠️ Hostname normalizado: ${normalizedHostname}`);
+    // return normalizedHostname;
+    
+    // Por enquanto, vamos apenas retornar o hostname original,
+    // mas deixamos o código de normalização comentado caso seja necessário
+  }
+  return hostname;
+}
+
 try {
   // Always prioritize PostgreSQL in browser environments too
   if (isBrowser) {
@@ -40,14 +59,17 @@ try {
       DB_POSTGRESDB_HOST_PLACEHOLDER !== "DB_POSTGRESDB_HOST_PLACEHOLDER" && 
       DB_POSTGRESDB_HOST_PLACEHOLDER !== "") {
     
+    // Capturamos o host original antes de qualquer processamento
+    const originalHost = DB_POSTGRESDB_HOST_PLACEHOLDER;
+    
     // Log detalhado das configurações encontradas
     console.log("Configuração detectada para PostgreSQL direto:", {
-      host: DB_POSTGRESDB_HOST_PLACEHOLDER,
+      host: originalHost,
       port: DB_POSTGRESDB_PORT_PLACEHOLDER,
       user: DB_POSTGRESDB_USER_PLACEHOLDER,
       database: DB_POSTGRESDB_DATABASE_PLACEHOLDER,
       hasPassword: Boolean(DB_POSTGRESDB_PASSWORD_PLACEHOLDER),
-      hostType: typeof DB_POSTGRESDB_HOST_PLACEHOLDER
+      hostType: typeof originalHost
     });
     
     usePostgresDirect = true;
@@ -77,14 +99,19 @@ try {
 // Exporta a indicação se estamos usando PostgreSQL direto
 export const isUsingPostgresDirect = usePostgresDirect;
 
+// Tratamento especial para hostname com underscore
+const originalHost = typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_HOST_PLACEHOLDER : 'localhost';
+const processedHost = normalizeHostname(originalHost);
+
 // Exporta dados de conexão do PostgreSQL para uso direto pelos serviços (formato EasyPanel)
 export const postgresConfig = {
   type: typeof DB_TYPE_PLACEHOLDER !== 'undefined' ? DB_TYPE_PLACEHOLDER : 'postgresdb',
-  host: typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_HOST_PLACEHOLDER : 'localhost',
+  host: processedHost, // Usando a versão processada do hostname
   user: typeof DB_POSTGRESDB_USER_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_USER_PLACEHOLDER : 'postgres',
   password: typeof DB_POSTGRESDB_PASSWORD_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PASSWORD_PLACEHOLDER : 'postgres',
   database: typeof DB_POSTGRESDB_DATABASE_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_DATABASE_PLACEHOLDER : 'slingfila',
-  port: typeof DB_POSTGRESDB_PORT_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PORT_PLACEHOLDER : '5432'
+  port: typeof DB_POSTGRESDB_PORT_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PORT_PLACEHOLDER : '5432',
+  originalHost: originalHost // Mantemos o host original para diagnóstico
 };
 
 // Criar cliente Supabase apenas como fallback (sem chaves hardcoded)
@@ -107,4 +134,22 @@ if (postgresConfig.host.includes('_')) {
   console.warn("⚠️ O hostname do PostgreSQL contém underscores (_): " + postgresConfig.host);
   console.warn("⚠️ Em alguns ambientes, isso pode causar problemas de resolução DNS.");
   console.warn("⚠️ Se a conexão falhar, considere usar o endereço IP do servidor diretamente.");
+  
+  // Verificar se estamos em um ambiente que suporta DNS lookup
+  if (typeof window !== 'undefined' && 'require' in window) {
+    try {
+      console.log("Tentando realizar lookup de DNS para o hostname...");
+      // Este código só funcionará em ambientes Node.js, não no navegador
+      // const dns = require('dns');
+      // dns.lookup(postgresConfig.host, (err, address) => {
+      //   if (err) {
+      //     console.error("Erro ao resolver hostname:", err);
+      //   } else {
+      //     console.log("Hostname resolvido para IP:", address);
+      //   }
+      // });
+    } catch (error) {
+      console.error("Erro ao tentar resolver hostname:", error);
+    }
+  }
 }

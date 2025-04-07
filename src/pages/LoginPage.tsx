@@ -8,7 +8,7 @@ import SignupForm from "@/components/auth/SignupForm";
 import AuthFooter from "@/components/auth/AuthFooter";
 import { Button } from "@/components/ui/button";
 import { Database, RefreshCw, Server, Wifi, WifiOff } from "lucide-react";
-import { testDatabaseConnection, getConnectionConfig, resetConnection } from "@/services/connectionTest";
+import { testDatabaseConnection, getConnectionConfig, resetConnection, getSuggestedFixes } from "@/services/connectionTest";
 import { toast } from "sonner";
 
 const LoginPage = () => {
@@ -18,6 +18,7 @@ const LoginPage = () => {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'success' | 'error'>('unknown');
+  const [suggestedFixes, setSuggestedFixes] = useState<string[]>([]);
   const navigate = useNavigate();
 
   // Se o usuário já estiver autenticado, redirecione para o dashboard
@@ -43,8 +44,11 @@ const LoginPage = () => {
       setConnectionStatus(success ? 'success' : 'error');
       if (success) {
         toast.success("Conexão com o banco de dados estabelecida com sucesso!");
+        setSuggestedFixes([]);
       } else {
         toast.error("Falha ao conectar ao banco de dados. Verifique as configurações e o console para mais detalhes.");
+        setSuggestedFixes(getSuggestedFixes());
+        setShowDiagnostics(true); // Mostrar diagnósticos automaticamente em caso de erro
       }
     } finally {
       setIsTesting(false);
@@ -114,6 +118,18 @@ const LoginPage = () => {
               </div>
             )}
             
+            {/* Sugestões de correção para problemas de conexão */}
+            {connectionStatus === 'error' && suggestedFixes.length > 0 && (
+              <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-800 text-xs">
+                <h4 className="font-medium mb-1">Possíveis soluções:</h4>
+                <ul className="list-disc pl-4 space-y-1">
+                  {suggestedFixes.map((fix, index) => (
+                    <li key={index}>{fix}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
             {/* Botões de teste de conexão */}
             <div className="mt-4 w-full space-y-2">
               <Button 
@@ -162,14 +178,21 @@ const LoginPage = () => {
             )}
             
             {/* Ajuda sobre hostname com underscores */}
-            {showDiagnostics && connectionStatus === 'error' && (
+            {showDiagnostics && connectionStatus === 'error' && getConnectionConfig()['host']?.toString().includes('_') && (
               <div className="mt-2 p-2 bg-amber-100 rounded-md text-amber-800 text-xs">
-                <p className="font-medium">Possível problema com hostname contendo underscores (_):</p>
+                <p className="font-medium">Problema detectado: hostname contém underscores (_)</p>
                 <p className="mt-1">
-                  O hostname "{getConnectionConfig()['host']}" contém underscores, o que pode causar problemas 
-                  de resolução DNS em alguns ambientes. Considere usar o endereço IP do servidor PostgreSQL 
-                  diretamente no arquivo .env.
+                  O hostname "{getConnectionConfig()['host']}" contém underscores, o que causa problemas 
+                  de resolução DNS em muitos ambientes. <strong>Solução recomendada:</strong> Substitua o 
+                  hostname por seu endereço IP diretamente no arquivo .env.
                 </p>
+                <p className="mt-1">
+                  <strong>Como resolver:</strong> Consulte o administrador do sistema para obter o 
+                  endereço IP correto do servidor de banco de dados e atualize o arquivo .env com:
+                </p>
+                <pre className="bg-amber-50 p-1 mt-1 rounded">
+                  DB_POSTGRESDB_HOST=endereço.ip.do.servidor
+                </pre>
               </div>
             )}
           </CardFooter>

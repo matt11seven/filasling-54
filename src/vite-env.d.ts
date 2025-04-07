@@ -12,3 +12,14 @@ declare const DB_POSTGRESDB_USER_PLACEHOLDER: string;
 declare const DB_POSTGRESDB_PASSWORD_PLACEHOLDER: string;
 declare const DB_POSTGRESDB_DATABASE_PLACEHOLDER: string;
 declare const DB_POSTGRESDB_PORT_PLACEHOLDER: string;
+
+// Extensão para interface do PostgresConfig
+interface PostgresConfig {
+  type: string;
+  host: string;
+  user: string;
+  password: string;
+  database: string;
+  port: string;
+  originalHost?: string;
+}

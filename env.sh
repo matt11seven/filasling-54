@@ -60,15 +60,42 @@ if [[ "$DB_POSTGRESDB_HOST" == *"_"* ]]; then
         fi
     fi
     
+    # NOVIDADE: Método 5 - Substituir underscore por hífen para tentar
+    HYPHEN_HOST="${DB_POSTGRESDB_HOST//_/-}"
+    if [ "$HYPHEN_HOST" != "$DB_POSTGRESDB_HOST" ]; then
+        echo "Testando hostname alternativo (underscores substituídos por hífens): $HYPHEN_HOST"
+        # Tentar resolver esse hostname alternativo
+        if command -v dig &> /dev/null; then
+            IP_ALT=$(dig +short "$HYPHEN_HOST" 2>/dev/null | head -1)
+            if [ ! -z "$IP_ALT" ]; then
+                echo "✅ Endereço IP resolvido para versão com hífens: $IP_ALT"
+                if [ -z "$IP_RESOLVED" ]; then
+                    IP_RESOLVED=$IP_ALT
+                fi
+            fi
+        fi
+    fi
+    
     # Se conseguiu resolver, sugere usar o IP diretamente
     if [ ! -z "$IP_RESOLVED" ]; then
         echo "✅ Hostname resolvido para o IP: $IP_RESOLVED"
         echo "Recomendação: Considere usar o endereço IP diretamente no arquivo .env para evitar problemas de DNS."
         
-        # Opcionalmente, você pode substituir automaticamente o hostname pelo IP
-        # Descomente a linha abaixo para ativar essa funcionalidade
-        # DB_POSTGRESDB_HOST=$IP_RESOLVED
-        # echo "Host do banco substituído automaticamente pelo IP: $DB_POSTGRESDB_HOST"
+        # NOVIDADE: Perguntar ao usuário se quer substituir automaticamente o hostname pelo IP
+        if [ -t 0 ]; then  # Verifica se o script está sendo executado em um terminal interativo
+            read -p "Substituir automaticamente o hostname pelo IP resolvido? (s/n): " REPLACE_HOST
+            if [[ "$REPLACE_HOST" == "s" || "$REPLACE_HOST" == "S" ]]; then
+                echo "Substituindo hostname pelo IP resolvido..."
+                DB_POSTGRESDB_HOST=$IP_RESOLVED
+                echo "Host do banco substituído automaticamente pelo IP: $DB_POSTGRESDB_HOST"
+            fi
+        else
+            # Em ambiente não interativo, informamos que a substituição pode ser feita manualmente
+            echo "⚠️ Para usar o IP automaticamente, edite seu arquivo .env e substitua:"
+            echo "DB_POSTGRESDB_HOST=$DB_POSTGRESDB_HOST"
+            echo "Por:"
+            echo "DB_POSTGRESDB_HOST=$IP_RESOLVED"
+        fi
     else
         echo "❌ Não foi possível resolver o hostname para um IP. Isso pode causar problemas de conexão."
     fi
@@ -86,6 +113,22 @@ if [ ! -z "$DB_POSTGRESDB_HOST" ] && [ ! -z "$DB_POSTGRESDB_USER" ]; then
         
         echo "Verificando resolução de DNS para o host: $DB_POSTGRESDB_HOST"
         host $DB_POSTGRESDB_HOST 2>&1 || nslookup $DB_POSTGRESDB_HOST 2>&1 || echo "Ferramentas de resolução DNS não disponíveis"
+        
+        # NOVIDADE: Tentar conexão com o IP resolvido, se disponível
+        if [ ! -z "$IP_RESOLVED" ]; then
+            echo "Tentando conexão usando o IP resolvido ($IP_RESOLVED) em vez do hostname..."
+            if PGPASSWORD=$DB_POSTGRESDB_PASSWORD psql -h $IP_RESOLVED -p ${DB_POSTGRESDB_PORT:-5432} -U $DB_POSTGRESDB_USER -d ${DB_POSTGRESDB_DATABASE:-postgres} -c '\l' > /dev/null 2>&1; then
+                echo "✅ Conexão usando IP direto bem-sucedida!"
+                echo "Recomendação: Use o IP $IP_RESOLVED em vez do hostname no seu arquivo .env"
+                
+                # NOVIDADE: Usar o IP resolvido para o resto do script
+                DB_POSTGRESDB_HOST_ORIGINAL=$DB_POSTGRESDB_HOST
+                DB_POSTGRESDB_HOST=$IP_RESOLVED
+                echo "Usando IP resolvido ($DB_POSTGRESDB_HOST) para o restante da execução"
+            else
+                echo "❌ Também falhou usando o IP resolvido. Problema deve ser outro."
+            fi
+        fi
         
         echo "ATENÇÃO: A aplicação tentará iniciar, mas a conexão com o banco pode falhar em runtime!"
     fi

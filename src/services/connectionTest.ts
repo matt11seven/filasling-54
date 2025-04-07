@@ -20,7 +20,8 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
       database: postgresConfig.database,
       user: postgresConfig.user,
       hostRaw: typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_HOST_PLACEHOLDER : 'não disponível',
-      hostRawType: typeof DB_POSTGRESDB_HOST_PLACEHOLDER
+      hostRawType: typeof DB_POSTGRESDB_HOST_PLACEHOLDER,
+      originalHost: postgresConfig.originalHost || postgresConfig.host
     });
     
     // Verificar se a configuração parece válida
@@ -98,7 +99,7 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
           console.warn("⚠️ O hostname contém underscores (_). Verifique se o DNS resolve corretamente esse formato.");
           console.warn("⚠️ Em alguns ambientes, hostnames com underscores podem causar problemas de resolução DNS.");
           toast.error("Hostname contém underscores (_) que podem causar problemas de resolução DNS.", {
-            description: "Tente substituir o nome do host pelo endereço IP diretamente no arquivo .env",
+            description: "Tente substituir o nome do host pelo endereço IP diretamente no arquivo .env - por exemplo, consulte o administrador para obter o IP correto do servidor de banco de dados.",
             duration: 10000
           });
         }
@@ -150,7 +151,9 @@ export const getConnectionConfig = (): object => {
       userPlaceholder: typeof DB_POSTGRESDB_USER_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_USER_PLACEHOLDER : 'não disponível',
       databasePlaceholder: typeof DB_POSTGRESDB_DATABASE_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_DATABASE_PLACEHOLDER : 'não disponível',
       portPlaceholder: typeof DB_POSTGRESDB_PORT_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PORT_PLACEHOLDER : 'não disponível'
-    }
+    },
+    // Adicionar informação sobre o hostname original (antes de processamento)
+    originalHost: postgresConfig.originalHost || postgresConfig.host
   };
 };
 
@@ -161,4 +164,24 @@ export const resetConnection = (): void => {
   resetConnectionCache();
   resetPool();
   toast.info("Conexão com banco de dados reiniciada");
+};
+
+/**
+ * Tenta sugerir soluções para problemas de conexão
+ */
+export const getSuggestedFixes = (): string[] => {
+  const suggestions: string[] = [];
+  
+  // Adicionar sugestões específicas baseadas na configuração atual
+  if (postgresConfig.host.includes('_')) {
+    suggestions.push("Substitua o hostname com underscores por seu endereço IP equivalente no arquivo .env");
+    suggestions.push("Verifique se o servidor de banco de dados está acessível na sua rede");
+  }
+  
+  // Adicionar sugestões gerais
+  suggestions.push("Verifique se o firewall permite conexões para a porta do PostgreSQL");
+  suggestions.push("Confirme se as credenciais de acesso ao banco estão corretas");
+  suggestions.push("Verifique se o banco de dados está em execução");
+  
+  return suggestions;
 };
