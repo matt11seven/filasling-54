@@ -1,6 +1,6 @@
 
 import { isUsingPostgresDirect, resetConnectionCache, postgresConfig } from "@/integrations/supabase/client";
-import { checkConnection, resetPool } from "@/integrations/postgres/client";
+import { checkConnection, resetPool, tryAlternativeConnection, getConnectionDiagnostics } from "@/integrations/postgres/client";
 import { toast } from "sonner";
 
 /**
@@ -21,7 +21,8 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
       user: postgresConfig.user,
       hostRaw: typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_HOST_PLACEHOLDER : 'não disponível',
       hostRawType: typeof DB_POSTGRESDB_HOST_PLACEHOLDER,
-      originalHost: postgresConfig.originalHost || postgresConfig.host
+      originalHost: postgresConfig.originalHost || postgresConfig.host,
+      isDockerEnv: postgresConfig.isDockerEnvironment
     });
     
     // Verificar se a configuração parece válida
@@ -39,6 +40,18 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
       return false;
     }
     
+    // Verificar se os valores das variáveis de ambiente foram substituídos corretamente
+    if (postgresConfig.host.includes("PLACEHOLDER") || 
+        postgresConfig.user.includes("PLACEHOLDER") || 
+        postgresConfig.database.includes("PLACEHOLDER")) {
+      toast.error("Erro na substituição de variáveis de ambiente", {
+        description: "As variáveis de ambiente não foram substituídas corretamente no build. Verifique o processo de build e deploy.",
+        duration: 15000
+      });
+      console.error("❌ Erro na substituição de variáveis de ambiente:", postgresConfig);
+      return false;
+    }
+    
     if (isUsingPostgresDirect) {
       // Mostrar toast informativo antes de iniciar o teste
       toast.info(`Testando conexão com PostgreSQL (${postgresConfig.host})...`, {
@@ -48,10 +61,15 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
       // Verificar se o hostname contém underscores
       if (postgresConfig.host.includes("_")) {
         console.warn("⚠️ O hostname contém underscores (_): " + postgresConfig.host);
-        toast.warning("Hostname contém underscores (_)", {
-          description: "Em alguns ambientes, hostnames com underscores podem causar problemas de resolução DNS. Se a conexão falhar, tente usar o endereço IP em vez do nome do host.",
-          duration: 15000
-        });
+        
+        if (postgresConfig.isDockerEnvironment) {
+          console.log("✅ Ambiente Docker/EasyPanel detectado, underscores geralmente são válidos");
+        } else {
+          toast.warning("Hostname contém underscores (_)", {
+            description: "Em alguns ambientes, hostnames com underscores podem causar problemas de resolução DNS. Se a conexão falhar, tente usar o endereço IP em vez do nome do host.",
+            duration: 15000
+          });
+        }
       }
       
       // Testa conexão direta com PostgreSQL com timeout
@@ -84,6 +102,22 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
         console.log(`✅ Conexão com PostgreSQL ${postgresConfig.host} funcionando`);
         return true;
       } else {
+        // Tentar estratégia alternativa para ambientes Docker
+        if (postgresConfig.isDockerEnvironment) {
+          toast.info("Tentando abordagem alternativa para ambiente Docker...", {
+            duration: 5000
+          });
+          
+          const altResult = await tryAlternativeConnection();
+          if (altResult) {
+            toast.success("Conexão alternativa estabelecida com sucesso!", {
+              description: "Usando abordagem específica para Docker",
+              duration: 5000
+            });
+            return true;
+          }
+        }
+        
         toast.error(`Falha ao conectar ao PostgreSQL (${postgresConfig.host})`, {
           description: `Verifique as credenciais, firewall e se o servidor está em execução.
                         Host: ${postgresConfig.host}
@@ -94,12 +128,13 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
         });
         console.error(`❌ Falha na conexão com PostgreSQL ${postgresConfig.host}:${postgresConfig.port}`);
         
-        // Verificar configurações para diagnóstico
-        if (postgresConfig.host.includes("_")) {
-          console.warn("⚠️ O hostname contém underscores (_). Verifique se o DNS resolve corretamente esse formato.");
-          console.warn("⚠️ Em alguns ambientes, hostnames com underscores podem causar problemas de resolução DNS.");
-          toast.error("Hostname contém underscores (_) que podem causar problemas de resolução DNS.", {
-            description: "Tente substituir o nome do host pelo endereço IP diretamente no arquivo .env - por exemplo, consulte o administrador para obter o IP correto do servidor de banco de dados.",
+        // Verificar se é ambiente Docker com underscores
+        if (postgresConfig.host.includes('_') && postgresConfig.isDockerEnvironment) {
+          console.log("⚠️ Ambiente Docker com hostname contendo underscores");
+          console.log("⚠️ Sugestão: Verifique se o nome do serviço está correto na rede Docker");
+          
+          toast.warning("Ambiente Docker com hostname contendo underscores", {
+            description: "Verifique se o nome do serviço está correto na rede Docker e se os containers estão na mesma rede",
             duration: 10000
           });
         }
@@ -136,6 +171,9 @@ export const getConnectionMode = (): string => {
  * Retorna as configurações de conexão atuais (para diagnóstico)
  */
 export const getConnectionConfig = (): object => {
+  // Obter diagnósticos detalhados
+  const diagnostics = getConnectionDiagnostics();
+  
   // Omitir a senha por segurança
   return {
     type: postgresConfig.type,
@@ -144,6 +182,7 @@ export const getConnectionConfig = (): object => {
     database: postgresConfig.database,
     user: postgresConfig.user,
     hasPassword: Boolean(postgresConfig.password),
+    isDockerEnv: postgresConfig.isDockerEnvironment,
     // Adicionar valores brutos dos placeholders para diagnóstico
     rawPlaceholders: {
       hostPlaceholder: typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_HOST_PLACEHOLDER : 'não disponível',
@@ -153,7 +192,9 @@ export const getConnectionConfig = (): object => {
       portPlaceholder: typeof DB_POSTGRESDB_PORT_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PORT_PLACEHOLDER : 'não disponível'
     },
     // Adicionar informação sobre o hostname original (antes de processamento)
-    originalHost: postgresConfig.originalHost || postgresConfig.host
+    originalHost: postgresConfig.originalHost || postgresConfig.host,
+    // Incluir diagnósticos detalhados
+    diagnostics: diagnostics
   };
 };
 
@@ -172,16 +213,68 @@ export const resetConnection = (): void => {
 export const getSuggestedFixes = (): string[] => {
   const suggestions: string[] = [];
   
+  // Verificar se os valores das variáveis de ambiente foram substituídos corretamente
+  if (postgresConfig.host.includes("PLACEHOLDER") || 
+      postgresConfig.user.includes("PLACEHOLDER")) {
+    suggestions.push("As variáveis de ambiente não foram substituídas corretamente. Verifique o processo de build e deploy.");
+  }
+  
   // Adicionar sugestões específicas baseadas na configuração atual
   if (postgresConfig.host.includes('_')) {
-    suggestions.push("Substitua o hostname com underscores por seu endereço IP equivalente no arquivo .env");
-    suggestions.push("Verifique se o servidor de banco de dados está acessível na sua rede");
+    if (postgresConfig.isDockerEnvironment) {
+      suggestions.push("Verifique se os containers estão na mesma rede Docker");
+      suggestions.push("Confirme que o nome do serviço PostgreSQL está correto no Docker Compose");
+      suggestions.push("Tente usar o nome simples do serviço sem domínio (primeira parte antes do ponto)");
+    } else {
+      suggestions.push("Substitua o hostname com underscores por seu endereço IP equivalente no arquivo .env");
+    }
+  }
+  
+  // Sugestões específicas para Docker
+  if (postgresConfig.isDockerEnvironment) {
+    suggestions.push("Verifique se o container do banco de dados está em execução (docker ps)");
+    suggestions.push("Confirme que não há conflitos de portas no Docker");
+    suggestions.push("Tente acessar o banco diretamente do container (docker exec -it [container] psql...)");
   }
   
   // Adicionar sugestões gerais
   suggestions.push("Verifique se o firewall permite conexões para a porta do PostgreSQL");
   suggestions.push("Confirme se as credenciais de acesso ao banco estão corretas");
   suggestions.push("Verifique se o banco de dados está em execução");
+  suggestions.push("Tente aumentar o tempo de timeout da conexão");
   
   return suggestions;
+};
+
+/**
+ * Verifica se o sistema está rodando em ambiente Docker
+ */
+export const isDockerEnvironment = (): boolean => {
+  return postgresConfig.isDockerEnvironment || false;
+};
+
+/**
+ * Verifica se as variáveis de ambiente foram corretamente substituídas
+ */
+export const areEnvironmentVariablesReplaced = (): boolean => {
+  return !postgresConfig.host.includes("PLACEHOLDER") && 
+         !postgresConfig.user.includes("PLACEHOLDER") && 
+         !postgresConfig.database.includes("PLACEHOLDER");
+};
+
+/**
+ * Fornece uma análise detalhada do problema de conexão
+ */
+export const getDetailedAnalysis = (): string => {
+  const diagnostics = getConnectionDiagnostics();
+  
+  if (!areEnvironmentVariablesReplaced()) {
+    return "As variáveis de ambiente não foram substituídas corretamente durante o build/deploy.";
+  }
+  
+  if (postgresConfig.isDockerEnvironment) {
+    return "Ambiente Docker/EasyPanel detectado. Problemas comuns incluem configuração incorreta de rede entre containers ou nomes de serviços.";
+  }
+  
+  return "Problema de conexão padrão. Verifique credenciais, firewall e se o servidor está em execução.";
 };

@@ -37,6 +37,9 @@ export default defineConfig(({ mode }) => ({
     DB_POSTGRESDB_DATABASE_PLACEHOLDER: JSON.stringify("DB_POSTGRESDB_DATABASE_PLACEHOLDER"),
     DB_POSTGRESDB_PORT_PLACEHOLDER: JSON.stringify("DB_POSTGRESDB_PORT_PLACEHOLDER"),
     
+    // Flag para indicar ambiente Docker
+    IS_DOCKER_ENV_PLACEHOLDER: JSON.stringify("IS_DOCKER_ENV_PLACEHOLDER"),
+    
     // Melhor polyfill para process.env
     "process.env": "{}",
     "global": "globalThis",

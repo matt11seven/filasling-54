@@ -12,11 +12,13 @@ interface PgQueryResult {
 class MockPool {
   async connect() {
     console.warn("PostgreSQL direct connection is not supported in browser environments");
+    console.warn("A API do servidor fará a conexão em seu nome");
     throw new Error("PostgreSQL connection not available in browser");
   }
   
   async query(text: string, params: any[] = []): Promise<PgQueryResult> {
     console.warn("PostgreSQL query not supported in browser:", { text, params });
+    console.warn("Esta operação deve ser feita via API do servidor");
     return { rows: [], rowCount: 0 };
   }
   
@@ -54,7 +56,7 @@ try {
   Pool = MockPool;
 }
 
-import { isUsingPostgresDirect, postgresConfig } from '../supabase/client';
+import { isUsingPostgresDirect, postgresConfig, analyzeConnectionError } from '../supabase/client';
 
 // Configurar o pool de conexões PostgreSQL
 let pool: any = null;
@@ -86,13 +88,15 @@ function getPool(): any | null {
         user: postgresConfig.user,
         database: postgresConfig.database,
         port: parseInt(postgresConfig.port, 10),
+        isDockerEnv: postgresConfig.isDockerEnvironment,
         timestamp: new Date().toISOString()
       });
       
       // Check if we're running in an environment that supports PostgreSQL direct connections
       if (!isNodeEnvironment) {
-        console.warn("⚠️ Tentativa de usar PostgreSQL direto em ambiente de navegador. Usando implementação simulada.");
+        console.warn("⚠️ Tentativa de usar PostgreSQL direto em ambiente de navegador.");
         console.warn("⚠️ No navegador, conexões diretas com PostgreSQL não são possíveis por questões de segurança!");
+        console.warn("⚠️ Em vez disso, use uma API proxy no servidor para se comunicar com o banco de dados.");
         console.warn("⚠️ Valores de conexão que estão sendo usados:", {
           host: postgresConfig.host || "não definido",
           port: postgresConfig.port || "não definido",
@@ -111,36 +115,53 @@ function getPool(): any | null {
         return pool;
       }
       
-      // Verificar se o hostname contém underscores e alertar
-      if (postgresConfig.host.includes('_')) {
-        console.warn("⚠️ ATENÇÃO: O hostname do PostgreSQL contém underscores: " + postgresConfig.host);
-        console.warn("⚠️ Em alguns ambientes, isso pode causar problemas de resolução DNS.");
-        console.warn("⚠️ Se a conexão falhar, tente substituir por endereço IP diretamente.");
+      // Verificar se o hostname está em um formato válido
+      if (postgresConfig.host.length === 0) {
+        console.error("❌ ERRO CRÍTICO: Host do PostgreSQL está vazio!");
+        pool = new MockPool();
+        return pool;
       }
       
-      pool = new Pool({
+      // Verificar se o hostname contém underscores e alertar
+      if (postgresConfig.host.includes('_')) {
+        if (postgresConfig.isDockerEnvironment) {
+          console.log("✅ Ambiente Docker/EasyPanel detectado com hostname: " + postgresConfig.host);
+          console.log("✅ Underscores em hostnames geralmente são válidos em ambientes Docker");
+        } else {
+          console.warn("⚠️ ATENÇÃO: O hostname do PostgreSQL contém underscores: " + postgresConfig.host);
+          console.warn("⚠️ Em alguns ambientes, isso pode causar problemas de resolução DNS.");
+        }
+      }
+      
+      // Opções de conexão específicas para ambiente Docker
+      const connectionOptions: any = {
         host: postgresConfig.host,
         user: postgresConfig.user,
         password: postgresConfig.password,
         database: postgresConfig.database,
         port: parseInt(postgresConfig.port, 10),
         // Adicionar timeout para não bloquear a renderização por muito tempo
-        connectionTimeoutMillis: 8000, // Aumentado para 8 segundos
-        // Adicionar log para diagnóstico de problemas de conexão
-        log: (...args: any[]) => {
-          console.log('PostgreSQL log:', ...args);
-        }
-      });
+        connectionTimeoutMillis: 10000, // Aumentado para 10 segundos
+      };
+      
+      // Em ambiente Docker, podemos precisar de configurações específicas
+      if (postgresConfig.isDockerEnvironment) {
+        console.log("Aplicando configurações específicas para ambiente Docker");
+      }
+      
+      pool = new Pool(connectionOptions);
       
       // Adicionar listener para erros de conexão
       pool.on('error', (err: Error) => {
         console.error('Erro inesperado no pool do PostgreSQL:', err);
+        console.error('Análise detalhada do erro:', analyzeConnectionError(err));
       });
       
       // Log informativo sobre tentativa de conexão
       console.log(`Tentando conectar ao PostgreSQL em ${postgresConfig.host}:${postgresConfig.port}/${postgresConfig.database} como ${postgresConfig.user}`);
     } catch (error) {
       console.error('Falha ao criar pool de conexões PostgreSQL:', error);
+      console.error('Análise detalhada do erro:', analyzeConnectionError(error));
       // Use mock pool as fallback in case of error
       pool = new MockPool();
     }
@@ -166,6 +187,7 @@ export async function query(text: string, params: any[] = []): Promise<PgQueryRe
     return res;
   } catch (error) {
     console.error('Erro ao executar consulta:', error);
+    console.error('Análise detalhada do erro de consulta:', analyzeConnectionError(error));
     // Retornar um resultado vazio em vez de lançar erro
     return { rows: [], rowCount: 0 };
   }
@@ -195,18 +217,87 @@ export async function checkConnection() {
   }
   
   try {
+    console.log("Tentando estabelecer conexão com o PostgreSQL...");
     const client = await currentPool.connect();
+    console.log("Conexão estabelecida com sucesso, executando teste simples...");
+    
+    // Executar uma consulta simples para verificar se a conexão está realmente funcionando
+    const result = await client.query('SELECT current_database() as db_name');
+    const dbName = result.rows[0]?.db_name || 'desconhecido';
+    
+    console.log(`Teste de conexão concluído com sucesso. Banco: ${dbName}`);
     client.release();
+    
     console.log('Conexão com PostgreSQL estabelecida com sucesso');
     return true;
   } catch (error) {
     console.error('Falha ao conectar ao PostgreSQL:', error);
+    console.error('Análise detalhada do erro de conexão:', analyzeConnectionError(error));
     console.error('Detalhes de configuração:', {
       host: postgresConfig.host,
       port: postgresConfig.port,
       database: postgresConfig.database,
-      user: postgresConfig.user
+      user: postgresConfig.user,
+      isDockerEnv: postgresConfig.isDockerEnvironment
     });
     return false;
   }
+}
+
+// Tentar conexão alternativa (apenas para diagnóstico)
+export async function tryAlternativeConnection() {
+  if (!isNodeEnvironment) {
+    console.warn("Tentativas alternativas não são suportadas no navegador");
+    return false;
+  }
+  
+  if (postgresConfig.isDockerEnvironment) {
+    try {
+      console.log("Tentando abordagem alternativa para ambiente Docker...");
+      
+      // Em Docker, às vezes o serviço é acessível pelo nome do serviço sem domínio
+      const serviceName = postgresConfig.host.split('.')[0];
+      
+      // Criar um pool temporário para teste
+      const pg = require('pg');
+      const tempPool = new pg.Pool({
+        host: serviceName,
+        user: postgresConfig.user,
+        password: postgresConfig.password,
+        database: postgresConfig.database,
+        port: parseInt(postgresConfig.port, 10),
+        connectionTimeoutMillis: 5000
+      });
+      
+      const client = await tempPool.connect();
+      client.release();
+      await tempPool.end();
+      
+      console.log(`✅ Conexão alternativa bem-sucedida usando nome do serviço: ${serviceName}`);
+      return true;
+    } catch (error) {
+      console.error("❌ Tentativa alternativa falhou:", error);
+      return false;
+    }
+  }
+  
+  return false;
+}
+
+// Fornecer informações detalhadas sobre o estado da conexão
+export function getConnectionDiagnostics() {
+  return {
+    isNode: isNodeEnvironment,
+    hasPool: Boolean(pool),
+    config: {
+      host: postgresConfig.host,
+      port: postgresConfig.port,
+      database: postgresConfig.database,
+      user: postgresConfig.user,
+      isDockerEnv: postgresConfig.isDockerEnvironment,
+      originalHost: postgresConfig.originalHost
+    },
+    poolStatus: pool ? "iniciado" : "não iniciado",
+    environment: typeof window !== 'undefined' ? 'browser' : 'node'
+  };
 }

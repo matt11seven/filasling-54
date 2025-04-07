@@ -22,4 +22,5 @@ interface PostgresConfig {
   database: string;
   port: string;
   originalHost?: string;
+  isDockerEnvironment?: boolean;
 }
