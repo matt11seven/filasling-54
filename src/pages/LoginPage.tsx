@@ -15,7 +15,7 @@ const LoginPage = () => {
   const { isAuthenticated } = useAuth();
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [showApprovalInfo, setShowApprovalInfo] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<{connected: boolean, message?: string}>();
+  const [connectionStatus, setConnectionStatus] = useState<{connected: boolean, message?: string, diagnostics?: any}>();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   const navigate = useNavigate();
 
@@ -26,9 +26,9 @@ const LoginPage = () => {
       try {
         const status = await checkDatabaseConnection();
         setConnectionStatus(status);
-        console.log("Status de conexão do banco de dados:", status);
+        console.log("[Login] Status de conexão do banco de dados:", status);
       } catch (error) {
-        console.error("Erro ao verificar conexão:", error);
+        console.error("[Login] Erro ao verificar conexão:", error);
         setConnectionStatus({
           connected: false,
           message: "Erro ao verificar conexão com o banco de dados."
@@ -61,9 +61,9 @@ const LoginPage = () => {
     try {
       const status = await checkDatabaseConnection();
       setConnectionStatus(status);
-      console.log("Diagnóstico da conexão:", status);
+      console.log("[Login] Diagnóstico da conexão:", status);
     } catch (error) {
-      console.error("Erro ao verificar conexão:", error);
+      console.error("[Login] Erro ao verificar conexão:", error);
       setConnectionStatus({
         connected: false,
         message: "Erro ao verificar conexão com o banco de dados."
@@ -90,6 +90,15 @@ const LoginPage = () => {
             <AlertTitle className="text-red-700">Problema de conexão</AlertTitle>
             <AlertDescription className="text-red-600">
               {connectionStatus.message || "Não foi possível conectar ao banco de dados. Verifique as variáveis de ambiente."}
+              
+              {connectionStatus.diagnostics && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-sm font-medium">Detalhes técnicos</summary>
+                  <pre className="mt-2 bg-slate-100 p-2 rounded overflow-auto max-h-40 text-xs">
+                    {JSON.stringify(connectionStatus.diagnostics, null, 2)}
+                  </pre>
+                </details>
+              )}
             </AlertDescription>
           </Alert>
         )}
