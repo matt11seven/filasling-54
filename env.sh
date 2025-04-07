@@ -4,7 +4,7 @@
 echo "============================================"
 echo "Iniciando script de configuração de ambiente"
 echo "============================================"
-echo "Versão do script: 1.3"
+echo "Versão do script: 1.4"
 echo "Data de execução: $(date)"
 
 # Exibe informações do ambiente para diagnóstico
@@ -45,8 +45,9 @@ for var in DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME; do
     esac
   else
     # Corrigindo o problema de substituição aqui
-    value=$(echo ${!var} | sed 's/"/\\"/g')
-    echo "✅ Variável $var está definida: $value"
+    # Usar método mais compatível com shells diferentes
+    CURRENT_VALUE=$(eval echo \$${var})
+    echo "✅ Variável $var está definida: $CURRENT_VALUE"
   fi
 done
 
@@ -189,4 +190,3 @@ echo "============================================"
 echo "Configuração de ambiente concluída"
 echo "============================================"
 echo "Iniciando NGINX..."
-
