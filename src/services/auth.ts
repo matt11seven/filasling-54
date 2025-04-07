@@ -6,11 +6,11 @@ import { toast } from 'sonner';
 const bcrypt = {
   compare: async (password: string, hash: string) => {
     console.log('Mock bcrypt.compare called', { password, hash });
-    return password === 'test123'; // For demo purposes only
+    return password === 'aoladodoresultado2030'; // Para fins de demonstração apenas
   },
   hash: async (password: string, rounds: number) => {
     console.log('Mock bcrypt.hash called', { password, rounds });
-    return `hashed_${password}_${rounds}`; // For demo purposes only
+    return `hashed_${password}_${rounds}`; // Para fins de demonstração apenas
   }
 };
 
@@ -23,8 +23,8 @@ export interface UserData {
 // Verificar se o usuário está ativo
 export const checkUserActive = async (email: string): Promise<{ isActive: boolean; isAdmin: boolean }> => {
   try {
-    // In development, auto-succeed for test@example.com
-    if (import.meta.env.DEV && email === 'test@example.com') {
+    // In development, auto-succeed for matt@slingbr.com
+    if (import.meta.env.DEV && email === 'matt@slingbr.com') {
       return { isActive: true, isAdmin: true };
     }
     
@@ -50,8 +50,8 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
 // Login de usuário
 export const loginUser = async (email: string, password: string): Promise<UserData | null> => {
   try {
-    // In development, auto-login for test@example.com/test123
-    if (import.meta.env.DEV && email === 'test@example.com' && password === 'test123') {
+    // In development, auto-login for matt@slingbr.com/aoladodoresultado2030
+    if (import.meta.env.DEV && email === 'matt@slingbr.com' && password === 'aoladodoresultado2030') {
       toast.success('Login realizado com sucesso (modo de desenvolvimento)');
       return {
         id: 'dev-1',
