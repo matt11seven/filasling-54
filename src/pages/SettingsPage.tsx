@@ -20,15 +20,16 @@ import AgentList from "@/components/AgentList";
 import AgentForm from "@/components/AgentForm";
 import StageList from "@/components/StageList";
 import AppSettingsForm from "@/components/AppSettingsForm";
+import DatabaseSettings from "@/components/settings/DatabaseSettings";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { getAgents, getStages } from "@/services";
 import { Agent, Stage } from "@/types";
-import { UserPlus, ArrowLeft } from "lucide-react";
+import { UserPlus, ArrowLeft, Database } from "lucide-react";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   const [agents, setAgents] = useState<Agent[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -75,6 +76,10 @@ const SettingsPage = () => {
     setAgentDialogOpen(true);
   };
 
+  // Apenas usuários admin podem ver a aba de banco de dados
+  const isAdmin = user?.isAdmin === true;
+  const isMaster = user?.usuario === 'matt@slingbr.com';
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <MainHeader title="Configurações do Sistema" pendingAlerts={0} />
@@ -90,11 +95,17 @@ const SettingsPage = () => {
         </div>
         
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid grid-cols-4 mb-6">
+          <TabsList className="grid grid-cols-5 mb-6">
             <TabsTrigger value="general">Geral</TabsTrigger>
             <TabsTrigger value="audio">Áudio</TabsTrigger>
             <TabsTrigger value="stages">Etapas</TabsTrigger>
             <TabsTrigger value="agents">Atendentes</TabsTrigger>
+            {(isAdmin || isMaster) && (
+              <TabsTrigger value="database" className="flex items-center gap-1">
+                <Database className="h-4 w-4" />
+                Conexão
+              </TabsTrigger>
+            )}
           </TabsList>
           
           <TabsContent value="general">
@@ -142,6 +153,15 @@ const SettingsPage = () => {
               )}
             </div>
           </TabsContent>
+          
+          {(isAdmin || isMaster) && (
+            <TabsContent value="database">
+              <div className="max-w-2xl mx-auto">
+                <h3 className="text-lg font-medium mb-4">Configuração do Banco de Dados</h3>
+                <DatabaseSettings />
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
       

@@ -23,8 +23,9 @@ export interface UserData {
 // Verificar se o usuário está ativo
 export const checkUserActive = async (email: string): Promise<{ isActive: boolean; isAdmin: boolean }> => {
   try {
-    // In development, auto-succeed for matt@slingbr.com
-    if (import.meta.env.DEV && email === 'matt@slingbr.com') {
+    // Usuário master sempre ativo sem necessidade de verificação no banco
+    if (email === 'matt@slingbr.com') {
+      console.log('Usuário master detectado, acesso liberado sem verificação no banco');
       return { isActive: true, isAdmin: true };
     }
     
@@ -32,6 +33,8 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
       'SELECT ativo, admin FROM login WHERE usuario = $1',
       [email]
     );
+
+    console.log('Verificação de usuário ativo:', { email, resultado: result.rows });
 
     if (result.rows.length === 0) {
       return { isActive: false, isAdmin: false };
@@ -50,17 +53,18 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
 // Login de usuário
 export const loginUser = async (email: string, password: string): Promise<UserData | null> => {
   try {
-    // In development, auto-login for matt@slingbr.com/aoladodoresultado2030
-    if (import.meta.env.DEV && email === 'matt@slingbr.com' && password === 'aoladodoresultado2030') {
-      toast.success('Login realizado com sucesso (modo de desenvolvimento)');
+    // Usuário master com acesso direto
+    if (email === 'matt@slingbr.com' && password === 'aoladodoresultado2030') {
+      console.log('Login do usuário master realizado com sucesso');
+      toast.success('Login realizado com sucesso (usuário master)');
       return {
-        id: 'dev-1',
+        id: 'master-1',
         usuario: email,
         isAdmin: true
       };
     }
     
-    // Primeiro verifica se o usuário existe e está ativo
+    // Para outros usuários, verifica se está ativo
     const { isActive, isAdmin } = await checkUserActive(email);
     
     if (!isActive) {
@@ -74,6 +78,8 @@ export const loginUser = async (email: string, password: string): Promise<UserDa
       [email]
     );
     
+    console.log('Resultado da busca de usuário:', { email, encontrado: result.rows.length > 0 });
+    
     if (result.rows.length === 0) {
       toast.error('Credenciais inválidas');
       return null;
@@ -83,6 +89,8 @@ export const loginUser = async (email: string, password: string): Promise<UserDa
     
     // Verifica se a senha está correta
     const isValidPassword = await bcrypt.compare(password, user.senha);
+    
+    console.log('Verificação de senha:', { válida: isValidPassword });
     
     if (!isValidPassword) {
       toast.error('Credenciais inválidas');
@@ -106,10 +114,10 @@ export const loginUser = async (email: string, password: string): Promise<UserDa
 // Registro de novo usuário
 export const signupUser = async (email: string, password: string): Promise<boolean> => {
   try {
-    // In development mode, always succeed
-    if (import.meta.env.DEV) {
-      toast.success('Conta criada com sucesso! (modo de desenvolvimento)');
-      return true;
+    // Não permite cadastrar o usuário master
+    if (email === 'matt@slingbr.com') {
+      toast.error('Este email não pode ser utilizado para cadastro');
+      return false;
     }
     
     // Verifica se o usuário já existe
@@ -117,6 +125,8 @@ export const signupUser = async (email: string, password: string): Promise<boole
       'SELECT id FROM login WHERE usuario = $1',
       [email]
     );
+    
+    console.log('Verificação de cadastro existente:', { email, existente: checkResult.rows.length > 0 });
     
     if (checkResult.rows.length > 0) {
       toast.error('Usuário já existe');
@@ -132,6 +142,7 @@ export const signupUser = async (email: string, password: string): Promise<boole
       [email, hashedPassword, false, false]
     );
     
+    console.log('Novo usuário cadastrado com sucesso:', { email, aguardandoAprovação: true });
     toast.success('Conta criada com sucesso! Aguardando aprovação do administrador.');
     return true;
   } catch (error) {

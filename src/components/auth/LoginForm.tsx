@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { checkDatabaseConnection, resetDatabaseConnection } from "@/services/connectionTest";
+import { checkDatabaseConnection } from "@/services/connectionTest";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email inválido" }),
@@ -39,7 +39,6 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
   const [connectionStatus, setConnectionStatus] = useState<{connected: boolean, message?: string, diagnostics?: any}>({
     connected: true
   });
-  const [checkingConnection, setCheckingConnection] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,41 +48,23 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
     },
   });
 
-  const checkConnection = async () => {
-    setCheckingConnection(true);
-    try {
-      const status = await checkDatabaseConnection();
-      setConnectionStatus(status);
-    } finally {
-      setCheckingConnection(false);
-    }
-  };
-
-  const resetConnection = async () => {
-    setCheckingConnection(true);
-    try {
-      const status = await resetDatabaseConnection();
-      setConnectionStatus(status);
-    } finally {
-      setCheckingConnection(false);
-    }
-  };
-
   const onSubmit = async (values: FormValues) => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
 
-      // Verifica conexão com o banco
+      // Verifica conexão com o banco (apenas log, não exibe para o usuário)
       const status = await checkDatabaseConnection();
-      if (!status.connected) {
-        setConnectionStatus(status);
-        setErrorMessage("Não foi possível conectar ao banco de dados. Verifique a conexão.");
-        return;
-      }
+      console.log('Status da conexão antes do login:', status);
       
       try {
-        // Verifica primeiro se o usuário existe e está ativo
+        // Se for o usuário matt@slingbr.com, o login será mais direto
+        if (values.email === 'matt@slingbr.com') {
+          await login(values.email, values.password);
+          return;
+        }
+        
+        // Para outros usuários, verifica primeiro se existe e está ativo
         const { isActive } = await checkUserActive(values.email);
           
         // Se não tiver dados ou o usuário não estiver ativo
@@ -131,16 +112,6 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
                 </pre>
               </div>
             )}
-            <div className="mt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={resetConnection}
-                disabled={checkingConnection}
-              >
-                {checkingConnection ? "Reconectando..." : "Tentar reconectar"}
-              </Button>
-            </div>
           </AlertDescription>
         </Alert>
       )}
@@ -193,7 +164,7 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full" disabled={isLoading || checkingConnection}>
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader className="mr-2 h-4 w-4 animate-spin" /> Entrando...
@@ -212,23 +183,6 @@ const LoginForm = ({ onSwitchMode }: LoginFormProps) => {
           className="p-0"
         >
           Não tem uma conta? Cadastre-se
-        </Button>
-      </div>
-      
-      <div className="mt-4 text-center">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={checkConnection}
-          disabled={checkingConnection}
-        >
-          {checkingConnection ? (
-            <>
-              <Loader className="mr-2 h-3 w-3 animate-spin" /> Verificando conexão...
-            </>
-          ) : (
-            "Verificar conexão com banco de dados"
-          )}
         </Button>
       </div>
     </>
