@@ -8,31 +8,29 @@ let supabaseUrl: string;
 let supabaseKey: string;
 let usePostgresDirect = false;
 
-// Verifica se os valores são placeholders ou se estamos usando PostgreSQL direto
-if (typeof SUPABASE_URL_PLACEHOLDER === 'undefined' || 
-    SUPABASE_URL_PLACEHOLDER === "SUPABASE_URL_PLACEHOLDER" || 
-    SUPABASE_URL_PLACEHOLDER === "") {
-  
-  // Verifica se as variáveis de PostgreSQL direto estão configuradas
-  if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
-      DB_POSTGRESDB_HOST_PLACEHOLDER !== "DB_POSTGRESDB_HOST_PLACEHOLDER" && 
-      DB_POSTGRESDB_HOST_PLACEHOLDER !== "") {
-    console.log("Configuração detectada para PostgreSQL direto (EasyPanel)");
-    usePostgresDirect = true;
-    
-    // Aqui não configuramos supabaseUrl/Key porque vamos usar PostgreSQL direto
-    // Os serviços precisarão verificar usePostgresDirect
-  } else {
-    // Fallback para valores de desenvolvimento hardcoded do Supabase
-    console.log("Usando configuração de desenvolvimento do Supabase");
-    supabaseUrl = "https://cfhjwvibgiierhvaafrd.supabase.co";
-    supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaGp3dmliZ2lpZXJodmFhZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODI1NjcsImV4cCI6MjA1OTM1ODU2N30.3GvW0fV610dUXnQgF08XhT5EPKIwHoyfAQRgCSGN4EM";
-  }
-} else {
-  // Usa valores do ambiente para produção (serão substituídos por env.sh)
-  console.log("Usando configuração de produção do Supabase");
+// Verifica primeiro se as variáveis de PostgreSQL direto estão configuradas
+if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
+    DB_POSTGRESDB_HOST_PLACEHOLDER !== "DB_POSTGRESDB_HOST_PLACEHOLDER" && 
+    DB_POSTGRESDB_HOST_PLACEHOLDER !== "") {
+  console.log("Configuração detectada para PostgreSQL direto (EasyPanel)");
+  usePostgresDirect = true;
+  // Não configuramos supabaseUrl/Key porque vamos usar PostgreSQL direto
+} 
+// Caso não tenha PostgreSQL configurado, tenta usar Supabase
+else if (typeof SUPABASE_URL_PLACEHOLDER !== 'undefined' && 
+    SUPABASE_URL_PLACEHOLDER !== "SUPABASE_URL_PLACEHOLDER" && 
+    SUPABASE_URL_PLACEHOLDER !== "") {
+  // Usa valores do ambiente para Supabase
+  console.log("Usando configuração do Supabase");
   supabaseUrl = SUPABASE_URL_PLACEHOLDER;
   supabaseKey = SUPABASE_ANON_KEY_PLACEHOLDER;
+} 
+// Fallback para ambiente de desenvolvimento
+else {
+  // Valores de desenvolvimento hardcoded do Supabase
+  console.log("Usando configuração de desenvolvimento do Supabase");
+  supabaseUrl = "https://cfhjwvibgiierhvaafrd.supabase.co";
+  supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaGp3dmliZ2lpZXJodmFhZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODI1NjcsImV4cCI6MjA1OTM1ODU2N30.3GvW0fV610dUXnQgF08XhT5EPKIwHoyfAQRgCSGN4EM";
 }
 
 // Exporta a indicação se estamos usando PostgreSQL direto
@@ -52,3 +50,12 @@ export const postgresConfig = {
 export const supabase = !usePostgresDirect 
   ? createClient<Database>(supabaseUrl, supabaseKey)
   : createClient<Database>("", ""); // Cliente vazio para evitar erros de tipo
+
+// Adiciona log para identificar qual modo está sendo usado
+console.log(`Modo de conexão: ${usePostgresDirect ? 'PostgreSQL Direto' : 'Supabase'}`);
+console.log("Configuração de banco:", usePostgresDirect ? {
+  host: postgresConfig.host,
+  user: postgresConfig.user,
+  database: postgresConfig.database,
+  port: postgresConfig.port
+} : "Usando Supabase");

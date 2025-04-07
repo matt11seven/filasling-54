@@ -1,6 +1,13 @@
 
 #!/bin/bash
 
+# Exibe informações de configuração
+echo "Configurando variáveis de ambiente..."
+echo "Tipo de banco: ${DB_TYPE}"
+echo "Host do banco: ${DB_POSTGRESDB_HOST}"
+echo "Porta do banco: ${DB_POSTGRESDB_PORT}"
+echo "Banco de dados: ${DB_POSTGRESDB_DATABASE}"
+
 # Substitui as variáveis de ambiente nos arquivos JavaScript
 find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"SUPABASE_URL_PLACEHOLDER\"|\"${SUPABASE_URL}\"|g" {} \;
 find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"SUPABASE_ANON_KEY_PLACEHOLDER\"|\"${SUPABASE_ANON_KEY}\"|g" {} \;
@@ -14,3 +21,4 @@ find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"DB_POSTGRESDB_
 find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|\"DB_POSTGRESDB_PORT_PLACEHOLDER\"|\"${DB_POSTGRESDB_PORT}\"|g" {} \;
 
 echo "Variáveis de ambiente substituídas com sucesso!"
+echo "Iniciando o servidor web..."

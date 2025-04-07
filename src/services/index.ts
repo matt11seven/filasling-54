@@ -4,3 +4,4 @@ export * from './tickets';
 export * from './stages';
 export * from './agents';
 export * from './realtime';
+export * from './connectionTest';

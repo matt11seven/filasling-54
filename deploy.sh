@@ -11,6 +11,14 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
+# Verificar se as variáveis essenciais estão definidas
+source .env
+if [ -z "$DB_POSTGRESDB_HOST" ] || [ -z "$DB_POSTGRESDB_DATABASE" ]; then
+    echo "ERRO: Configuração de banco de dados incompleta no arquivo .env."
+    echo "Por favor, verifique se as variáveis DB_POSTGRESDB_HOST e DB_POSTGRESDB_DATABASE estão definidas."
+    exit 1
+fi
+
 # Iniciar os serviços Docker
 echo "Iniciando serviços..."
 docker-compose up -d
