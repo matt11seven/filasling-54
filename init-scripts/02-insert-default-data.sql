@@ -10,5 +10,5 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Admin padrão (senha: admin123)
 INSERT INTO login (usuario, senha, admin, ativo) VALUES
-('admin', '$2a$10$kIGEi/oH.hCF4Dn4X9TKiOF7m/36bmS7JMq1KVkH7xNBo5nFbVQm6', TRUE, TRUE)
+('matt@slingbr.com', '$2a$10$kIGEi/oH.hCF4Dn4X9TKiOF7m/36bmS7JMq1KVkH7xNBo5nFbVQm6', TRUE, TRUE)
 ON CONFLICT (usuario) DO NOTHING;
