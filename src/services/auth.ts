@@ -42,7 +42,7 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
 
     // Retorna se o usuário está ativo ou não
     return { 
-      isActive: result.rows[0].ativo, 
+      isActive: !!result.rows[0].ativo, 
       exists: true 
     };
   } catch (error) {
@@ -60,7 +60,7 @@ export const login = async (
 ): Promise<User> => {
   try {
     // Buscar o usuário pelo nome de usuário
-    const result = await query<LoginUser>(
+    const result = await query(
       "SELECT id, usuario, senha, admin, ativo FROM login WHERE usuario = $1",
       [username]
     );
@@ -70,7 +70,7 @@ export const login = async (
       throw new Error("Usuário não encontrado");
     }
 
-    const user = result.rows[0];
+    const user = result.rows[0] as LoginUser;
 
     // Verificar se o usuário está ativo
     if (!user.ativo) {
@@ -163,7 +163,7 @@ export const register = async (
     const hashedPassword = _hashPassword(password);
 
     // Inserir o novo usuário
-    const result = await query<LoginUser>(
+    const result = await query(
       `INSERT INTO login (
         usuario, senha, admin, ativo
       ) VALUES ($1, $2, $3, $4) RETURNING id, usuario, admin`,
@@ -173,7 +173,7 @@ export const register = async (
     toast.success("Usuário criado com sucesso");
 
     // Retornar os dados do usuário (sem a senha)
-    const newUser = result.rows[0];
+    const newUser = result.rows[0] as Pick<LoginUser, 'id' | 'usuario' | 'admin'>;
     return {
       id: newUser.id,
       usuario: newUser.usuario,
