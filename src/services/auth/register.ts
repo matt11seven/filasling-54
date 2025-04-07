@@ -38,7 +38,14 @@ export const register = async (
       throw new Error("Falha ao criar usuário: sem resultado do banco de dados");
     }
 
-    const rowData = result.rows[0];
+    // Tipar corretamente o resultado da consulta
+    interface UserRow {
+      id: string | number;
+      usuario?: string;
+      admin?: boolean;
+    }
+    
+    const rowData = result.rows[0] as UserRow;
     
     if (!rowData) {
       throw new Error("Dados de usuário inválidos após inserção");
