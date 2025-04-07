@@ -65,3 +65,46 @@ export const resetConnection = (): void => {
   resetPool();
   toast.info("Conexão com banco de dados reiniciada");
 };
+
+/**
+ * Retorna informações de diagnóstico sobre a conexão
+ */
+export const getDatabaseDiagnostics = async (): Promise<string> => {
+  try {
+    // Capturar informações do ambiente
+    const envInfo = {
+      DB_TYPE: process.env.DB_TYPE || 'Não definido',
+      DB_HOST: process.env.DB_POSTGRESDB_HOST || 'Não definido',
+      DB_PORT: process.env.DB_POSTGRESDB_PORT || 'Não definido',
+      DB_NAME: process.env.DB_POSTGRESDB_DATABASE || 'Não definido',
+      DB_USER: process.env.DB_POSTGRESDB_USER || 'Não definido',
+      CONNECTION_MODE: getConnectionMode(),
+      NODE_ENV: process.env.NODE_ENV || 'Não definido',
+      TIMESTAMP: new Date().toISOString()
+    };
+    
+    // Tentar conexão
+    const isConnected = await testDatabaseConnection();
+    
+    // Formatar relatório
+    const report = `
+=== DIAGNÓSTICO DE CONEXÃO ===
+Timestamp: ${envInfo.TIMESTAMP}
+Modo de conexão: ${envInfo.CONNECTION_MODE}
+Ambiente: ${envInfo.NODE_ENV}
+Tipo de BD: ${envInfo.DB_TYPE}
+Host: ${envInfo.DB_HOST}
+Porta: ${envInfo.DB_PORT}
+Banco: ${envInfo.DB_NAME}
+Usuário: ${envInfo.DB_USER}
+Status da conexão: ${isConnected ? '✅ CONECTADO' : '❌ FALHA'}
+============================
+    `;
+    
+    console.log(report);
+    return report;
+  } catch (error) {
+    console.error("Erro ao gerar diagnóstico:", error);
+    return `Erro ao gerar diagnóstico: ${error}`;
+  }
+};
