@@ -12,13 +12,15 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
     resetConnectionCache();
     resetPool();
     
-    // Exibir informações de configuração no console para diagnóstico
+    // Exibir informações detalhadas de configuração para diagnóstico
     console.log("Testando conexão com as seguintes configurações:", {
       modo: isUsingPostgresDirect ? "PostgreSQL Direto" : "Supabase (fallback)",
       host: postgresConfig.host,
       port: postgresConfig.port,
       database: postgresConfig.database,
-      user: postgresConfig.user
+      user: postgresConfig.user,
+      hostRaw: typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_HOST_PLACEHOLDER : 'não disponível',
+      hostRawType: typeof DB_POSTGRESDB_HOST_PLACEHOLDER
     });
     
     // Verificar se a configuração parece válida
@@ -26,11 +28,13 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
         !postgresConfig.host || 
         postgresConfig.host === "") {
       toast.error("Configuração de banco inválida: host não definido", {
-        description: "Verifique se as variáveis de ambiente estão configuradas corretamente no seu .env",
-        duration: 10000
+        description: `Verifique se as variáveis de ambiente estão configuradas corretamente no seu .env. 
+                     Valor recebido: "${postgresConfig.host}" (${typeof postgresConfig.host})`,
+        duration: 15000
       });
       console.error("❌ Configuração inválida: HOST não está definido corretamente");
       console.error("Valores recebidos:", postgresConfig);
+      console.error("Valor raw do placeholder:", DB_POSTGRESDB_HOST_PLACEHOLDER);
       return false;
     }
     
@@ -47,12 +51,16 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
       const timeoutPromise = new Promise<boolean>((resolve) => {
         setTimeout(() => {
           toast.error(`Timeout ao tentar conectar ao PostgreSQL (${postgresConfig.host})`, {
-            description: "Verifique se o servidor PostgreSQL está em execução e acessível",
-            duration: 10000
+            description: `Verifique se o servidor PostgreSQL está em execução e acessível.
+                          Host: ${postgresConfig.host}
+                          Porta: ${postgresConfig.port}
+                          Usuário: ${postgresConfig.user}
+                          Database: ${postgresConfig.database}`,
+            duration: 15000
           });
           console.error(`❌ Timeout na conexão com PostgreSQL ${postgresConfig.host}:${postgresConfig.port}`);
           resolve(false);
-        }, 8000); // Aumentando o timeout para 8 segundos
+        }, 10000); // Aumentando o timeout para 10 segundos
       });
       
       // Usar Promise.race para garantir que não bloqueie por muito tempo
@@ -67,16 +75,20 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
         return true;
       } else {
         toast.error(`Falha ao conectar ao PostgreSQL (${postgresConfig.host})`, {
-          description: "Verifique as credenciais, firewall e se o servidor está em execução",
-          duration: 10000
+          description: `Verifique as credenciais, firewall e se o servidor está em execução.
+                        Host: ${postgresConfig.host}
+                        Porta: ${postgresConfig.port}
+                        Usuário: ${postgresConfig.user}
+                        Database: ${postgresConfig.database}`,
+          duration: 15000
         });
         console.error(`❌ Falha na conexão com PostgreSQL ${postgresConfig.host}:${postgresConfig.port}`);
         
         // Verificar configurações para diagnóstico
-        if (postgresConfig.host === "db") {
-          console.warn("⚠️ Você está usando 'db' como hostname. Se estiver fora do contêiner Docker, isso não vai funcionar.");
-          console.warn("⚠️ Utilize o IP ou hostname real do servidor PostgreSQL.");
-          toast.error("Hostname 'db' não resolve fora do Docker. Use IP ou hostname real.", {
+        if (postgresConfig.host.includes("_")) {
+          console.warn("⚠️ O hostname contém underscores (_). Verifique se o DNS resolve corretamente esse formato.");
+          console.warn("⚠️ Em alguns ambientes, hostnames com underscores podem causar problemas de resolução DNS.");
+          toast.error("Hostname contém underscores (_) que podem causar problemas de resolução DNS.", {
             duration: 10000
           });
         }
@@ -121,6 +133,14 @@ export const getConnectionConfig = (): object => {
     database: postgresConfig.database,
     user: postgresConfig.user,
     hasPassword: Boolean(postgresConfig.password),
+    // Adicionar valores brutos dos placeholders para diagnóstico
+    rawPlaceholders: {
+      hostPlaceholder: typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_HOST_PLACEHOLDER : 'não disponível',
+      hostPlaceholderType: typeof DB_POSTGRESDB_HOST_PLACEHOLDER,
+      userPlaceholder: typeof DB_POSTGRESDB_USER_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_USER_PLACEHOLDER : 'não disponível',
+      databasePlaceholder: typeof DB_POSTGRESDB_DATABASE_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_DATABASE_PLACEHOLDER : 'não disponível',
+      portPlaceholder: typeof DB_POSTGRESDB_PORT_PLACEHOLDER !== 'undefined' ? DB_POSTGRESDB_PORT_PLACEHOLDER : 'não disponível'
+    }
   };
 };
 

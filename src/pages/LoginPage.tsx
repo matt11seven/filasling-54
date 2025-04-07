@@ -7,8 +7,8 @@ import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
 import AuthFooter from "@/components/auth/AuthFooter";
 import { Button } from "@/components/ui/button";
-import { Database, RefreshCw } from "lucide-react";
-import { testDatabaseConnection, getConnectionConfig } from "@/services/connectionTest";
+import { Database, RefreshCw, Server } from "lucide-react";
+import { testDatabaseConnection, getConnectionConfig, resetConnection } from "@/services/connectionTest";
 import { toast } from "sonner";
 
 const LoginPage = () => {
@@ -47,6 +47,13 @@ const LoginPage = () => {
     } finally {
       setIsTesting(false);
     }
+  };
+  
+  // Reset de conexão
+  const handleResetConnection = () => {
+    resetConnection();
+    setShowDiagnostics(true);
+    toast.info("Conexão com banco reiniciada. Clique em Testar Conexão para verificar novamente.");
   };
   
   // Mostrar/esconder diagnósticos
@@ -98,14 +105,26 @@ const LoginPage = () => {
                 {isTesting ? "Testando conexão..." : "Testar Conexão com Banco"}
               </Button>
               
-              <Button 
-                onClick={toggleDiagnostics}
-                variant="ghost"
-                size="sm"
-                className="text-xs mt-1 w-full"
-              >
-                {showDiagnostics ? "Esconder Diagnósticos" : "Mostrar Diagnósticos"}
-              </Button>
+              <div className="flex gap-2 w-full">
+                <Button 
+                  onClick={toggleDiagnostics}
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs flex-1"
+                >
+                  {showDiagnostics ? "Esconder Diagnósticos" : "Mostrar Diagnósticos"}
+                </Button>
+                
+                <Button 
+                  onClick={handleResetConnection}
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs flex items-center gap-1"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Resetar
+                </Button>
+              </div>
             </div>
             
             {/* Diagnósticos de conexão */}
