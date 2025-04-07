@@ -31,6 +31,21 @@ echo -e "Port: ${DB_PORT}"
 echo -e "User: ${DB_USER}"
 echo -e "Database: ${DB_NAME}"
 
+# Verificar se o banco de dados existe, caso contrário criar
+echo -e "${YELLOW}Verificando se o banco de dados existe...${NC}"
+if PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -lqt | cut -d \| -f 1 | grep -qw $DB_NAME; then
+    echo -e "${GREEN}✓ Banco de dados $DB_NAME já existe${NC}"
+else
+    echo -e "${YELLOW}Criando banco de dados $DB_NAME...${NC}"
+    PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -c "CREATE DATABASE $DB_NAME;"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Banco de dados $DB_NAME criado com sucesso${NC}"
+    else
+        echo -e "${RED}✗ Erro ao criar banco de dados $DB_NAME${NC}"
+        exit 1
+    fi
+fi
+
 # Executar script de criação de tabelas
 echo -e "${YELLOW}Criando tabelas...${NC}"
 PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f init-scripts/01-create-tables.sql
@@ -61,4 +76,3 @@ echo -e ""
 echo -e "${YELLOW}Ou com:${NC}"
 echo -e "Email: admin@example.com"
 echo -e "Senha: admin123"
-

@@ -52,4 +52,3 @@ BEGIN
     RAISE NOTICE '- 3 Tickets de exemplo criados';
     RAISE NOTICE '===========================================';
 END $$;
-

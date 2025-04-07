@@ -57,3 +57,12 @@ CREATE TABLE IF NOT EXISTS tickets (
 CREATE INDEX IF NOT EXISTS idx_atendentes_email ON atendentes(email);
 CREATE INDEX IF NOT EXISTS idx_tickets_etapa_numero ON tickets(etapa_numero);
 CREATE INDEX IF NOT EXISTS idx_tickets_atendente_id ON tickets(atendente_id);
+
+-- Funções auxiliares
+CREATE OR REPLACE FUNCTION check_user_active(email VARCHAR) RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM login WHERE usuario = email AND ativo = TRUE
+  );
+END;
+$$ LANGUAGE plpgsql;
