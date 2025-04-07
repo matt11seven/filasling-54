@@ -42,9 +42,11 @@ const LoginPage = () => {
   }, []);
 
   // Se o usuário já estiver autenticado, redirecione para o dashboard
-  if (isAuthenticated) {
-    navigate("/dashboard");
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSwitchMode = () => {
     setIsSigningUp(!isSigningUp);

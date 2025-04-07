@@ -17,10 +17,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Verifica se existe um usuário salvo no localStorage
     const checkSession = async () => {
       setIsLoading(true);
-      const storedUser = localStorage.getItem("queueUser");
-      
-      if (storedUser) {
-        try {
+      try {
+        const storedUser = localStorage.getItem("queueUser");
+        
+        if (storedUser) {
           const userData: User = JSON.parse(storedUser);
           
           // Verifica se o usuário ainda está ativo
@@ -33,19 +33,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             toast.error("Sua conta está aguardando aprovação do administrador");
             navigate("/login");
           }
-        } catch (error) {
-          console.error("Erro ao verificar sessão:", error);
-          setUser(null);
-          localStorage.removeItem("queueUser");
         }
+      } catch (error) {
+        console.error("Erro ao verificar sessão:", error);
+        setUser(null);
+        localStorage.removeItem("queueUser");
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
 
     // Verifica a sessão ao carregar
     checkSession();
-  }, [navigate]);
+  }, [navigate]); // Adicione navigate como dependência do useEffect
 
   const login = async (email: string, password: string) => {
     try {

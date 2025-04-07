@@ -20,10 +20,10 @@ function App() {
   const [queryClient] = useState(() => new QueryClient());
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <TooltipProvider>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
             <SettingsProvider>
               <Toaster />
               <Sonner position="top-center" closeButton richColors />
@@ -37,10 +37,10 @@ function App() {
               </Routes>
               <GlobalRankingMonitor />
             </SettingsProvider>
-          </TooltipProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
 
