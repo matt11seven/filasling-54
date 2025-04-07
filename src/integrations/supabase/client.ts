@@ -14,10 +14,10 @@ if (typeof SUPABASE_URL_PLACEHOLDER === 'undefined' ||
     SUPABASE_URL_PLACEHOLDER === "") {
   
   // Verifica se as variáveis de PostgreSQL direto estão configuradas
-  if (typeof DB_HOST_PLACEHOLDER !== 'undefined' && 
-      DB_HOST_PLACEHOLDER !== "DB_HOST_PLACEHOLDER" && 
-      DB_HOST_PLACEHOLDER !== "") {
-    console.log("Configuração detectada para PostgreSQL direto");
+  if (typeof DB_POSTGRESDB_HOST_PLACEHOLDER !== 'undefined' && 
+      DB_POSTGRESDB_HOST_PLACEHOLDER !== "DB_POSTGRESDB_HOST_PLACEHOLDER" && 
+      DB_POSTGRESDB_HOST_PLACEHOLDER !== "") {
+    console.log("Configuração detectada para PostgreSQL direto (EasyPanel)");
     usePostgresDirect = true;
     
     // Aqui não configuramos supabaseUrl/Key porque vamos usar PostgreSQL direto
@@ -38,13 +38,14 @@ if (typeof SUPABASE_URL_PLACEHOLDER === 'undefined' ||
 // Exporta a indicação se estamos usando PostgreSQL direto
 export const isUsingPostgresDirect = usePostgresDirect;
 
-// Exporta dados de conexão do PostgreSQL para uso direto pelos serviços
+// Exporta dados de conexão do PostgreSQL para uso direto pelos serviços (formato EasyPanel)
 export const postgresConfig = {
-  host: DB_HOST_PLACEHOLDER,
-  user: DB_USER_PLACEHOLDER,
-  password: DB_PASSWORD_PLACEHOLDER,
-  database: DB_NAME_PLACEHOLDER,
-  port: DB_PORT_PLACEHOLDER
+  type: DB_TYPE_PLACEHOLDER,
+  host: DB_POSTGRESDB_HOST_PLACEHOLDER,
+  user: DB_POSTGRESDB_USER_PLACEHOLDER,
+  password: DB_POSTGRESDB_PASSWORD_PLACEHOLDER,
+  database: DB_POSTGRESDB_DATABASE_PLACEHOLDER,
+  port: DB_POSTGRESDB_PORT_PLACEHOLDER
 };
 
 // Cria cliente do Supabase apenas se não estivermos usando PostgreSQL direto
