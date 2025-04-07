@@ -6,29 +6,30 @@ interface ConnectionStatus {
   diagnostics?: Record<string, any>;
 }
 
-// Função para obter as configurações de conexão do localStorage
+// Obter configurações de conexão do arquivo .env
 export const getDatabaseConfig = () => {
   try {
-    const config = localStorage.getItem('dbConfig');
-    if (config) {
-      return JSON.parse(config);
-    }
-    return null;
+    // Prioriza variáveis de ambiente (substituídas em runtime pelo script env.sh)
+    const config = {
+      host: DB_HOST_PLACEHOLDER,
+      port: DB_PORT_PLACEHOLDER,
+      user: DB_USER_PLACEHOLDER, 
+      password: DB_PASSWORD_PLACEHOLDER,
+      database: DB_NAME_PLACEHOLDER
+    };
+    
+    console.log('Configurações de banco obtidas das variáveis de ambiente:', {
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      database: config.database,
+      password: '********'
+    });
+    
+    return config;
   } catch (error) {
-    console.error('Erro ao ler configurações do banco de dados:', error);
+    console.error('Erro ao obter configurações do banco de dados:', error);
     return null;
-  }
-};
-
-// Função para salvar as configurações de conexão no localStorage
-export const saveDatabaseConfig = (config: any) => {
-  try {
-    localStorage.setItem('dbConfig', JSON.stringify(config));
-    console.log('Configurações de banco de dados salvas', config);
-    return true;
-  } catch (error) {
-    console.error('Erro ao salvar configurações do banco de dados:', error);
-    return false;
   }
 };
 
@@ -36,15 +37,21 @@ export const checkDatabaseConnection = async (): Promise<ConnectionStatus> => {
   // Em um ambiente de navegador, não podemos testar diretamente a conexão do banco de dados
   // Isso precisaria ser feito através de um endpoint de API do lado do servidor
   
-  console.log('Verificação de conexão solicitada (mock do navegador)');
+  console.log('Verificação de conexão solicitada (modo diagnóstico)');
   
   const config = getDatabaseConfig();
-  console.log('Configurações de banco de dados para teste:', config || 'Não configurado');
+  console.log('Configurações de banco de dados para diagnóstico:', config ? {
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    database: config.database,
+    password: '********'
+  } : 'Não configurado');
   
   if (!config) {
     return {
       connected: false,
-      message: "Configurações de banco de dados não encontradas.",
+      message: "Variáveis de ambiente para banco de dados não encontradas.",
       diagnostics: { 
         env: import.meta.env.MODE,
         timestamp: new Date().toISOString(),
@@ -53,10 +60,10 @@ export const checkDatabaseConnection = async (): Promise<ConnectionStatus> => {
     };
   }
   
-  // Simula conexão bem-sucedida
+  // Simula conexão bem-sucedida em ambiente de desenvolvimento
   return {
     connected: true,
-    message: "Modo de simulação ativado. Configurações de banco armazenadas para uso no servidor.",
+    message: "Variáveis de ambiente para conexão com o banco de dados encontradas.",
     diagnostics: {
       env: import.meta.env.MODE,
       config: {

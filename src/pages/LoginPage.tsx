@@ -8,7 +8,8 @@ import SignupForm from "@/components/auth/SignupForm";
 import AuthFooter from "@/components/auth/AuthFooter";
 import { checkDatabaseConnection } from "@/services/connectionTest";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Database } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const LoginPage = () => {
   const { isAuthenticated } = useAuth();
@@ -25,6 +26,7 @@ const LoginPage = () => {
       try {
         const status = await checkDatabaseConnection();
         setConnectionStatus(status);
+        console.log("Status de conexão do banco de dados:", status);
       } catch (error) {
         console.error("Erro ao verificar conexão:", error);
         setConnectionStatus({
@@ -54,6 +56,23 @@ const LoginPage = () => {
     setIsSigningUp(false);
   };
 
+  const handleDiagnosticCheck = async () => {
+    setIsCheckingConnection(true);
+    try {
+      const status = await checkDatabaseConnection();
+      setConnectionStatus(status);
+      console.log("Diagnóstico da conexão:", status);
+    } catch (error) {
+      console.error("Erro ao verificar conexão:", error);
+      setConnectionStatus({
+        connected: false,
+        message: "Erro ao verificar conexão com o banco de dados."
+      });
+    } finally {
+      setIsCheckingConnection(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
@@ -70,10 +89,23 @@ const LoginPage = () => {
             <InfoIcon className="h-4 w-4 text-red-500" />
             <AlertTitle className="text-red-700">Problema de conexão</AlertTitle>
             <AlertDescription className="text-red-600">
-              {connectionStatus.message || "Não foi possível conectar ao banco de dados. Verifique as configurações."}
+              {connectionStatus.message || "Não foi possível conectar ao banco de dados. Verifique as variáveis de ambiente."}
             </AlertDescription>
           </Alert>
         )}
+        
+        <div className="flex justify-end mb-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDiagnosticCheck}
+            disabled={isCheckingConnection}
+            className="flex items-center gap-1 text-xs"
+          >
+            <Database className="h-3 w-3" />
+            {isCheckingConnection ? "Verificando..." : "Diagnosticar BD"}
+          </Button>
+        </div>
         
         <Card>
           <CardHeader className="space-y-1">

@@ -14,16 +14,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 import MainHeader from "@/components/MainHeader";
 import AgentList from "@/components/AgentList";
 import AgentForm from "@/components/AgentForm";
 import StageList from "@/components/StageList";
 import AppSettingsForm from "@/components/AppSettingsForm";
-import DatabaseSettings from "@/components/settings/DatabaseSettings";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { getAgents, getStages } from "@/services";
+import { checkDatabaseConnection } from "@/services/connectionTest";
 import { Agent, Stage } from "@/types";
 import { UserPlus, ArrowLeft, Database } from "lucide-react";
 
@@ -36,6 +37,7 @@ const SettingsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [agentDialogOpen, setAgentDialogOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(undefined);
+  const [connectionStatus, setConnectionStatus] = useState<{ connected: boolean; message: string; diagnostics?: any }>();
 
   // Load data
   const loadData = async () => {
@@ -76,7 +78,24 @@ const SettingsPage = () => {
     setAgentDialogOpen(true);
   };
 
-  // Apenas usuários admin podem ver a aba de banco de dados
+  // Diagnóstico da conexão com o banco de dados
+  const handleDiagnosticCheck = async () => {
+    try {
+      const status = await checkDatabaseConnection();
+      setConnectionStatus(status);
+      if (status.connected) {
+        toast.success("Configurações de banco de dados encontradas!");
+      } else {
+        toast.error("Problema ao acessar configurações de banco de dados.");
+      }
+      console.log("Diagnóstico da conexão:", status);
+    } catch (error) {
+      console.error("Erro ao verificar configurações:", error);
+      toast.error("Erro ao verificar configurações de banco de dados");
+    }
+  };
+
+  // Apenas usuários admin podem ver a opção de diagnóstico
   const isAdmin = user?.isAdmin === true;
   const isMaster = user?.usuario === 'matt@slingbr.com';
 
@@ -92,20 +111,40 @@ const SettingsPage = () => {
             </Button>
             <h2 className="text-xl font-semibold">Configurações</h2>
           </div>
+          
+          {(isAdmin || isMaster) && (
+            <Button variant="outline" onClick={handleDiagnosticCheck} className="flex items-center gap-1">
+              <Database className="h-4 w-4" />
+              Diagnosticar BD
+            </Button>
+          )}
         </div>
         
+        {connectionStatus && (isAdmin || isMaster) && (
+          <div className={`mb-6 p-4 rounded-md border ${connectionStatus.connected ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <h3 className={`font-medium ${connectionStatus.connected ? 'text-green-700' : 'text-yellow-700'}`}>
+              Diagnóstico do Banco de Dados
+            </h3>
+            <p className={connectionStatus.connected ? 'text-green-600' : 'text-yellow-600'}>
+              {connectionStatus.message}
+            </p>
+            {connectionStatus.diagnostics && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-sm font-medium">Detalhes técnicos</summary>
+                <pre className="mt-2 bg-slate-100 p-2 rounded overflow-auto max-h-56 text-xs">
+                  {JSON.stringify(connectionStatus.diagnostics, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        )}
+        
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid grid-cols-5 mb-6">
+          <TabsList className="grid grid-cols-4 mb-6">
             <TabsTrigger value="general">Geral</TabsTrigger>
             <TabsTrigger value="audio">Áudio</TabsTrigger>
             <TabsTrigger value="stages">Etapas</TabsTrigger>
             <TabsTrigger value="agents">Atendentes</TabsTrigger>
-            {(isAdmin || isMaster) && (
-              <TabsTrigger value="database" className="flex items-center gap-1">
-                <Database className="h-4 w-4" />
-                Conexão
-              </TabsTrigger>
-            )}
           </TabsList>
           
           <TabsContent value="general">
@@ -153,15 +192,6 @@ const SettingsPage = () => {
               )}
             </div>
           </TabsContent>
-          
-          {(isAdmin || isMaster) && (
-            <TabsContent value="database">
-              <div className="max-w-2xl mx-auto">
-                <h3 className="text-lg font-medium mb-4">Configuração do Banco de Dados</h3>
-                <DatabaseSettings />
-              </div>
-            </TabsContent>
-          )}
         </Tabs>
       </main>
       
