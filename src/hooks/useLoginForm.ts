@@ -41,21 +41,23 @@ export const useLoginForm = () => {
       setErrorMessage(null);
       setShowApprovalInfo(false);
 
+      // Verificar conexão antes de tentar login
+      const status = await checkDatabaseConnection();
+      console.log('[LoginForm] Status da conexão antes do login:', status);
+      setConnectionStatus(status);
+      
+      if (!status.connected) {
+        console.error("❌ [LoginForm] FALHA LOGIN: Banco de dados não conectado");
+        setErrorMessage("Não foi possível conectar ao banco de dados. O sistema operará em modo offline com funcionalidades limitadas.");
+        setIsLoading(false);
+        return;
+      }
+      
       // Normalizando o email para remover espaços e padronizar lowercase
       const normalizedEmail = values.email.trim().toLowerCase();
       
       // Log para debug
       console.log(`🔐 [LoginForm] TENTATIVA DE LOGIN - Email normalizado: "${normalizedEmail}"`);
-      
-      // Verifica conexão com o banco (apenas log, não exibe para o usuário)
-      const status = await checkDatabaseConnection();
-      console.log('[LoginForm] Status da conexão antes do login:', status);
-      
-      if (!status.connected) {
-        console.error("❌ [LoginForm] FALHA LOGIN: Banco de dados não conectado");
-        setErrorMessage("Não foi possível conectar ao banco de dados. Por favor, tente novamente mais tarde.");
-        return;
-      }
       
       // Verificação especial para o usuário master
       const isMasterUser = normalizedEmail === 'matt@slingbr.com';
@@ -119,6 +121,7 @@ export const useLoginForm = () => {
     showApprovalInfo,
     errorMessage,
     connectionStatus,
+    setConnectionStatus,
     onSubmit: form.handleSubmit(onSubmit),
   };
 };
