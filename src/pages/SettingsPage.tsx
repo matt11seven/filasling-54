@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAgents, getStages } from "@/services";
 import { Agent, Stage } from "@/types";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 import MainHeader from "@/components/MainHeader";
 import SettingsHeader from "@/components/settings/SettingsHeader";
@@ -22,7 +22,6 @@ const SettingsPage = () => {
   const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Load data
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -30,7 +29,6 @@ const SettingsPage = () => {
       
       console.log("Loading settings data...");
       
-      // Carregar agentes e etapas em paralelo
       const [agentsData, stagesData] = await Promise.all([
         getAgents().catch(error => {
           console.error("Error loading agents:", error);
@@ -58,14 +56,12 @@ const SettingsPage = () => {
     }
   };
 
-  // Initial data load
   useEffect(() => {
     if (isAuthenticated) {
       loadData();
     }
   }, [isAuthenticated]);
   
-  // Check for authentication
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
@@ -82,7 +78,6 @@ const SettingsPage = () => {
     setAgentDialogOpen(true);
   };
 
-  // Apenas usuários admin podem ver a opção de diagnóstico
   const isAdmin = user?.isAdmin === true;
   const isMaster = user?.usuario === 'matt@slingbr.com';
 
