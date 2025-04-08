@@ -2,7 +2,12 @@
 // Este arquivo fornece um cliente para operações com a API Python backend
 // A conexão com o banco de dados é gerenciada pelo backend Python
 
-import { toast } from 'sonner';
+// Função simples para substituir as notificações toast
+const toast = {
+  error: (message: string) => console.error('Error:', message),
+  success: (message: string) => console.log('Success:', message),
+  info: (message: string) => console.log('Info:', message)
+};
 
 // Definir o tipo para as variáveis de ambiente injetadas pelo script de inicialização
 declare global {
