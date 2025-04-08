@@ -5,15 +5,33 @@ import { toast } from "sonner";
 
 export const getStages = async (): Promise<Stage[]> => {
   try {
-    console.log("Fetching stages...");
-    const result = await query(`
-      SELECT id, nome, numero, cor, data_criado, data_atualizado, numero_sistema
-      FROM etapas
-      ORDER BY numero ASC
-    `);
+    console.log("Fetching stages from API...");
     
-    console.log("Stages result:", result);
-    return (result.rows || []) as Stage[];
+    // Tenta buscar do endpoint API primeiro
+    try {
+      const response = await fetch('/api/etapas');
+      
+      if (!response.ok) {
+        throw new Error(`API responded with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Stages from API:", data);
+      return data || [];
+    } catch (apiError) {
+      console.error("Error fetching stages from API:", apiError);
+      console.log("Falling back to local database query...");
+      
+      // Fallback para busca local se a API falhar
+      const result = await query(`
+        SELECT id, nome, numero, cor, data_criado, data_atualizado, numero_sistema
+        FROM etapas
+        ORDER BY numero ASC
+      `);
+      
+      console.log("Stages from local DB:", result);
+      return (result.rows || []) as Stage[];
+    }
   } catch (error) {
     console.error("Error fetching stages:", error);
     toast.error("Erro ao carregar etapas");

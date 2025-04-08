@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAgents, getStages } from "@/services";
 import { Agent, Stage } from "@/types";
+import { toast } from "sonner";
 
 import MainHeader from "@/components/MainHeader";
 import SettingsHeader from "@/components/settings/SettingsHeader";
@@ -19,19 +20,39 @@ const SettingsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [agentDialogOpen, setAgentDialogOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(undefined);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load data
   const loadData = async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
+      
+      console.log("Loading settings data...");
+      
+      // Carregar agentes e etapas em paralelo
       const [agentsData, stagesData] = await Promise.all([
-        getAgents(),
-        getStages(),
+        getAgents().catch(error => {
+          console.error("Error loading agents:", error);
+          toast.error("Erro ao carregar atendentes");
+          return [];
+        }),
+        getStages().catch(error => {
+          console.error("Error loading stages:", error);
+          toast.error("Erro ao carregar etapas");
+          return [];
+        }),
       ]);
+      
+      console.log("Loaded agents:", agentsData);
+      console.log("Loaded stages:", stagesData);
+      
       setAgents(agentsData);
       setStages(stagesData);
     } catch (error) {
       console.error("Error loading settings data:", error);
+      setLoadError("Erro ao carregar dados. Tente novamente.");
+      toast.error("Erro ao carregar dados de configurações");
     } finally {
       setIsLoading(false);
     }
@@ -39,8 +60,10 @@ const SettingsPage = () => {
 
   // Initial data load
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated]);
   
   // Check for authentication
   useEffect(() => {
@@ -74,14 +97,23 @@ const SettingsPage = () => {
           isMaster={isMaster}
         />
         
-        <SettingsTabs 
-          isLoading={isLoading}
-          agents={agents}
-          stages={stages}
-          onAgentChange={loadData}
-          onEditAgent={handleEditAgent}
-          onNewAgent={handleNewAgent}
-        />
+        {loadError ? (
+          <div className="text-center py-12 border rounded-lg mt-4">
+            <p className="text-red-500 mb-4">{loadError}</p>
+            <Button onClick={loadData} variant="default">
+              Tentar Novamente
+            </Button>
+          </div>
+        ) : (
+          <SettingsTabs 
+            isLoading={isLoading}
+            agents={agents}
+            stages={stages}
+            onAgentChange={loadData}
+            onEditAgent={handleEditAgent}
+            onNewAgent={handleNewAgent}
+          />
+        )}
       </main>
       
       <AgentDialog
