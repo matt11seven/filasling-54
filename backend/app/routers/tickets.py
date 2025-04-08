@@ -5,7 +5,7 @@ from psycopg2.extras import RealDictCursor
 import os
 from datetime import datetime
 from pydantic import BaseModel
-from .auth import get_db_connection, oauth2_scheme
+from .auth import get_db_connection, oauth2_scheme, get_current_user
 
 router = APIRouter()
 
