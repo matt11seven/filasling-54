@@ -60,7 +60,7 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
       // Tentar verificar no banco de dados local como fallback
       try {
         console.log(`🔍 [UserStatus] Executando query para verificar status do usuário "${email}"`);
-        const result = await query<{ ativo: boolean }>('SELECT ativo FROM login WHERE usuario = $1', [email]);
+        const result = await query('SELECT ativo FROM login WHERE usuario = $1', [email]);
         
         console.log(`📊 [UserStatus] Consulta de status - linhas encontradas: ${result.rowCount}`);
         console.log(`📊 [UserStatus] Resultado completo:`, result.rows);
