@@ -5,6 +5,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sistema de Fila by Sling</title>
+    
+    <!-- Script para corrigir URLs hardcoded para localhost:8000 -->
+    <script>
+      // Monkey patch o fetch original para interceptar chamadas para localhost:8000
+      (function() {
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+          let newUrl = url;
+          
+          // Se a URL contiver localhost:8000, alterar para o caminho relativo
+          if (typeof url === 'string' && url.includes('localhost:8000')) {
+            // Extrair o caminho após localhost:8000
+            const path = url.split('localhost:8000')[1];
+            newUrl = `/api${path}`;
+            console.log('🔄 URL redirecionada:', url, '→', newUrl);
+          }
+          
+          return originalFetch.call(this, newUrl, options);
+        };
+        console.log('✅ Patch para redirecionamento de URL aplicado!');
+      })();
+    </script>
     <meta name="description" content="Sistema de gerenciamento de filas para controle de atendimento" />
     <meta name="author" content="Sling Soluções de Mercado" />
 
@@ -28,6 +50,41 @@
   <body>
     <div id="root"></div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+    <!-- Sobrescrever qualquer URL hardcoded para localhost:8000 após o carregamento -->
+    <script>
+      window.addEventListener('load', function() {
+        console.log('🔍 Verificando e aplicando configurações de API...');
+        // Forçar uso de API relativa em produção
+        if (window.location.hostname.includes('easypanel.host') || 
+            window.location.hostname !== 'localhost') {
+          console.log('🌐 Ambiente de produção detectado, forçando API relativa');
+          
+          // Qualquer variável global configurando URL da API
+          if (window.API_BASE_URL) window.API_BASE_URL = '/api';
+          if (window.ENV && window.ENV.VITE_API_URL) window.ENV.VITE_API_URL = '/api';
+          
+          // Suprimir mensagens de erro relacionadas a placeholders de banco de dados
+          // Como o frontend não deve se conectar diretamente ao banco, podemos ignorar essas mensagens
+          if (window.DB_CONFIG_PLACEHOLDERS) {
+            console.log('🚫 Suprimindo mensagens de erro de placeholders de banco de dados');
+            // Atribuir objeto vazio para evitar erros, mas não fornecer credenciais reais
+            window.DB_CONFIG_PLACEHOLDERS = {};
+          }
+          
+          // Interceptar qualquer função que tente acessar configurações de DB
+          // para encaminhar corretamente através da API em vez de tentar conexão direta
+          if (window.replaceDbPlaceholders) {
+            window.replaceDbPlaceholders = function() {
+              console.log('💾 Usando API para operações de banco de dados em vez de conexão direta');
+              return {};
+            };
+          }
+          
+          console.log('✅ Configurações de API atualizadas para produção');
+        }
+      });
+    </script>
+    
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
