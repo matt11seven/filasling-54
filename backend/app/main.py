@@ -29,20 +29,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Incluir routers
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
-app.include_router(tickets.router, prefix="/tickets", tags=["tickets"])
-app.include_router(atendentes.router, prefix="/atendentes", tags=["atendentes"])
+# Prefixo global para todos os endpoints
+API_PREFIX = "/api"
+
+# Incluir routers com prefixo /api
+app.include_router(auth.router, prefix=f"{API_PREFIX}/auth", tags=["auth"])
+app.include_router(tickets.router, prefix=f"{API_PREFIX}/tickets", tags=["tickets"])
+app.include_router(atendentes.router, prefix=f"{API_PREFIX}/atendentes", tags=["atendentes"])
 
 # Rota de health check
-@app.get("/health", tags=["health"])
+@app.get(f"{API_PREFIX}/health", tags=["health"])
 def health_check():
     return {"status": "ok", "message": "API is running"}
 
-# Rota raiz
+# Rota raiz para o prefixo /api
+@app.get(f"{API_PREFIX}", tags=["root"])
+def read_api_root():
+    return {"message": "Bem-vindo à API FilaSling. Acesse /docs para a documentação."}
+
+# Rota raiz principal
 @app.get("/", tags=["root"])
 def read_root():
-    return {"message": "Bem-vindo à API FilaSling. Acesse /docs para a documentação."}
+    return {"message": "Bem-vindo à API FilaSling. Acesse /api para endpoints da API ou /docs para documentação."}
 
 if __name__ == "__main__":
     import uvicorn
