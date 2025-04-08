@@ -46,7 +46,7 @@
           if (typeof url === 'string' && (url.includes('/api/') || newUrl.includes('/api/'))) {
             // Pegar o token do localStorage
             try {
-              const authToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
+              const authToken = localStorage.getItem('accessToken');
               if (authToken) {
                 // Garantir que temos um objeto headers
                 newOptions.headers = newOptions.headers || {};
@@ -63,13 +63,15 @@
                 // Adicionar o token de autenticação ao header Authorization
                 newOptions.headers['Authorization'] = `Bearer ${authToken}`;
                 console.log('🔑 Token de autenticação adicionado à requisição');
+              } else {
+                console.log('⚠️ Nenhum token de autenticação encontrado no localStorage');
               }
             } catch (e) {
               console.error('Erro ao adicionar token de autenticação:', e);
             }
           }
           
-          return originalFetch.call(this, newUrl, options);
+          return originalFetch.call(this, newUrl, newOptions);
         };
         console.log('✅ Patch para redirecionamento de URL aplicado!');
       })();

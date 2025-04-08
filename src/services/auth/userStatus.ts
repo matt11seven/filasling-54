@@ -14,38 +14,42 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
       return { isActive: true, exists: true };
     }
     
-    // Buscar o usuário pelo email (que é o campo usuario na tabela login)
-    console.log(`🔍 [UserStatus] Executando query para verificar status do usuário "${email}"`);
-    const result = await query(
-      "SELECT ativo FROM login WHERE usuario = $1",
-      [email]
-    );
-
-    console.log(`📊 [UserStatus] Consulta de status - linhas encontradas: ${result.rows ? result.rows.length : 0}`);
-    console.log(`📊 [UserStatus] Resultado completo:`, JSON.stringify(result.rows || []));
-
-    // Se não encontrou o usuário
-    if (!result.rows || result.rows.length === 0) {
-      console.log(`❌ [UserStatus] Status: Usuário "${email}" não encontrado no banco`);
+    // Obter o token JWT do localStorage
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      console.error("🚨 [UserStatus] Token de autenticação não encontrado no localStorage");
       return { isActive: false, exists: false };
     }
-
-    // Verificamos se o resultado tem a propriedade esperada
-    const userRow = result.rows[0];
     
-    if (!('ativo' in userRow)) {
-      console.error("❌ [UserStatus] Status: Resultado da consulta não contém a propriedade 'ativo':", userRow);
-      return { isActive: false, exists: true };
+    // Buscar o status do usuário diretamente via API em vez de query local
+    console.log(`🔍 [UserStatus] Verificando status via API para "${email}"`);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`🚨 [UserStatus] API respondeu com status ${response.status}: ${errorText}`);
+        return { isActive: false, exists: false };
+      }
+      
+      const userData = await response.json();
+      console.log(`📊 [UserStatus] Status via API: `, userData);
+      
+      return { 
+        isActive: userData.ativo !== false, // Consideramos ativo se não for explicitamente false
+        exists: true
+      };
+      
+    } catch (apiError) {
+      console.error("🚨 [UserStatus] Erro ao verificar status via API:", apiError);
+      return { isActive: false, exists: false };
     }
-
-    // Retorna se o usuário está ativo ou não
-    const isActive = !!userRow.ativo;
-    console.log(`📊 [UserStatus] Status do usuário "${email}": ${isActive ? '✅ ATIVO' : '❌ INATIVO'}`);
-    
-    return { 
-      isActive: isActive, 
-      exists: true 
-    };
   } catch (error) {
     console.error("🚨 [UserStatus] Erro ao verificar status do usuário:", error);
     return { isActive: false, exists: false };

@@ -38,7 +38,7 @@ export const login = async (
     console.log(`🔄 Iniciando autenticação via API para usuário "${username}"`);
     
     // Usar endereço fixo para a API, será substituído no ambiente de produção
-    const API_URL = 'http://localhost:8000';
+    const API_URL = '/api';
     
     try {
       console.log(`🌐 Enviando requisição para ${API_URL}/auth/login`);
@@ -75,6 +75,14 @@ export const login = async (
         usuario: userData.usuario,
         isAdmin: userData.isAdmin ? "Sim" : "Não"
       });
+      
+      // Armazenar o token JWT no localStorage
+      if (userData.access_token) {
+        console.log("🔑 Armazenando access_token no localStorage");
+        localStorage.setItem("accessToken", userData.access_token);
+      } else {
+        console.warn("⚠️ API retornou usuário sem access_token!");
+      }
       
       // Criar objeto de usuário a partir dos dados da API
       const user: User = {

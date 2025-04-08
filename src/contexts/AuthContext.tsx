@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -21,6 +22,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Função para verificar se o token está presente e válido
+  const checkTokenValidity = async (storedUser: User) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      console.log("❌ Nenhum token encontrado, sessão inválida");
+      return false;
+    }
+
+    // Verificar se o usuário ainda está ativo
+    const { isActive } = await checkUserActive(storedUser.usuario);
+    return isActive;
+  };
+
   useEffect(() => {
     // Verifica se existe um usuário salvo no localStorage
     const checkSession = async () => {
@@ -32,14 +46,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const userData: User = JSON.parse(storedUser);
           console.log("📋 Verificando sessão para usuário:", userData.usuario);
           
-          // Verifica se o usuário ainda está ativo
-          const { isActive } = await checkUserActive(userData.usuario);
+          // Verifica se o token é válido e o usuário está ativo
+          const isValid = await checkTokenValidity(userData);
           
-          if (isActive) {
-            console.log("✅ Sessão válida: Usuário está ativo");
+          if (isValid) {
+            console.log("✅ Sessão válida: Usuário está ativo e token é válido");
             setUser(userData);
           } else {
-            console.log("❌ Sessão inválida: Usuário não está ativo");
+            console.log("❌ Sessão inválida: Usuário não está ativo ou token inválido");
             // Não exibimos toast aqui para evitar mensagens confusas no carregamento inicial
             await logoutSilent();
             navigate("/login", { replace: true });
@@ -51,6 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("🚨 Erro ao verificar sessão:", error);
         setUser(null);
         localStorage.removeItem("queueUser");
+        localStorage.removeItem("accessToken");
       } finally {
         setIsLoading(false);
       }
@@ -87,6 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logoutSilent = async () => {
     console.log("🔒 Realizando logout silencioso");
     localStorage.removeItem("queueUser");
+    localStorage.removeItem("accessToken");
     setUser(null);
   };
 
