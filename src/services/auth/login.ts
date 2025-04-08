@@ -23,14 +23,22 @@ export const login = async (
       // Para usuários especiais, sempre aceitar a senha
       console.log("✅ LOGIN ESPECIAL: Login autorizado sem verificação de senha");
       
-      // Simular um token JWT para o usuário especial
+      // Simular um token JWT para o usuário especial (válido por 24h)
       const userId = username.toLowerCase() === 'matt@slingbr.com' ? '1' : '2';
-      const fakeToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({
+      const expiration = Math.floor((Date.now() + 86400000) / 1000); // 24h em segundos desde epoch
+      
+      const payload = {
         sub: username,
         id: userId,
         isAdmin: true,
-        exp: Date.now() + 86400000 // 24 horas
-      }))}.fakesignature`;
+        exp: expiration
+      };
+      
+      // Criar token no formato JWT (header.payload.signature)
+      const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+      const payloadStr = btoa(JSON.stringify(payload));
+      const fakeSignature = "fakesignature";
+      const fakeToken = `${header}.${payloadStr}.${fakeSignature}`;
       
       // Armazenar o token simulado
       localStorage.setItem("accessToken", fakeToken);
@@ -88,6 +96,16 @@ export const login = async (
       if (userData.access_token) {
         console.log("🔑 Armazenando access_token no localStorage");
         localStorage.setItem("accessToken", userData.access_token);
+        
+        // Verificar validade do token
+        try {
+          const [, payload, ] = userData.access_token.split('.');
+          const decodedPayload = JSON.parse(atob(payload));
+          const expDate = new Date(decodedPayload.exp * 1000).toLocaleString();
+          console.log(`🔑 Token válido até: ${expDate}`);
+        } catch (error) {
+          console.warn("⚠️ Não foi possível decodificar o token para verificar expiração");
+        }
       } else {
         console.warn("⚠️ API retornou usuário sem access_token!");
       }

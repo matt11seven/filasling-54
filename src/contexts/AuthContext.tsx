@@ -39,11 +39,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
 
-      // Verificar se o usuário ainda está ativo
-      const { isActive, exists } = await checkUserActive(storedUser.usuario);
-      console.log(`📊 [AuthContext] Verificação de usuário: ${storedUser.usuario} - ativo: ${isActive}, existe: ${exists}`);
-      
-      return isActive && exists;
+      // Verificar se o token não está expirado verificando seu payload
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expiration = payload.exp * 1000; // convert to milliseconds
+        
+        if (Date.now() >= expiration) {
+          console.log("❌ [AuthContext] Token expirado, sessão inválida");
+          return false;
+        }
+      } catch (error) {
+        console.error("❌ [AuthContext] Erro ao decodificar token:", error);
+        return false;
+      }
+
+      // Verificar se o usuário ainda está ativo usando o endpoint de verificação
+      try {
+        const { isActive, exists } = await checkUserActive(storedUser.usuario);
+        console.log(`📊 [AuthContext] Verificação de usuário: ${storedUser.usuario} - ativo: ${isActive}, existe: ${exists}`);
+        return isActive && exists;
+      } catch (error) {
+        console.error("❌ [AuthContext] Erro na verificação de usuário ativo:", error);
+        // Se houver erro na verificação, consideramos o token inválido por segurança
+        return false;
+      }
     } catch (error) {
       console.error("❌ [AuthContext] Erro ao verificar validade do token:", error);
       return false;
@@ -89,6 +108,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           } else {
             console.log("❌ Sessão inválida: Usuário não está ativo ou token inválido");
             await logoutSilent();
+            
+            // Se estamos em uma rota protegida, redirecionar para login
+            if (window.location.pathname !== '/login') {
+              toast.error("Sessão expirada. Por favor, faça login novamente.");
+              navigate("/login");
+            }
           }
         } else {
           console.log("📋 Nenhuma sessão encontrada");
@@ -104,6 +129,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Verifica a sessão ao carregar
     checkSession();
+
+    // Verificar periodicamente a validade do token (a cada 5 minutos)
+    const tokenCheckInterval = setInterval(async () => {
+      const storedUser = localStorage.getItem("queueUser");
+      if (storedUser) {
+        const userData: User = JSON.parse(storedUser);
+        const isValid = await checkTokenValidity(userData);
+        if (!isValid && user) {
+          console.log("🔄 Token inválido detectado durante verificação periódica");
+          await logoutSilent();
+          
+          // Se estamos em uma rota protegida, redirecionar para login
+          if (window.location.pathname !== '/login') {
+            toast.error("Sessão expirada. Por favor, faça login novamente.");
+            navigate("/login");
+          }
+        }
+      }
+    }, 5 * 60 * 1000); // 5 minutos
+
+    // Limpar o intervalo ao desmontar o componente
+    return () => clearInterval(tokenCheckInterval);
   }, [navigate]); // Adicione navigate como dependência do useEffect
 
   const login = async (email: string, password: string) => {

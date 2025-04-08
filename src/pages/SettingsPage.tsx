@@ -22,6 +22,7 @@ const SettingsPage = () => {
   const [agentDialogOpen, setAgentDialogOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const loadData = async () => {
     try {
@@ -36,6 +37,25 @@ const SettingsPage = () => {
         console.error("Token de autenticação não encontrado");
         setLoadError("Sessão expirada ou inválida. Por favor, faça login novamente.");
         toast.error("Sessão expirada, faça login novamente");
+        logout();
+        return;
+      }
+
+      // Verificar se o token não está expirado
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expiration = payload.exp * 1000; // convert to milliseconds
+        
+        if (Date.now() >= expiration) {
+          console.log("Token expirado, redirecionando para login");
+          setLoadError("Sessão expirada. Por favor, faça login novamente.");
+          toast.error("Sessão expirada, faça login novamente");
+          logout();
+          return;
+        }
+      } catch (error) {
+        console.error("Erro ao decodificar token:", error);
+        setLoadError("Erro na verificação do token. Por favor, faça login novamente.");
         logout();
         return;
       }
@@ -82,7 +102,13 @@ const SettingsPage = () => {
         logout();
       } else {
         setLoadError("Erro ao carregar dados. Tente novamente.");
-        toast.error("Erro ao carregar dados de configurações");
+        
+        // Se após 3 tentativas ainda houver erro, sugerir fazer login novamente
+        if (retryCount >= 2) {
+          setLoadError("Erro persistente ao carregar dados. Tente fazer login novamente.");
+        } else {
+          toast.error("Erro ao carregar dados de configurações");
+        }
       }
     } finally {
       setIsLoading(false);
@@ -97,6 +123,11 @@ const SettingsPage = () => {
       loadData();
     }
   }, [isAuthenticated]);
+  
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    loadData();
+  };
   
   const handleEditAgent = (agent: Agent) => {
     setSelectedAgent(agent);
@@ -125,12 +156,12 @@ const SettingsPage = () => {
         {loadError ? (
           <div className="text-center py-12 border rounded-lg mt-4">
             <p className="text-red-500 mb-4">{loadError}</p>
-            {loadError.includes("Sessão expirada") ? (
+            {loadError.includes("Sessão expirada") || retryCount >= 2 ? (
               <Button onClick={() => navigate("/login")} variant="default">
                 Fazer Login Novamente
               </Button>
             ) : (
-              <Button onClick={loadData} variant="default">
+              <Button onClick={handleRetry} variant="default">
                 Tentar Novamente
               </Button>
             )}

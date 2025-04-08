@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from datetime import timedelta
 import traceback
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import json
 
 from .models import UserLogin, User
 from .security import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -56,10 +58,16 @@ async def test_database_connection():
 
 # Endpoint para verificação de sessão/usuário atual
 @router.get("/login")
-async def verify_session(current_user: dict = Depends(get_current_user)):
+async def verify_session(request: Request, current_user: dict = Depends(get_current_user)):
     try:
         print(f"== VERIFICAÇÃO DE SESSÃO ==")
         print(f"Usuário atual: {current_user['usuario']}")
+        print(f"Headers da requisição: {dict(request.headers)}")
+        
+        # Log do token para debug
+        auth_header = request.headers.get('authorization', '')
+        token_part = auth_header.replace('Bearer ', '')[:20] + '...' if auth_header else 'Não fornecido'
+        print(f"Token (parcial): {token_part}")
         
         # Consulta adicional para verificar se o usuário está ativo
         result = check_user_active(current_user['usuario'])
@@ -99,11 +107,12 @@ async def verify_session(current_user: dict = Depends(get_current_user)):
 
 # Endpoint para login
 @router.post("/login")
-async def login(user_data: UserLogin):
+async def login(request: Request, user_data: UserLogin):
     try:
         print(f"== NOVA TENTATIVA DE LOGIN ==")
         print(f"Tentativa de login para usuário: {user_data.username}")
         print(f"Informações do request recebido: username={user_data.username}, password_length={len(user_data.password)}")
+        print(f"Headers da requisição: {dict(request.headers)}")
         
         # Verificar usuário e senha
         user = authenticate_user(user_data.username, user_data.password)
@@ -123,6 +132,10 @@ async def login(user_data: UserLogin):
             data={"sub": user["usuario"], "id": user["id"]},
             expires_delta=access_token_expires
         )
+        
+        # Log do token para debug
+        token_part = access_token[:20] + '...' if access_token else 'Erro na geração do token'
+        print(f"Token (parcial) gerado: {token_part}")
         
         # Preparar resposta
         response = {

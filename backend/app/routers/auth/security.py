@@ -1,12 +1,13 @@
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import os
 from dotenv import load_dotenv
+import traceback
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -64,18 +65,58 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
                 detail="Campo 'sub' ou 'usuario' é necessário para gerar o token"
             )
     
+    # Log para debug
+    print(f"Criando token com payload: {to_encode}")
+    print(f"Expiração: {expire.isoformat()} UTC")
+    
     # Gerar o token JWT
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    try:
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+    except Exception as e:
+        print(f"Erro ao gerar token JWT: {e}")
+        traceback.print_exc()
+        raise
 
 def decode_token(token: str) -> Dict[str, Any]:
     """Decodifica e verifica um token JWT."""
     try:
+        # Imprimir parte do token para debug (sem revelar todo o token)
+        token_part = token[:20] + "..." if len(token) > 20 else token
+        print(f"Decodificando token: {token_part}")
+        
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         usuario: str = payload.get("sub")
         user_id: str = payload.get("id")
+        
         if usuario is None or user_id is None:
+            print("Token inválido: 'sub' ou 'id' ausente no payload")
             raise credentials_exception
+        
+        # Verificar expiração explicitamente
+        exp = payload.get("exp")
+        if exp is None:
+            print("Token inválido: sem data de expiração")
+            raise credentials_exception
+            
+        if datetime.fromtimestamp(exp) < datetime.utcnow():
+            print(f"Token expirado. Expiração: {datetime.fromtimestamp(exp).isoformat()}, Agora: {datetime.utcnow().isoformat()}")
+            raise ExpiredSignatureError("Token expirado")
+            
+        print(f"Token válido para usuário: {usuario}, id: {user_id}")
         return payload
-    except JWTError:
+        
+    except ExpiredSignatureError:
+        print("Erro de token: Assinatura expirada")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except JWTError as e:
+        print(f"Erro de JWT ao decodificar token: {e}")
+        raise credentials_exception
+    except Exception as e:
+        print(f"Erro inesperado ao decodificar token: {e}")
+        traceback.print_exc()
         raise credentials_exception

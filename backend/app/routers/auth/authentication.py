@@ -1,8 +1,9 @@
 
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from .security import verify_password, decode_token, oauth2_scheme
 from .db import get_user_by_username
+import traceback
 
 def authenticate_user(username: str, password: str):
     """Autentica um usuário com base no nome de usuário e senha."""
@@ -36,13 +37,26 @@ def authenticate_user(username: str, password: str):
         
     except Exception as e:
         print(f"Erro na autenticação do usuário {username}: {e}")
+        traceback.print_exc()
         raise
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)):
     """Obtém o usuário atual a partir do token JWT."""
-    payload = decode_token(token)
-    usuario: str = payload.get("sub")
-    user_id: str = payload.get("id")
-    
-    # Retornando o campo como 'usuario' para manter consistência com o resto do código
-    return {"usuario": usuario, "id": user_id}
+    try:
+        # Log de debug para verificar o token recebido
+        auth_header = request.headers.get('authorization', '')
+        token_part = auth_header.replace('Bearer ', '')[:20] + '...' if auth_header else 'Não fornecido'
+        print(f"Verificando token do usuário atual. Header: {token_part}")
+        
+        payload = decode_token(token)
+        usuario: str = payload.get("sub")
+        user_id: str = payload.get("id")
+        
+        print(f"Token válido para usuário: {usuario}, id: {user_id}")
+        
+        # Retornando o campo como 'usuario' para manter consistência com o resto do código
+        return {"usuario": usuario, "id": user_id}
+    except Exception as e:
+        print(f"Erro ao obter usuário atual: {e}")
+        traceback.print_exc()
+        raise
