@@ -50,7 +50,8 @@ COPY ./backend /app
 # Instalar as dependências do Python backend
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Adicionar configuração do Nginx
+# Remover configuração padrão do Nginx e adicionar nossa configuração personalizada
+RUN rm -f /etc/nginx/sites-enabled/default
 COPY ./nginx-mono.conf /etc/nginx/conf.d/default.conf
 
 # Copiar script de ambiente
