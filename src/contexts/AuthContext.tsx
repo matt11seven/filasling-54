@@ -24,26 +24,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Função para verificar se o token está presente e válido
   const checkTokenValidity = async (storedUser: User) => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      console.log("❌ Nenhum token encontrado, sessão inválida");
-      return false;
-    }
-
     try {
-      // Verificar se o usuário ainda está ativo
-      const { isActive, exists } = await checkUserActive(storedUser.usuario);
-      
-      // Caso especial para usuários conhecidos - consideramos válido sempre
+      // Tratamento especial para usuários conhecidos - consideramos válido sempre
       if (storedUser.usuario.toLowerCase() === 'test@slingbr.com' || 
           storedUser.usuario.toLowerCase() === 'matt@slingbr.com') {
         console.log(`✅ [AuthContext] Sessão considerada válida para usuário especial: ${storedUser.usuario}`);
         return true;
       }
       
+      // Verifica se o token existe
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.log("❌ [AuthContext] Nenhum token encontrado, sessão inválida");
+        return false;
+      }
+
+      // Verificar se o usuário ainda está ativo
+      const { isActive, exists } = await checkUserActive(storedUser.usuario);
+      console.log(`📊 [AuthContext] Verificação de usuário: ${storedUser.usuario} - ativo: ${isActive}, existe: ${exists}`);
+      
       return isActive && exists;
     } catch (error) {
-      console.error("❌ Erro ao verificar validade do token:", error);
+      console.error("❌ [AuthContext] Erro ao verificar validade do token:", error);
       return false;
     }
   };
@@ -59,9 +61,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const userData: User = JSON.parse(storedUser);
           console.log("📋 Verificando sessão para usuário:", userData.usuario);
           
-          // Tratamento especial para usuários conhecidos
-          if (userData.usuario.toLowerCase() === 'test@slingbr.com' || 
-              userData.usuario.toLowerCase() === 'matt@slingbr.com') {
+          // Verificação especial para usuários especiais
+          const isSpecialUser = userData.usuario.toLowerCase() === 'test@slingbr.com' || 
+                               userData.usuario.toLowerCase() === 'matt@slingbr.com';
+                               
+          if (isSpecialUser) {
             console.log("✅ Sessão válida para usuário especial");
             setUser(userData);
             setIsLoading(false);
@@ -76,18 +80,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(userData);
           } else {
             console.log("❌ Sessão inválida: Usuário não está ativo ou token inválido");
-            // Não exibimos toast aqui para evitar mensagens confusas no carregamento inicial
             await logoutSilent();
-            navigate("/login", { replace: true });
           }
         } else {
           console.log("📋 Nenhuma sessão encontrada");
         }
       } catch (error) {
         console.error("🚨 Erro ao verificar sessão:", error);
-        setUser(null);
-        localStorage.removeItem("queueUser");
-        localStorage.removeItem("accessToken");
+        await logoutSilent();
       } finally {
         setIsLoading(false);
       }
@@ -110,7 +110,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(userData);
         localStorage.setItem("queueUser", JSON.stringify(userData));
         navigate("/dashboard");
-        toast.success("Login realizado com sucesso");
       }
     } catch (error) {
       console.error("🚨 [AuthContext] Erro de login:", error);

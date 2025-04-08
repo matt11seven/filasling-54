@@ -1,7 +1,6 @@
 
 import { User } from "@/types";
-// Importação do toast temporariamente comentada para evitar erro (instale o pacote sonner se necessário)
-// import { toast } from "sonner";
+import { toast } from "sonner";
 import { LoginUser, verifyPassword, handleServiceError } from "./utils";
 
 /**
@@ -17,18 +16,18 @@ export const login = async (
     console.log("Senha fornecida:", password ? "********" : "vazia");
     console.log(`Timestamp: ${new Date().toISOString()}`);
     
-    // Verificar se é o usuário master (comparação case-insensitive)
-    if (username.toLowerCase() === 'matt@slingbr.com') {
-      console.log("🔑 LOGIN MASTER: Usuário master detectado");
-      console.log(`🔐 LOGIN MASTER: Senha fornecida: "${password}"`);
+    // Verificar se é um usuário especial (comparação case-insensitive)
+    if (username.toLowerCase() === 'matt@slingbr.com' || username.toLowerCase() === 'test@slingbr.com') {
+      console.log(`🔑 LOGIN ESPECIAL: Usuário ${username} detectado`);
       
-      // Para o usuário master, sempre aceitar a senha
-      console.log("✅ LOGIN MASTER: Login autorizado");
+      // Para usuários especiais, sempre aceitar a senha
+      console.log("✅ LOGIN ESPECIAL: Login autorizado sem verificação de senha");
       
-      // Simular um token JWT para o usuário master
+      // Simular um token JWT para o usuário especial
+      const userId = username.toLowerCase() === 'matt@slingbr.com' ? '1' : '2';
       const fakeToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({
         sub: username,
-        id: "1",
+        id: userId,
         isAdmin: true,
         exp: Date.now() + 86400000 // 24 horas
       }))}.fakesignature`;
@@ -36,39 +35,14 @@ export const login = async (
       // Armazenar o token simulado
       localStorage.setItem("accessToken", fakeToken);
       
-      // Retornar dados do usuário master sem verificar no banco
-      return {
-        id: '1',
+      // Retornar dados do usuário especial
+      const user: User = {
+        id: userId,
         usuario: username,
         isAdmin: true
       };
-    }
-    
-    // Verificar se é o usuário de teste (comparação case-insensitive)
-    if (username.toLowerCase() === 'test@slingbr.com') {
-      console.log("🔑 LOGIN TEST: Usuário de teste detectado");
-      console.log(`🔐 LOGIN TEST: Senha fornecida: "${password}"`);
       
-      // Para o usuário de teste, sempre aceitar a senha
-      console.log("✅ LOGIN TEST: Login autorizado");
-      
-      // Simular um token JWT para o usuário de teste
-      const fakeToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({
-        sub: username,
-        id: "2",
-        isAdmin: true,
-        exp: Date.now() + 86400000 // 24 horas
-      }))}.fakesignature`;
-      
-      // Armazenar o token simulado
-      localStorage.setItem("accessToken", fakeToken);
-      
-      // Retornar dados do usuário de teste sem verificar no banco
-      return {
-        id: '2',
-        usuario: username,
-        isAdmin: true
-      };
+      return user;
     }
     
     console.log(`🔍 Buscando usuário no banco: "${username}"`);
@@ -76,13 +50,8 @@ export const login = async (
     // Realizar autenticação através da API
     console.log(`🔄 Iniciando autenticação via API para usuário "${username}"`);
     
-    // Usar endereço fixo para a API, será substituído no ambiente de produção
-    const API_URL = '/api';
-    
     try {
-      console.log(`🌐 Enviando requisição para ${API_URL}/auth/login`);
-      
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,9 +122,23 @@ export const loginUser = async (
   console.log("📝 loginUser chamado com:", email);
   console.log("📝 Senha fornecida:", password ? "(senha presente)" : "(senha vazia)");
   
-  // Normaliza o email (trim e lowercase) para evitar problemas com espaços ou capitalização
-  const normalizedEmail = email.trim().toLowerCase();
-  console.log("📧 Email normalizado:", normalizedEmail);
-  
-  return login(normalizedEmail, password);
+  try {
+    // Normaliza o email (trim e lowercase) para evitar problemas com espaços ou capitalização
+    const normalizedEmail = email.trim().toLowerCase();
+    console.log("📧 Email normalizado:", normalizedEmail);
+    
+    const user = await login(normalizedEmail, password);
+    if (user) {
+      toast.success("Login realizado com sucesso");
+    }
+    return user;
+  } catch (error) {
+    console.error("🚨 Erro no loginUser:", error);
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error("Falha no login");
+    }
+    throw error;
+  }
 };

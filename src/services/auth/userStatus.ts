@@ -8,15 +8,9 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
   try {
     console.log(`📊 [UserStatus] Verificando status do usuário: "${email}" - ${new Date().toISOString()}`);
     
-    // Verificação especial para o usuário master
-    if (email.toLowerCase() === 'matt@slingbr.com') {
-      console.log("✅ [UserStatus] Usuário master detectado na verificação de status");
-      return { isActive: true, exists: true };
-    }
-    
-    // Verificação especial para o usuário de teste
-    if (email.toLowerCase() === 'test@slingbr.com') {
-      console.log("✅ [UserStatus] Usuário de teste detectado na verificação de status");
+    // Verificação especial para usuários especiais
+    if (email.toLowerCase() === 'matt@slingbr.com' || email.toLowerCase() === 'test@slingbr.com') {
+      console.log(`✅ [UserStatus] Usuário especial detectado: "${email}"`);
       return { isActive: true, exists: true };
     }
     
@@ -27,9 +21,10 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
       return { isActive: false, exists: false };
     }
     
-    // Buscar o status do usuário diretamente via API
-    console.log(`🔍 [UserStatus] Verificando status via API para "${email}"`);
     try {
+      // Buscar o status do usuário diretamente via API
+      console.log(`🔍 [UserStatus] Verificando status via API para "${email}"`);
+      
       const response = await fetch('/api/auth/login', {
         method: 'GET',
         headers: {
@@ -62,16 +57,26 @@ export const checkUserActive = async (email: string): Promise<{ isActive: boolea
     } catch (apiError) {
       console.error("🚨 [UserStatus] Erro ao verificar status via API:", apiError);
       
-      // Tratamento especial - considerando usuários conhecidos como ativos
-      // No ambiente de produção, assumimos que usuários conhecidos estão ativos
-      // independentemente do resultado da API
-      if (email.toLowerCase() === 'test@slingbr.com' || 
-          email.toLowerCase() === 'admin@slingbr.com') {
-        console.log(`✅ [UserStatus] Tratamento especial para usuário conhecido: "${email}"`);
-        return { isActive: true, exists: true };
+      // Tentar verificar no banco de dados local como fallback
+      try {
+        console.log(`🔍 [UserStatus] Executando query para verificar status do usuário "${email}"`);
+        const result = await query<{ ativo: boolean }>('SELECT ativo FROM login WHERE usuario = $1', [email]);
+        
+        console.log(`📊 [UserStatus] Consulta de status - linhas encontradas: ${result.rowCount}`);
+        console.log(`📊 [UserStatus] Resultado completo:`, result.rows);
+        
+        if (result.rowCount > 0) {
+          const isActive = result.rows[0].ativo !== false;
+          console.log(`📊 [UserStatus] Status local: Usuário "${email}" ${isActive ? 'ativo' : 'inativo'}`);
+          return { isActive, exists: true };
+        } else {
+          console.log(`❌ [UserStatus] Status: Usuário "${email}" não encontrado no banco`);
+          return { isActive: false, exists: false };
+        }
+      } catch (dbError) {
+        console.error("🚨 [UserStatus] Erro ao verificar status no banco local:", dbError);
+        return { isActive: false, exists: false };
       }
-      
-      return { isActive: false, exists: false };
     }
   } catch (error) {
     console.error("🚨 [UserStatus] Erro ao verificar status do usuário:", error);
