@@ -66,8 +66,13 @@ const getCommonHeaders = (): HeadersInit => {
   };
   
   const token = getAuthToken();
+  console.log('🔑 Verificando token de autenticação:', token ? 'Token encontrado' : 'Token ausente');
+  
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('🔑 Header de autorização adicionado:', `Bearer ${token.substring(0, 15)}...`);
+  } else {
+    console.log('⚠️ Atenção: Token não encontrado no localStorage');
   }
   
   return headers;
@@ -150,9 +155,12 @@ export const query = async (text: string, params?: any[]) => {
     const response = await fetch(apiUrl, {
       method,
       headers: getCommonHeaders(),
-      body: method !== 'GET' && body ? body : undefined,
-      credentials: 'include'
+      body: method !== 'GET' && body ? body : undefined
     });
+    
+    // Log para debug do token
+    const token = getAuthToken();
+    console.log('🔑 Token usado na requisição:', token ? 'presente' : 'ausente');
     
     if (!response.ok) {
       const errorText = await response.text();
