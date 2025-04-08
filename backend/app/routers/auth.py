@@ -94,7 +94,8 @@ def get_user_by_username(username: str):
                 "admin": True
             }
             
-        cur.execute("SELECT id, usuario, senha, admin FROM usuarios WHERE usuario = %s", (username,))
+        # Modificado para usar a tabela login em vez de usuarios
+        cur.execute("SELECT id, usuario, senha, admin FROM login WHERE usuario = %s", (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()

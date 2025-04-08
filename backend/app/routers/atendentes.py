@@ -33,9 +33,9 @@ async def list_atendentes(current_user: dict = Depends(get_current_user)):
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, usuario, nome_completo, ativo, admin
-            FROM usuarios
-            ORDER BY nome_completo
+            SELECT id, nome as nome_completo, email as usuario, ativo, false as admin
+            FROM atendentes
+            ORDER BY nome
         """)
         atendentes = cur.fetchall()
         cur.close()

@@ -38,9 +38,9 @@ async def list_tickets(current_user: dict = Depends(get_current_user)):
         cur = conn.cursor()
         cur.execute("""
             SELECT t.id, t.usuario, t.descricao, t.prioridade, t.data_criacao, 
-                   t.status, t.atendente_id, u.usuario as atendente_nome
+                   t.status, t.atendente_id, a.nome as atendente_nome
             FROM tickets t
-            LEFT JOIN usuarios u ON t.atendente_id = u.id
+            LEFT JOIN atendentes a ON t.atendente_id = a.id
             ORDER BY 
                 CASE 
                     WHEN t.status = 'pendente' THEN 1
