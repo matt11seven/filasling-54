@@ -1,187 +1,93 @@
 
-// This file provides API client for database operations with Python backend
-// Connections are handled by the Python API backend
+// Este arquivo fornece um cliente para operações com a API Python backend
+// A conexão com o banco de dados é gerenciada pelo backend Python
 
 import { toast } from 'sonner';
 
-// Get database configuration (from placeholders or env)
-const getDbConfig = () => {
-  try {
-    // Check for placeholders replaced by env.sh script
-    let config;
-    
-    try {
-      config = {
-        host: DB_HOST_PLACEHOLDER,
-        port: DB_PORT_PLACEHOLDER,
-        user: DB_USER_PLACEHOLDER, 
-        password: DB_PASSWORD_PLACEHOLDER,
-        database: DB_NAME_PLACEHOLDER
-      };
-      
-      console.log('🔌 Database config read from placeholders:', {
-        ...config,
-        password: '********' // Don't log the actual password
-      });
-    } catch (e) {
-      console.error('❌ Error accessing database placeholders:', e);
-      // Fallback to default values
-      config = {
-        host: "localhost",
-        port: "5432",
-        user: "postgres",
-        password: "postgres", 
-        database: "slingfila"
-      };
-      console.warn('⚠️ Using fallback database configuration');
-    }
-    
-    // Sanity check for placeholder values
-    if (typeof config.host === 'string' && config.host.includes('_PLACEHOLDER')) {
-      console.error('❌ Host placeholder was not properly replaced');
-      config.host = 'ops-aux_seridofila-db'; // Usando o valor real que estava funcionando
-    }
-    
-    // Check if placeholders were properly replaced
-    const hasPlaceholders = Object.values(config).some(
-      value => typeof value === 'string' && value.includes('_PLACEHOLDER')
-    );
-    
-    if (hasPlaceholders) {
-      console.error('❌ Database placeholders were not replaced:', 
-        Object.entries(config)
-          .filter(([_, v]) => typeof v === 'string' && v.includes('_PLACEHOLDER'))
-          .map(([k]) => k)
-      );
-      
-      // Se placeholders não foram substituídos, sempre mostra um erro no console
-      console.error('❌ ERRO: Os placeholders do banco de dados não foram substituídos corretamente');
-      
-      // Não usamos toast aqui para evitar dependências
-      // Em produção, isso será tratado pelo backend Python
-    }
-    
-    return config;
-  } catch (error) {
-    console.error('❌ Error getting database configuration:', error);
-    return null;
-  }
+// Função para obter a URL base da API
+const getApiBaseUrl = (): string => {
+  // Por padrão, a API está no mesmo host e na porta 8000 (development)
+  // Em produção, a API é acessada através do proxy do Nginx em /api
+  return '/api';
 };
 
-// Execute this immediately to validate configuration on load
-const dbConfig = getDbConfig();
-console.log('🏁 Initial database configuration loaded:', dbConfig ? 'OK' : 'FAILED');
-console.log('🔍 Host value being used:', dbConfig?.host);
+// Armazenar a URL base da API
+const API_BASE_URL = getApiBaseUrl();
 
-// Mock query function for client-side
-export const query = async (text: string, params?: any[]) => {
-  console.log('📊 Query called with:', { text, params });
+console.log(`🌐 API Base URL: ${API_BASE_URL}`);
+
+// Função para verificar se o token de autenticação está presente no localStorage
+const getAuthToken = (): string | null => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return localStorage.getItem('auth_token');
+  }
+  return null;
+};
+
+// Função para adicionar headers comuns a todas as requisições
+const getCommonHeaders = (): HeadersInit => {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
   
-  // In development mode, you can return mock data for testing
-  if (import.meta.env.DEV) {
-    console.log('🧪 Running in development mode, using mock data');
-    
-    // For testing purposes, here you can return mock data based on the query
-    if (text.includes('FROM tickets')) {
-      return { 
-        rows: [
-          { 
-            id: '123', 
-            nome: 'Teste Dev', 
-            etapa_numero: 1,
-            motivo: 'Teste de desenvolvimento',
-            data_criado: new Date().toISOString(),
-            email_atendente: 'dev@example.com',
-            user_ns: 'TEST123'
-          }
-        ],
-        rowCount: 1
-      };
-    }
-    
-    if (text.includes('FROM atendentes')) {
-      return {
-        rows: [
-          {
-            id: '456',
-            nome: 'Atendente Teste',
-            email: 'atendente@exemplo.com',
-            ativo: true
-          }
-        ],
-        rowCount: 1
-      };
-    }
-    
-    if (text.includes('FROM etapas')) {
-      return {
-        rows: [
-          {
-            id: '789',
-            nome: 'Etapa Teste',
-            numero: 1,
-            cor: '#FF5733'
-          }
-        ],
-        rowCount: 1
-      };
-    }
-    
-    // Default mock response
-    return { rows: [], rowCount: 0 };
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
   
-  // For production, send requests to the API backend
-  console.log('🔄 Produção: enviando requisição para API');
-  
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  return headers;
+};
+
+// Função para executar consultas no banco através da API
+export const query = async (text: string, params?: any[]) => {
+  console.log('📊 Query chamada com:', { text, params });
   
   try {
-    // Determine which API endpoint to call based on the query
-    let endpoint = '/query';
-    let method = 'POST';
-    let body = { query: text, params };
+    // Determinar o endpoint baseado na consulta SQL
+    let endpoint = '/tickets';
+    let method = 'GET';
+    let body = null;
     
-    // Parse query to determine appropriate endpoint
+    // Parse da query para determinar o endpoint apropriado
     if (text.toLowerCase().includes('from tickets')) {
-      if (text.toLowerCase().includes('select')) {
-        endpoint = '/tickets';
-        method = 'GET';
-        body = null;
+      endpoint = '/tickets';
+      
+      if (text.toLowerCase().includes('insert')) {
+        method = 'POST';
+        // Simplificação para compatibilidade com código existente
+        body = JSON.stringify({
+          usuario: params?.[0] || '',
+          descricao: params?.[1] || '',
+          prioridade: params?.[2] || 1
+        });
+      }
+    } 
+    else if (text.toLowerCase().includes('from usuarios') || text.toLowerCase().includes('atendentes')) {
+      endpoint = '/atendentes';
+      
+      if (text.toLowerCase().includes('insert')) {
+        method = 'POST';
+        body = JSON.stringify({
+          usuario: params?.[0] || '',
+          nome_completo: params?.[1] || '',
+          senha: params?.[2] || '',
+          admin: params?.[3] === true
+        });
       }
     }
-    
-    if (text.toLowerCase().includes('from atendentes')) {
-      if (text.toLowerCase().includes('select')) {
-        endpoint = '/atendentes';
-        method = 'GET';
-        body = null;
-      }
+    else if (text.toLowerCase().includes('login') || text.toLowerCase().includes('where usuario =')) {
+      // Consultas de login devem usar o endpoint auth/login
+      console.log('🔒 Consulta de login detectada - redirecionando para auth');
+      endpoint = '/auth/login';
     }
     
-    if (text.toLowerCase().includes('from etapas')) {
-      if (text.toLowerCase().includes('select')) {
-        endpoint = '/etapas';
-        method = 'GET';
-        body = null;
-      }
-    }
+    console.log(`🌐 Fazendo requisição para ${API_BASE_URL}${endpoint} (${method})`);
     
-    if (text.toLowerCase().includes('from login') && text.toLowerCase().includes('where usuario =')) {
-      // Login queries should be handled by auth/login instead
-      console.log('🔒 Consulta de login detectada, use a função de login específica');
-      return { rows: [], rowCount: 0 };
-    }
-    
-    console.log(`🌐 Fazendo requisição para ${API_URL}${endpoint} usando método ${method}`);
-    
-    // Make the API call
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    // Fazer a chamada para a API
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined,
+      headers: getCommonHeaders(),
+      body: method !== 'GET' && body ? body : undefined,
       credentials: 'include'
     });
     
@@ -194,72 +100,105 @@ export const query = async (text: string, params?: any[]) => {
     const data = await response.json();
     console.log('✅ Dados recebidos da API:', data);
     
-    // Format response to match expected format
+    // Formatar resposta para compatibilidade com o código existente
     if (Array.isArray(data)) {
       return { rows: data, rowCount: data.length };
+    } else if (data.tickets && Array.isArray(data.tickets)) {
+      return { rows: data.tickets, rowCount: data.tickets.length };
+    } else if (data.atendentes && Array.isArray(data.atendentes)) {
+      return { rows: data.atendentes, rowCount: data.atendentes.length };
     }
     
     return { rows: [data], rowCount: 1 };
   } catch (error) {
     console.error('❌ Erro ao executar query na API:', error);
-    toast.error('Erro na execução da query');
+    toast.error(`Erro na execução da query: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     return { rows: [], rowCount: 0 };
   }
 };
 
-// Mock transaction function
+// Implementação de transações através da API
 export const transaction = async (callback: (client: any) => Promise<any>) => {
-  console.log('🔄 Transaction called');
+  console.log('🔄 Transação API iniciada');
   
   try {
-    const mockClient = {
-      query: (text: string, params?: any[]) => {
-        console.log('📝 Client query in transaction:', { text, params });
-        return Promise.resolve({ rows: [] });
-      }
+    // Criar um cliente de transação mock para compatibilidade com código existente
+    const apiClient = {
+      query: query
     };
     
-    return await callback(mockClient);
+    return await callback(apiClient);
   } catch (error) {
-    console.error('❌ Transaction error:', error);
-    toast.error('Erro na transação do banco de dados');
+    console.error('❌ Erro na transação API:', error);
+    toast.error(`Erro na transação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     throw error;
   }
 };
 
-// Mock connection test
+// Teste de conexão com a API
 export const testConnection = async (): Promise<boolean> => {
-  console.log('🔌 Testing database connection');
+  console.log('🔌 Testando conexão com a API');
   
-  // Check if database configuration is valid
-  if (!dbConfig || Object.values(dbConfig).some(val => typeof val === 'string' && val.includes('_PLACEHOLDER'))) {
-    console.error('❌ Cannot test connection: Database configuration contains placeholders or is invalid');
+  try {
+    // Testar a conexão chamando o endpoint de health check
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      method: 'GET',
+      headers: getCommonHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Verificação de saúde da API falhou: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ API health check:', data);
+    return true;
+  } catch (error) {
+    console.error('❌ Teste de conexão com a API falhou:', error);
     return false;
   }
-  
-  // In development, always return true
-  if (import.meta.env.DEV) {
-    console.log('🧪 DEV mode - Simulating successful connection');
-    return true;
-  }
-  
-  console.log('🚀 PROD mode - Validating connection to DB host:', dbConfig.host);
-  
-  // In production, we still can't really test from the browser
-  // but we can check if the configuration seems valid
-  console.log('🔍 PROD mode - Checking configuration validity');
-  const hasValidConfig = dbConfig 
-    && typeof dbConfig.host === 'string' 
-    && dbConfig.host !== '' 
-    && !dbConfig.host.includes('_PLACEHOLDER');
-  
-  console.log('✅ Connection config is valid:', hasValidConfig);
-  return hasValidConfig;
 };
 
-// Mock pool reset
+// Função para resetar o pool (mantida para compatibilidade)
 export const resetPool = () => {
-  console.log('🔄 Mock pool reset called');
-  toast.info('Reiniciando conexão com o banco de dados');
-  return {};
+  console.log('🔄 Reset do cliente API');
+  return Promise.resolve();
+};
+
+// Função auxiliar para login através da API
+export const loginViaApi = async (username: string, password: string) => {
+  console.log(`🔑 Tentando login para: ${username}`);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password }),
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Login falhou (${response.status}): ${errorText}`);
+    }
+    
+    const userData = await response.json();
+    console.log('✅ Login bem-sucedido:', {
+      id: userData.id,
+      usuario: userData.usuario,
+      isAdmin: userData.isAdmin 
+    });
+    
+    // Armazenar o token se estiver presente
+    if (userData.access_token && typeof window !== 'undefined') {
+      localStorage.setItem('auth_token', userData.access_token);
+    }
+    
+    return userData;
+  } catch (error) {
+    console.error('❌ Erro de login:', error);
+    throw error;
+  }
 };
