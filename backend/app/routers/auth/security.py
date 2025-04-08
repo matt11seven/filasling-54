@@ -18,7 +18,12 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 horas
 
 # Contexto de criptografia para senhas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12,  # Usar 12 rounds para bcrypt
+    bcrypt__ident="2a"  # Suportar formato antigo $2a$ para compatibilidade
+)
 
 # Bearer token para autenticação OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -33,14 +38,24 @@ credentials_exception = HTTPException(
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica se a senha fornecida corresponde ao hash armazenado."""
     try:
-        print(f"Tentando verificar senha. Hash armazenado: {hashed_password}")
+        # Verificar se o hash está vazio ou é inválido
+        if not hashed_password or not isinstance(hashed_password, str):
+            print("Hash inválido ou vazio")
+            return False
+            
+        # Verificar o formato do hash
+        hash_format = hashed_password[:4] if len(hashed_password) > 4 else ''
+        print(f"Formato do hash: {hash_format}")
+        
+        # Tentar verificar a senha
         result = pwd_context.verify(plain_password, hashed_password)
         print(f"Resultado da verificação de senha: {result}")
         return result
+        
     except Exception as e:
         print(f"ERRO na verificação de senha: {str(e)}")
-        # Re-lançar a exceção para ser tratada pelos chamadores
-        raise
+        # Em caso de erro na verificação, retornar False em vez de lançar exceção
+        return False
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """Cria um novo token JWT com os dados fornecidos e tempo de expiração."""
@@ -84,6 +99,11 @@ def decode_token(token: str) -> Dict[str, Any]:
         # Imprimir parte do token para debug (sem revelar todo o token)
         token_part = token[:20] + "..." if len(token) > 20 else token
         print(f"Decodificando token: {token_part}")
+        
+        # Verificar se o token está vazio ou é inválido
+        if not token or not isinstance(token, str):
+            print("Token inválido: vazio ou tipo incorreto")
+            raise credentials_exception
         
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         usuario: str = payload.get("sub")

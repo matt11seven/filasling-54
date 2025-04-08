@@ -266,7 +266,20 @@ export const loginViaApi = async (username: string, password: string) => {
     
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Login falhou (${response.status}): ${errorText}`);
+      console.error(`❌ Login falhou (${response.status}):`, errorText);
+      
+      // Limpar token existente em caso de erro
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+      }
+      
+      // Tentar extrair mensagem de erro do JSON se possível
+      try {
+        const errorData = JSON.parse(errorText);
+        throw new Error(errorData.detail || `Login falhou (${response.status})`);
+      } catch {
+        throw new Error(`Login falhou (${response.status}): ${errorText}`);
+      }
     }
     
     const userData = await response.json();

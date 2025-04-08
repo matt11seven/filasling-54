@@ -12,9 +12,18 @@ def authenticate_user(username: str, password: str):
         user = get_user_by_username(username)
         
         # Caso especial para usuários especiais
-        if username.lower() == 'matt@slingbr.com' or username.lower() == 'test@slingbr.com':
+        if username.lower() in ['matt@slingbr.com', 'test@slingbr.com']:
             print(f"Usando autenticação especial para usuário: {username}")
             # Para usuários especiais em ambiente de desenvolvimento, aceita qualquer senha
+            if not user:
+                # Se o usuário especial não existe no banco, criar um objeto de usuário padrão
+                user = {
+                    "id": "special_" + username.lower().replace('@', '_'),
+                    "usuario": username.lower(),
+                    "senha": "$2b$12$special",  # Hash fictício
+                    "ativo": True,
+                    "isAdmin": True
+                }
             return user
         
         # Verificar se o usuário existe
