@@ -7,8 +7,9 @@ export const getStages = async (): Promise<Stage[]> => {
   try {
     console.log("Fetching stages from API...");
     
-    // Tenta buscar do endpoint API primeiro
+    // Ensure we're using a protocol-relative URL or HTTPS
     try {
+      // Using a relative URL to avoid mixed content issues
       const response = await fetch('/api/etapas');
       
       if (!response.ok) {

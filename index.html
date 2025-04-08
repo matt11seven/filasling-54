@@ -42,6 +42,16 @@
             }
           }
           
+          // Também garantir que URLs relativas a /api usem o protocolo correto
+          if (typeof newUrl === 'string' && 
+              newUrl.startsWith('/api') && 
+              options.url && 
+              typeof options.url === 'string' && 
+              options.url.startsWith('http:')) {
+            options.url = options.url.replace('http:', 'https:');
+            console.log('🔐 URL de opções HTTP convertida para HTTPS');
+          }
+          
           // Garantir que o token de autenticação seja enviado em todas as requisições
           if (typeof url === 'string' && (url.includes('/api/') || newUrl.includes('/api/'))) {
             // Pegar o token do localStorage
@@ -111,6 +121,26 @@
           // Qualquer variável global configurando URL da API
           if (window.API_BASE_URL) window.API_BASE_URL = '/api';
           if (window.ENV && window.ENV.VITE_API_URL) window.ENV.VITE_API_URL = '/api';
+          
+          // Patch adicional para garantir que todas as URLs /api/* usem o protocolo atual
+          const originalFetch = window.fetch;
+          if (originalFetch && typeof originalFetch === 'function') {
+            console.log('🔐 Aplicando patch adicional para garantir HTTPS em todas as chamadas de API');
+            window.fetch = function(url, options = {}) {
+              // Se for uma URL de API e estamos em HTTPS, garantir que ela também use HTTPS
+              if (typeof url === 'string' && 
+                  (url.includes('/api/') || url.startsWith('/api')) && 
+                  window.location.protocol === 'https:') {
+                // Forçar protocolo relativo ou HTTPS
+                if (url.startsWith('http:')) {
+                  const oldUrl = url;
+                  url = url.replace('http:', 'https:');
+                  console.log('🛠️ URL convertida de HTTP para HTTPS:', oldUrl, '→', url);
+                }
+              }
+              return originalFetch.call(this, url, options);
+            };
+          }
           
           // Suprimir mensagens de erro relacionadas a placeholders de banco de dados
           // Como o frontend não deve se conectar diretamente ao banco, podemos ignorar essas mensagens
