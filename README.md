@@ -49,8 +49,7 @@ Este projeto é construído com:
    ```
 
 ### Variáveis de Ambiente Obrigatórias
-- `SUPABASE_URL`: URL do seu projeto Supabase
-- `SUPABASE_ANON_KEY`: Chave anônima do Supabase
+<!-- Referências ao Supabase removidas - usando apenas PostgreSQL direto -->
 - `DB_USER`: Usuário do PostgreSQL
 - `DB_PASSWORD`: Senha do PostgreSQL
 - `DB_NAME`: Nome do banco de dados

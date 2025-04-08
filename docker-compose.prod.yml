@@ -10,8 +10,7 @@ services:
     ports:
       - "80:80"
     environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      # Variáveis removidas do Supabase - agora usando apenas PostgreSQL direto
       - DB_HOST=${DB_HOST:-db}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}

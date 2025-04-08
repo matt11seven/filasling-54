@@ -32,7 +32,7 @@ class User(BaseModel):
 # Configuração de segurança
 SECRET_KEY = os.getenv("SECRET_KEY", "chave_secreta_padrao_temporaria_nao_usar_em_producao")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 horas
 
 # Conexão ao banco de dados
 DB_HOST = os.getenv("DB_HOST", "localhost")
@@ -186,11 +186,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        usuario: str = payload.get("sub")
         user_id: str = payload.get("id")
-        if username is None or user_id is None:
+        if usuario is None or user_id is None:
             raise credentials_exception
-        return {"username": username, "id": user_id}
+        # Retornando o campo como 'usuario' para manter consistência com o resto do código
+        return {"usuario": usuario, "id": user_id}
     except JWTError:
         raise credentials_exception
 
