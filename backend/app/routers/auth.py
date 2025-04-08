@@ -66,9 +66,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    # Garanta que o campo "sub" esteja presente
-    if "usuario" in to_encode:
-        to_encode["sub"] = to_encode["usuario"]
+    # Forçar a definição do campo "sub"
+    # Se "usuario" estiver presente, usa seu valor; caso contrário, lança um erro ou define um valor padrão
+    usuario = to_encode.get("usuario")
+    if usuario:
+        to_encode["sub"] = usuario
+    else:
+        # Você pode optar por lançar um erro, ou definir um valor padrão (ex.: "desconhecido")
+        to_encode["sub"] = ""
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
