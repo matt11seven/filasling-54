@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Importar routers
-from app.routers import auth, tickets, atendentes
+from app.routers import auth, tickets, atendentes, etapas
 
 # Criar aplicação FastAPI
 app = FastAPI(
@@ -36,6 +36,7 @@ API_PREFIX = "/api"
 app.include_router(auth.router, prefix=f"{API_PREFIX}/auth", tags=["auth"])
 app.include_router(tickets.router, prefix=f"{API_PREFIX}/tickets", tags=["tickets"])
 app.include_router(atendentes.router, prefix=f"{API_PREFIX}/atendentes", tags=["atendentes"])
+app.include_router(etapas.router, prefix=f"{API_PREFIX}/etapas", tags=["etapas"])
 
 # Rota de health check
 @app.get(f"{API_PREFIX}/health", tags=["health"])

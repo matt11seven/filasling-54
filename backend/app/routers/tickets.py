@@ -11,22 +11,36 @@ router = APIRouter()
 
 # Modelo para ticket
 class TicketBase(BaseModel):
-    usuario: str
-    descricao: str
-    prioridade: int
+    nome: str  # nome do cliente/solicitante
+    motivo: str  # descrição do problema/solicitação
+    telefone: Optional[str] = None
+    setor: Optional[str] = None
+    user_ns: Optional[str] = None  # identificador do usuário no sistema
 
 class TicketCreate(TicketBase):
-    pass
+    atendente_id: Optional[str] = None
+    etapa_numero: int = 1  # Por padrão, começa na etapa 1 (Aguardando)
 
 class TicketUpdate(BaseModel):
-    status: str
+    nome: Optional[str] = None
+    motivo: Optional[str] = None
+    telefone: Optional[str] = None
+    setor: Optional[str] = None
+    etapa_numero: Optional[int] = None  # Número da etapa para atualização
     atendente_id: Optional[str] = None
+    numero_sistema: Optional[int] = None  # Número de identificação no sistema externo
     
 class Ticket(TicketBase):
     id: str
-    data_criacao: datetime
-    status: str
+    etapa_numero: int
     atendente_id: Optional[str] = None
+    nome_atendente: Optional[str] = None
+    email_atendente: Optional[str] = None
+    url_imagem_atendente: Optional[str] = None
+    numero_sistema: Optional[int] = None
+    data_criado: datetime
+    data_atualizado: datetime
+    data_saida_etapa1: Optional[datetime] = None
 
 # A função get_current_user foi movida para o módulo auth
 
@@ -35,26 +49,26 @@ class Ticket(TicketBase):
 async def list_tickets(current_user: dict = Depends(get_current_user)):
     conn = get_db_connection()
     try:
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
-            SELECT t.id, t.usuario, t.descricao, t.prioridade, t.data_criacao, 
-                   t.status, t.atendente_id, a.nome as atendente_nome
+            SELECT t.*, e.nome as etapa_nome, e.cor as etapa_cor, 
+                   a.nome as nome_atendente, a.email as email_atendente, a.url_imagem as url_imagem_atendente
             FROM tickets t
+            LEFT JOIN etapas e ON t.etapa_numero = e.numero
             LEFT JOIN atendentes a ON t.atendente_id = a.id
             ORDER BY 
                 CASE 
-                    WHEN t.status = 'pendente' THEN 1
-                    WHEN t.status = 'em_atendimento' THEN 2
-                    WHEN t.status = 'concluido' THEN 3
-                    ELSE 4
+                    WHEN t.etapa_numero = 1 THEN 1
+                    WHEN t.etapa_numero = 2 THEN 2
+                    WHEN t.etapa_numero = 3 THEN 3
+                    ELSE t.etapa_numero
                 END,
-                t.prioridade DESC,
-                t.data_criacao
+                t.data_criado DESC
         """)
         tickets = cur.fetchall()
         cur.close()
         conn.close()
-        return {"tickets": tickets}
+        return tickets
     except Exception as e:
         conn.close()
         raise HTTPException(
@@ -67,14 +81,33 @@ async def list_tickets(current_user: dict = Depends(get_current_user)):
 async def create_ticket(ticket: TicketCreate, current_user: dict = Depends(get_current_user)):
     conn = get_db_connection()
     try:
-        cur = conn.cursor()
+        # Se um atendente_id foi fornecido, buscar informações do atendente
+        nome_atendente = None
+        email_atendente = None
+        url_imagem_atendente = None
+        
+        if ticket.atendente_id:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("SELECT nome, email, url_imagem FROM atendentes WHERE id = %s", (ticket.atendente_id,))
+            atendente = cur.fetchone()
+            if atendente:
+                nome_atendente = atendente["nome"]
+                email_atendente = atendente["email"]
+                url_imagem_atendente = atendente["url_imagem"]
+        
+        # Inserir novo ticket
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(
             """
-            INSERT INTO tickets (usuario, descricao, prioridade, data_criacao, status)
-            VALUES (%s, %s, %s, NOW(), 'pendente')
-            RETURNING id, usuario, descricao, prioridade, data_criacao, status
+            INSERT INTO tickets (nome, motivo, telefone, setor, user_ns, atendente_id, 
+                              nome_atendente, email_atendente, url_imagem_atendente, 
+                              etapa_numero, data_criado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            RETURNING *
             """,
-            (ticket.usuario, ticket.descricao, ticket.prioridade)
+            (ticket.nome, ticket.motivo, ticket.telefone, ticket.setor, ticket.user_ns,
+             ticket.atendente_id, nome_atendente, email_atendente, url_imagem_atendente,
+             ticket.etapa_numero)
         )
         new_ticket = cur.fetchone()
         conn.commit()
@@ -98,7 +131,7 @@ async def update_ticket(
 ):
     conn = get_db_connection()
     try:
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         # Verificar se o ticket existe
         cur.execute("SELECT * FROM tickets WHERE id = %s", (ticket_id,))
         existing_ticket = cur.fetchone()
@@ -110,17 +143,72 @@ async def update_ticket(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Ticket com ID {ticket_id} não encontrado"
             )
+
+        # Prepara os valores para update
+        update_fields = []
+        values = []
+        
+        # Campos básicos
+        if ticket_update.nome is not None:
+            update_fields.append("nome = %s")
+            values.append(ticket_update.nome)
             
-        # Atualizar ticket
-        cur.execute(
-            """
-            UPDATE tickets 
-            SET status = %s, atendente_id = %s
-            WHERE id = %s
-            RETURNING id, usuario, descricao, prioridade, data_criacao, status, atendente_id
-            """,
-            (ticket_update.status, ticket_update.atendente_id, ticket_id)
-        )
+        if ticket_update.motivo is not None:
+            update_fields.append("motivo = %s")
+            values.append(ticket_update.motivo)
+            
+        if ticket_update.telefone is not None:
+            update_fields.append("telefone = %s")
+            values.append(ticket_update.telefone)
+            
+        if ticket_update.setor is not None:
+            update_fields.append("setor = %s")
+            values.append(ticket_update.setor)
+
+        # Atualização de atendente
+        if ticket_update.atendente_id is not None:
+            update_fields.append("atendente_id = %s")
+            values.append(ticket_update.atendente_id)
+            
+            # Se tiver um atendente, busca os dados dele para atualizar
+            if ticket_update.atendente_id:
+                cur.execute("SELECT nome, email, url_imagem FROM atendentes WHERE id = %s", (ticket_update.atendente_id,))
+                atendente = cur.fetchone()
+                if atendente:
+                    update_fields.append("nome_atendente = %s")
+                    values.append(atendente["nome"])
+                    update_fields.append("email_atendente = %s")
+                    values.append(atendente["email"])
+                    update_fields.append("url_imagem_atendente = %s")
+                    values.append(atendente["url_imagem"])
+
+        # Atualização de etapa
+        if ticket_update.etapa_numero is not None:
+            # Verificar se a etapa anterior era 1 e se está mudando de etapa
+            if existing_ticket["etapa_numero"] == 1 and ticket_update.etapa_numero != 1:
+                # Registrar data em que o ticket saiu da etapa 1
+                update_fields.append("data_saida_etapa1 = CURRENT_TIMESTAMP")
+                
+            update_fields.append("etapa_numero = %s")
+            values.append(ticket_update.etapa_numero)
+
+        # Atualização de número de sistema
+        if ticket_update.numero_sistema is not None:
+            update_fields.append("numero_sistema = %s")
+            values.append(ticket_update.numero_sistema)
+
+        # Sempre atualiza a data de atualização
+        update_fields.append("data_atualizado = CURRENT_TIMESTAMP")
+
+        # Se não há nada para atualizar
+        if not update_fields:
+            return {"message": "Nenhum campo fornecido para atualização"}
+            
+        # Construir e executar query de update
+        query = f"UPDATE tickets SET {', '.join(update_fields)} WHERE id = %s RETURNING *"
+        values.append(ticket_id)
+        
+        cur.execute(query, values)
         updated_ticket = cur.fetchone()
         conn.commit()
         cur.close()
