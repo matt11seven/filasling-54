@@ -48,7 +48,15 @@ router = APIRouter()
 
 # Função para verificar senha
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        print(f"Tentando verificar senha. Hash armazenado: {hashed_password}")
+        result = pwd_context.verify(plain_password, hashed_password)
+        print(f"Resultado da verificação de senha: {result}")
+        return result
+    except Exception as e:
+        print(f"ERRO na verificação de senha: {str(e)}")
+        # Re-lançar a exceção para ser tratada pelos chamadores
+        raise
 
 # Função para criar token JWT
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
