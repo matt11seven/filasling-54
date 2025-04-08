@@ -19,15 +19,25 @@ app = FastAPI(
 )
 
 # Configurações de CORS
-origins = os.getenv("ALLOWED_ORIGINS", "http://localhost,http://localhost:5173").split(",")
+origins = os.getenv("ALLOWED_ORIGINS", "http://localhost,http://localhost:5173,https://ops-aux-seridofila.waxfyw.easypanel.host").split(",")
+
+# Adicionar regra para aceitar todas as origens durante o desenvolvimento
+if os.getenv("ENVIRONMENT", "development") == "development":
+    print("Ambiente de desenvolvimento detectado. Permitindo todas as origens para CORS.")
+    origins.append("*")
+
+print(f"Origens CORS permitidas: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Permitir todas as origens para resolver o problema de CORS
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Type", "Authorization"],
 )
+
+print("Middleware CORS configurado")
 
 # Prefixo global para todos os endpoints
 API_PREFIX = "/api"

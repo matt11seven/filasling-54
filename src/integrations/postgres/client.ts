@@ -201,9 +201,13 @@ export const resetPool = () => {
 // Função auxiliar para login através da API
 export const loginViaApi = async (username: string, password: string) => {
   console.log(`🔑 Tentando login para: ${username}`);
+  console.log(`🌐 API Base URL: ${API_BASE_URL}`);
+  const fullUrl = `${API_BASE_URL}/auth/login`;
+  console.log(`📍 URL completa: ${fullUrl}`);
   
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    console.log('💾 Iniciando fetch para login...');
+    const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -232,6 +236,13 @@ export const loginViaApi = async (username: string, password: string) => {
     return userData;
   } catch (error) {
     console.error('❌ Erro de login:', error);
+    // Log para ajudar no diagnóstico
+    console.error('🔍 Detalhes do erro:', {
+      mensagem: error.message,
+      nome: error.name,
+      stack: error.stack,
+      causa: error.cause
+    });
     throw error;
   }
 };

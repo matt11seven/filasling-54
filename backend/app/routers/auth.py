@@ -239,7 +239,9 @@ async def test_database_connection():
 @router.post("/login")
 async def login(user_data: UserLogin):
     try:
+        print(f"== NOVA TENTATIVA DE LOGIN ==")
         print(f"Tentativa de login para usuário: {user_data.username}")
+        print(f"Informações do request recebido: username={user_data.username}, password_length={len(user_data.password)}")
         
         # Verificar usuário e senha
         user = authenticate_user(user_data.username, user_data.password)
@@ -273,7 +275,13 @@ async def login(user_data: UserLogin):
         return response
         
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"======= ERRO NO LOGIN =======")
         print(f"Erro no login: {e}")
+        print(f"Stack trace:\n{error_trace}")
+        print(f"Usuario: {user_data.username}")
+        print(f"=========================")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro no processo de login: {str(e)}"
