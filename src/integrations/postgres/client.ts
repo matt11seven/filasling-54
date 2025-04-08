@@ -76,24 +76,29 @@ export const query = async (text: string, params?: any[]) => {
       
       if (text.toLowerCase().includes('insert')) {
         method = 'POST';
-        // Simplificação para compatibilidade com código existente
+        // Adaptação para o novo modelo de tickets
         body = JSON.stringify({
-          usuario: params?.[0] || '',
-          descricao: params?.[1] || '',
-          prioridade: params?.[2] || 1
+          nome: params?.[0] || '',  // Nome do cliente
+          motivo: params?.[1] || '', // Motivo/descrição
+          telefone: '',
+          setor: '',
+          etapa_numero: 1 // Começa na primeira etapa
         });
       }
     } 
+    else if (text.toLowerCase().includes('from etapas')) {
+      endpoint = '/etapas';
+    }
     else if (text.toLowerCase().includes('from usuarios') || text.toLowerCase().includes('atendentes')) {
       endpoint = '/atendentes';
       
       if (text.toLowerCase().includes('insert')) {
         method = 'POST';
         body = JSON.stringify({
-          usuario: params?.[0] || '',
-          nome_completo: params?.[1] || '',
+          email: params?.[0] || '',  // E-mail como usuário
+          nome: params?.[1] || '',  // Nome do atendente
           senha: params?.[2] || '',
-          admin: params?.[3] === true
+          ativo: true
         });
       }
     }
@@ -125,10 +130,16 @@ export const query = async (text: string, params?: any[]) => {
     // Formatar resposta para compatibilidade com o código existente
     if (Array.isArray(data)) {
       return { rows: data, rowCount: data.length };
-    } else if (data.tickets && Array.isArray(data.tickets)) {
+    } 
+    // Verificações mantidas para compatiblidade retroativa com diferentes formatos de resposta
+    else if (data.tickets && Array.isArray(data.tickets)) {
       return { rows: data.tickets, rowCount: data.tickets.length };
-    } else if (data.atendentes && Array.isArray(data.atendentes)) {
+    } 
+    else if (data.atendentes && Array.isArray(data.atendentes)) {
       return { rows: data.atendentes, rowCount: data.atendentes.length };
+    }
+    else if (data.etapas && Array.isArray(data.etapas)) {
+      return { rows: data.etapas, rowCount: data.etapas.length };
     }
     
     return { rows: [data], rowCount: 1 };

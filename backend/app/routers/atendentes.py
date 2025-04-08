@@ -9,38 +9,49 @@ router = APIRouter()
 
 # Modelo para atendente
 class AtendenteBase(BaseModel):
-    usuario: str
-    nome_completo: str
+    email: str  # Campo 'usuario' no frontend é email no banco
+    nome: str   # Campo 'nome_completo' no frontend é nome no banco
     
 class AtendenteCreate(AtendenteBase):
     senha: str
-    admin: bool = False
+    ativo: bool = True
 
 class AtendenteUpdate(BaseModel):
-    nome_completo: Optional[str] = None
+    nome: Optional[str] = None  # nome do atendente
     ativo: Optional[bool] = None
-    admin: Optional[bool] = None
 
 class Atendente(AtendenteBase):
     id: str
     ativo: bool
-    admin: bool
+    url_imagem: Optional[str] = None
 
 # Listar todos os atendentes
 @router.get("/")
 async def list_atendentes(current_user: dict = Depends(get_current_user)):
     conn = get_db_connection()
     try:
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
-            SELECT id, nome as nome_completo, email as usuario, ativo, false as admin
+            SELECT id, nome, email, url_imagem, ativo
             FROM atendentes
             ORDER BY nome
         """)
         atendentes = cur.fetchall()
+        
+        # Mapper para compatibilidade com o frontend
+        result = []
+        for atendente in atendentes:
+            result.append({
+                "id": atendente["id"],
+                "nome_completo": atendente["nome"],  # Mapeia nome para nome_completo
+                "usuario": atendente["email"],       # Mapeia email para usuario
+                "ativo": atendente["ativo"],
+                "url_imagem": atendente["url_imagem"]
+            })
+            
         cur.close()
         conn.close()
-        return {"atendentes": atendentes}
+        return result  # Retorna array diretamente
     except Exception as e:
         conn.close()
         raise HTTPException(
@@ -90,31 +101,50 @@ async def create_atendente(
     
     conn = get_db_connection()
     try:
-        cur = conn.cursor()
-        # Verificar se já existe um usuário com este email
-        cur.execute("SELECT id FROM usuarios WHERE usuario = %s", (atendente.usuario,))
+        # Verificar se já existe um atendente com este email
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT id FROM atendentes WHERE email = %s", (atendente.email,))
         if cur.fetchone():
             cur.close()
             conn.close()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Já existe um atendente com o email {atendente.usuario}"
+                detail=f"Já existe um atendente com o email {atendente.email}"
             )
-            
-        # Inserir novo atendente
+        
+        # Primeiro criar uma entrada na tabela de login para autenticar
         cur.execute(
             """
-            INSERT INTO usuarios (usuario, nome_completo, senha, ativo, admin)
-            VALUES (%s, %s, %s, true, %s)
-            RETURNING id, usuario, nome_completo, ativo, admin
+            INSERT INTO login (usuario, senha, ativo, admin)
+            VALUES (%s, %s, true, false)
+            RETURNING id
             """,
-            (atendente.usuario, atendente.nome_completo, hashed_password, atendente.admin)
+            (atendente.email, hashed_password)
+        )
+        login_id = cur.fetchone()["id"]
+        
+        # Agora criar o atendente
+        cur.execute(
+            """
+            INSERT INTO atendentes (id, nome, email, url_imagem, ativo)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, nome, email, url_imagem, ativo
+            """,
+            (login_id, atendente.nome, atendente.email, None, atendente.ativo)
         )
         new_atendente = cur.fetchone()
         conn.commit()
         cur.close()
         conn.close()
-        return new_atendente
+        
+        # Mapear para formato esperado pelo frontend
+        return {
+            "id": new_atendente["id"],
+            "nome_completo": new_atendente["nome"],
+            "usuario": new_atendente["email"],
+            "ativo": new_atendente["ativo"],
+            "url_imagem": new_atendente["url_imagem"]
+        }
     except Exception as e:
         conn.rollback()
         conn.close()
@@ -206,7 +236,7 @@ async def update_password(
     try:
         cur = conn.cursor()
         # Verificar se o atendente existe
-        cur.execute("SELECT * FROM usuarios WHERE id = %s", (atendente_id,))
+        cur.execute("SELECT * FROM login WHERE id = %s", (atendente_id,))
         if not cur.fetchone():
             cur.close()
             conn.close()
@@ -218,10 +248,10 @@ async def update_password(
         # Atualizar senha
         cur.execute(
             """
-            UPDATE usuarios 
+            UPDATE login 
             SET senha = %s
             WHERE id = %s
-            RETURNING id, usuario, nome_completo, ativo, admin
+            RETURNING id, usuario, admin, ativo
             """,
             (hashed_password, atendente_id)
         )

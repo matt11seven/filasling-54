@@ -85,7 +85,7 @@ async def create_etapa(etapa: EtapaCreate, current_user: dict = Depends(get_curr
     conn = get_db_connection()
     try:
         # Verificar se já existe etapa com o mesmo número
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT id FROM etapas WHERE numero = %s", (etapa.numero,))
         exists = cur.fetchone()
         if exists:
@@ -98,15 +98,16 @@ async def create_etapa(etapa: EtapaCreate, current_user: dict = Depends(get_curr
         cur.execute("""
             INSERT INTO etapas (nome, numero, numero_sistema, cor)
             VALUES (%s, %s, %s, %s)
-            RETURNING id
+            RETURNING *
         """, (etapa.nome, etapa.numero, etapa.numero_sistema, etapa.cor))
         
-        new_id = cur.fetchone()[0]
+        new_etapa = cur.fetchone()
         conn.commit()
         cur.close()
         conn.close()
         
-        return {"id": new_id, "message": "Etapa criada com sucesso"}
+        # Retorna a etapa completa para o frontend
+        return new_etapa
     except HTTPException:
         conn.close()
         raise
