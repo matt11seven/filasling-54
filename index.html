@@ -22,6 +22,25 @@
             console.log('🔄 URL redirecionada:', url, '→', newUrl);
           }
           
+          // Corrigir problema de Mixed Content: garantir que todas as URLs usem HTTPS
+          if (typeof newUrl === 'string' && 
+              window.location.protocol === 'https:' && 
+              newUrl.startsWith('http:')) {
+            const oldUrl = newUrl;
+            newUrl = newUrl.replace('http:', 'https:');
+            console.log('🔐 URL HTTP convertida para HTTPS:', oldUrl, '→', newUrl);
+          }
+          
+          // Corrigir URLs absolutas com nome de host atual
+          if (typeof newUrl === 'string' && newUrl.includes(window.location.hostname)) {
+            // Se a URL contiver o nome do host atual, mas estiver usando HTTP quando o site é HTTPS
+            if (window.location.protocol === 'https:' && newUrl.startsWith('http:')) {
+              const oldUrl = newUrl;
+              newUrl = newUrl.replace('http:', 'https:');
+              console.log('🔐 URL HTTP convertida para HTTPS:', oldUrl, '→', newUrl);
+            }
+          }
+          
           return originalFetch.call(this, newUrl, options);
         };
         console.log('✅ Patch para redirecionamento de URL aplicado!');
