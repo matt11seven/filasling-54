@@ -84,7 +84,6 @@ def get_db_connection():
 def get_user_by_username(username: str):
     conn = get_db_connection()
     try:
-        cur = conn.cursor()
         # Tratando usuário master como caso especial
         if username.lower() == 'matt@slingbr.com':
             return {
@@ -93,9 +92,11 @@ def get_user_by_username(username: str):
                 "senha": pwd_context.hash("senha_master"),
                 "admin": True
             }
-            
+        
+        # Usar RealDictCursor para retornar registros como dicionário
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         # Modificado para usar a tabela login em vez de usuarios
-        cur.execute("SELECT id, usuario, senha, admin FROM login WHERE usuario = %s", (username,))
+        cur.execute("SELECT id, usuario, senha, admin, ativo FROM login WHERE usuario = %s", (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -110,21 +111,37 @@ def get_user_by_username(username: str):
 
 # Função para autenticar usuário
 def authenticate_user(username: str, password: str):
-    user = get_user_by_username(username)
-    
-    # Caso especial para usuário master
-    if username.lower() == 'matt@slingbr.com':
-        # Para o usuário master em ambiente de desenvolvimento, aceita qualquer senha
-        return user
-    
-    if not user:
-        return False
-    
-    # No caso de usuários normais, verifica a senha
-    if not verify_password(password, user["senha"]):
-        return False
+    try:
+        # Obter usuário do banco de dados
+        user = get_user_by_username(username)
         
-    return user
+        # Caso especial para usuário master
+        if username.lower() == 'matt@slingbr.com':
+            print("Usando autenticação especial para usuário master")
+            # Para o usuário master em ambiente de desenvolvimento, aceita qualquer senha
+            return user
+        
+        # Verificar se o usuário existe
+        if not user:
+            print(f"Usuário não encontrado: {username}")
+            return False
+        
+        # Verificar se o usuário está ativo
+        if user.get("ativo") is False:
+            print(f"Usuário inativo: {username}")
+            return False
+        
+        # Verificar a senha
+        if not verify_password(password, user["senha"]):
+            print(f"Senha incorreta para usuário: {username}")
+            return False
+            
+        print(f"Autenticação bem-sucedida para: {username}")
+        return user
+        
+    except Exception as e:
+        print(f"Erro na autenticação do usuário {username}: {e}")
+        raise
 
 # Função para obter usuário atual a partir do token
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -146,26 +163,43 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 # Endpoint para login
 @router.post("/login")
 async def login(user_data: UserLogin):
-    user = authenticate_user(user_data.username, user_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciais inválidas",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        print(f"Tentativa de login para usuário: {user_data.username}")
+        
+        # Verificar usuário e senha
+        user = authenticate_user(user_data.username, user_data.password)
+        if not user:
+            print(f"Login falhou: credenciais inválidas para {user_data.username}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Credenciais inválidas",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        print(f"Usuário autenticado: {user_data.username}, gerando token")
+        
+        # Gerar token JWT
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user["usuario"], "id": user["id"]},
+            expires_delta=access_token_expires
         )
-    
-    # Gerar token JWT
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user["usuario"], "id": user["id"]},
-        expires_delta=access_token_expires
-    )
-    
-    # Retornar token e dados do usuário
-    return {
-        "id": user["id"],
-        "usuario": user["usuario"],
-        "isAdmin": user["admin"],
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+        
+        # Preparar resposta
+        response = {
+            "id": user["id"],
+            "usuario": user["usuario"],
+            "isAdmin": user.get("admin", False),  # Usar get para evitar erro se admin não existir
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+        
+        print(f"Login bem-sucedido para: {user_data.username}")
+        return response
+        
+    except Exception as e:
+        print(f"Erro no login: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro no processo de login: {str(e)}"
+        )
