@@ -132,8 +132,31 @@ export const query = async (text: string, params?: any[]) => {
     
     console.log(`🌐 Fazendo requisição para ${API_BASE_URL}${endpoint} (${method})`);
     
+    // Construir a URL da API garantindo que seja HTTPS em ambiente de produção
+    let apiUrl = `${API_BASE_URL}${endpoint}`;
+    
+    // Forçar HTTPS para todas as requisições em ambiente de produção
+    if (typeof window !== 'undefined' && 
+        window.location && 
+        window.location.protocol === 'https:' && 
+        apiUrl.startsWith('http:')) {
+      apiUrl = apiUrl.replace('http:', 'https:');
+      console.log('🔐 Conversão forçada de HTTP para HTTPS:', apiUrl);
+    }
+    
+    // Se a URL não começar com http/https e estivermos em HTTPS, adicionar https://hostname
+    if (typeof window !== 'undefined' && 
+        window.location && 
+        window.location.protocol === 'https:' && 
+        apiUrl.startsWith('/')) {
+      apiUrl = `https://${window.location.hostname}${apiUrl}`;
+      console.log('🔐 URL relativa convertida para absoluta HTTPS:', apiUrl);
+    }
+    
+    console.log(`🌐 Fazendo requisição para ${apiUrl} (${method})`);
+    
     // Fazer a chamada para a API
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(apiUrl, {
       method,
       headers: getCommonHeaders(),
       body: method !== 'GET' && body ? body : undefined,
