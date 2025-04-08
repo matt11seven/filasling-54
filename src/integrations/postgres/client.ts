@@ -23,7 +23,20 @@ declare global {
 
 // Função para obter a URL base da API
 const getApiBaseUrl = (): string => {
-  // Verificar se existe a variável de ambiente definida pelo script monolítico
+  // Verificar se estamos em ambiente EasyPanel ou produção
+  const isProduction = typeof window !== 'undefined' && 
+    window.location && 
+    window.location.hostname.includes('easypanel.host');
+
+  console.log(`🌐 Ambiente detectado: ${isProduction ? 'PRODUÇÃO' : 'DEV/LOCAL'}`);
+  
+  // Em produção, sempre usar caminho relativo
+  if (isProduction) {
+    console.log('🔧 Usando URL da API relativa para ambiente de produção');
+    return '/api';
+  }
+  
+  // Se tiver variável de ambiente definida pelo script monolítico, usar ela
   if (typeof window !== 'undefined' && window.ENV && window.ENV.VITE_API_URL) {
     console.log('Usando URL da API do ambiente:', window.ENV.VITE_API_URL);
     return window.ENV.VITE_API_URL;
@@ -202,8 +215,11 @@ export const resetPool = () => {
 export const loginViaApi = async (username: string, password: string) => {
   console.log(`🔑 Tentando login para: ${username}`);
   console.log(`🌐 API Base URL: ${API_BASE_URL}`);
+  
+  // Garantir que não estamos usando localhost absoluto
   const fullUrl = `${API_BASE_URL}/auth/login`;
   console.log(`📍 URL completa: ${fullUrl}`);
+  console.log(`🔍 Hostname atual: ${window.location.hostname}`);
   
   try {
     console.log('💾 Iniciando fetch para login...');
