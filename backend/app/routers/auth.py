@@ -235,6 +235,59 @@ async def test_database_connection():
             "db_user": DB_USER
         }
 
+# Endpoint para verificação de sessão/usuário atual
+@router.get("/login")
+async def verify_session(current_user: dict = Depends(get_current_user)):
+    try:
+        print(f"== VERIFICAÇÃO DE SESSÃO ==")
+        print(f"Usuário atual: {current_user['usuario']}")
+        
+        # Consulta adicional para verificar se o usuário está ativo
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute(
+            "SELECT ativo FROM login WHERE usuario = %s",
+            (current_user['usuario'],)
+        )
+        
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if result and result.get('ativo') is True:
+            # Usuário ativo, retornar informações
+            response = {
+                "id": current_user["id"],
+                "usuario": current_user["usuario"],
+                "isAdmin": current_user.get("admin", False),
+                "ativo": True
+            }
+            print(f"Sessão válida para: {current_user['usuario']}")
+            return response
+        else:
+            # Usuário inativo ou não encontrado
+            print(f"Sessão inválida: Usuário {current_user['usuario']} não está ativo")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuário não está ativo",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"======= ERRO NA VERIFICAÇÃO DE SESSÃO =======")
+        print(f"Erro: {e}")
+        print(f"Stack trace:\n{error_trace}")
+        print(f"==========================")
+        # Para erros de sessão, retornar 401 para forçar novo login
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Erro na verificação de sessão: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
 # Endpoint para login
 @router.post("/login")
 async def login(user_data: UserLogin):
