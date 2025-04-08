@@ -208,8 +208,8 @@ export const loginViaApi = async (username: string, password: string) => {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username, password }),
-      credentials: 'include'
+      body: JSON.stringify({ username, password })
+      // credentials: 'include' removido - causando problemas de CORS
     });
     
     if (!response.ok) {
