@@ -44,6 +44,8 @@ def health_check():
     return {"status": "ok", "message": "API is running"}
 
 # Rota simples para testar diretamente a conexão com o banco
+# Colocada na raiz para ser acessada diretamente pela porta 8000
+@app.get("/")
 @app.get("/dbtest")
 def db_test():
     import psycopg2
