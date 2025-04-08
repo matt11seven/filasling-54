@@ -4,10 +4,27 @@
 
 import { toast } from 'sonner';
 
+// Definir o tipo para as variáveis de ambiente injetadas pelo script de inicialização
+declare global {
+  interface Window {
+    ENV?: {
+      VITE_API_URL: string;
+      ENVIRONMENT: string;
+      PROJECT_NAME: string;
+      DOMAIN: string;
+    };
+  }
+}
+
 // Função para obter a URL base da API
 const getApiBaseUrl = (): string => {
-  // Por padrão, a API está no mesmo host e na porta 8000 (development)
-  // Em produção, a API é acessada através do proxy do Nginx em /api
+  // Verificar se existe a variável de ambiente definida pelo script monolítico
+  if (typeof window !== 'undefined' && window.ENV && window.ENV.VITE_API_URL) {
+    console.log('Usando URL da API do ambiente:', window.ENV.VITE_API_URL);
+    return window.ENV.VITE_API_URL;
+  }
+  
+  // Fallback para modo monolítico local
   return '/api';
 };
 
