@@ -72,11 +72,28 @@ fi
 log_message "🔄 Configurando variáveis de ambiente para o frontend"
 
 # Criar um arquivo de configuração dinâmico para o frontend
+# Usar o domínio do EasyPanel se estiver definido
+log_message "🔍 Detectando domínio e ambiente..."
+
+# Determinar URL da API com base no ambiente
+if [[ "${ENVIRONMENT}" == "production" ]]; then
+  DEFAULT_API_URL="https://ops-aux-seridofila.waxfyw.easypanel.host/api"
+  log_message "🌐 Ambiente de produção detectado, usando URL: ${DEFAULT_API_URL}"
+else
+  DEFAULT_API_URL="http://localhost/api"
+  log_message "🔗 Ambiente de desenvolvimento detectado, usando URL: ${DEFAULT_API_URL}"
+fi
+
+# Criar arquivo de configuração
 cat > /usr/share/nginx/html/env-config.js << EOF
 window.ENV = {
-  VITE_API_URL: "${VITE_API_URL:-http://localhost/api}"
+  VITE_API_URL: "${VITE_API_URL:-${DEFAULT_API_URL}}",
+  ENVIRONMENT: "${ENVIRONMENT:-production}"
 };
+console.log('Configuração de ambiente carregada:', window.ENV);
 EOF
+
+log_message "✅ Arquivo de configuração criado com URL da API: ${VITE_API_URL:-${DEFAULT_API_URL}}"
 
 # Injetar o script env-config.js no index.html
 if grep -q "env-config.js" /usr/share/nginx/html/index.html; then
