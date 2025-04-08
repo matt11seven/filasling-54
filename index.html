@@ -11,8 +11,9 @@
       // Monkey patch o fetch original para interceptar chamadas para localhost:8000
       (function() {
         const originalFetch = window.fetch;
-        window.fetch = function(url, options) {
+        window.fetch = function(url, options = {}) {
           let newUrl = url;
+          let newOptions = {...options};
           
           // Se a URL contiver localhost:8000, alterar para o caminho relativo
           if (typeof url === 'string' && url.includes('localhost:8000')) {
@@ -38,6 +39,33 @@
               const oldUrl = newUrl;
               newUrl = newUrl.replace('http:', 'https:');
               console.log('🔐 URL HTTP convertida para HTTPS:', oldUrl, '→', newUrl);
+            }
+          }
+          
+          // Garantir que o token de autenticação seja enviado em todas as requisições
+          if (typeof url === 'string' && (url.includes('/api/') || newUrl.includes('/api/'))) {
+            // Pegar o token do localStorage
+            try {
+              const authToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
+              if (authToken) {
+                // Garantir que temos um objeto headers
+                newOptions.headers = newOptions.headers || {};
+                
+                // Se headers é um objeto Headers (não um objeto plano JS), convertê-lo
+                if (newOptions.headers instanceof Headers) {
+                  const plainHeaders = {};
+                  for (const [key, value] of newOptions.headers.entries()) {
+                    plainHeaders[key] = value;
+                  }
+                  newOptions.headers = plainHeaders;
+                }
+                
+                // Adicionar o token de autenticação ao header Authorization
+                newOptions.headers['Authorization'] = `Bearer ${authToken}`;
+                console.log('🔑 Token de autenticação adicionado à requisição');
+              }
+            } catch (e) {
+              console.error('Erro ao adicionar token de autenticação:', e);
             }
           }
           
