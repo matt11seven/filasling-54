@@ -43,6 +43,42 @@ app.include_router(etapas.router, prefix=f"{API_PREFIX}/etapas", tags=["etapas"]
 def health_check():
     return {"status": "ok", "message": "API is running"}
 
+# Rota de diagnóstico para o banco de dados
+@app.get(f"{API_PREFIX}/db-test", tags=["diagnostics"])
+def test_database_connection():
+    from app.routers.auth import get_db_connection
+    try:
+        # Tentar conectar ao banco de dados
+        conn = get_db_connection()
+        
+        # Testar consulta simples
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1 as test")
+            result = cursor.fetchone()
+        
+        # Fechar conexão
+        conn.close()
+        
+        # Retornar sucesso
+        return {
+            "status": "ok", 
+            "message": "Conexão com o banco de dados estabelecida com sucesso",
+            "db_host": os.getenv("DB_HOST", "localhost"),
+            "db_name": os.getenv("DB_NAME", "filasling"),
+            "test_result": result
+        }
+    except Exception as e:
+        # Retornar detalhes do erro
+        import traceback
+        return {
+            "status": "error",
+            "message": f"Erro ao conectar ao banco de dados: {str(e)}",
+            "traceback": traceback.format_exc(),
+            "db_host": os.getenv("DB_HOST", "localhost"),
+            "db_name": os.getenv("DB_NAME", "filasling"),
+            "db_user": os.getenv("DB_USER", "postgres")
+        }
+
 # Rota raiz para o prefixo /api
 @app.get(f"{API_PREFIX}", tags=["root"])
 def read_api_root():

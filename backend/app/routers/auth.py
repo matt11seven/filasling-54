@@ -64,17 +64,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 # Função para obter conexão com o banco de dados
 def get_db_connection():
     try:
+        print(f"Tentando conectar ao banco de dados: {DB_HOST}:{DB_PORT}/{DB_NAME} com usuário {DB_USER}")
         conn = psycopg2.connect(
             host=DB_HOST,
             port=DB_PORT,
             user=DB_USER,
             password=DB_PASSWORD,
-            dbname=DB_NAME,
-            cursor_factory=RealDictCursor
+            dbname=DB_NAME
         )
+        print("Conexão com o banco de dados estabelecida com sucesso!")
         return conn
     except Exception as e:
-        print(f"Erro ao conectar ao banco de dados: {e}")
+        error_msg = f"Erro ao conectar ao banco de dados: {e}"
+        print(error_msg)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erro ao conectar ao banco de dados"
@@ -82,31 +84,55 @@ def get_db_connection():
 
 # Função para obter usuário do banco de dados
 def get_user_by_username(username: str):
-    conn = get_db_connection()
+    # Tratando usuário master como caso especial
+    if username.lower() == 'matt@slingbr.com':
+        print("Usando usuário master especial")
+        return {
+            "id": "1",
+            "usuario": username,
+            "senha": pwd_context.hash("senha_master"),
+            "admin": True
+        }
+    
+    conn = None
     try:
-        # Tratando usuário master como caso especial
-        if username.lower() == 'matt@slingbr.com':
-            return {
-                "id": "1",
-                "usuario": username,
-                "senha": pwd_context.hash("senha_master"),
-                "admin": True
-            }
+        # Obter conexão com o banco de dados
+        conn = get_db_connection()
         
         # Usar RealDictCursor para retornar registros como dicionário
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        # Modificado para usar a tabela login em vez de usuarios
-        cur.execute("SELECT id, usuario, senha, admin, ativo FROM login WHERE usuario = %s", (username,))
+        
+        # Imprimir a consulta SQL para debug
+        query = "SELECT id, usuario, senha, admin, ativo FROM login WHERE usuario = %s"
+        print(f"Executando consulta: {query} com parâmetro: {username}")
+        
+        # Executar a consulta
+        cur.execute(query, (username,))
+        
+        # Obter o resultado
         user = cur.fetchone()
+        print(f"Resultado da consulta para {username}: {user if user else 'Nenhum usuário encontrado'}")
+        
+        # Fechar cursor e conexão
         cur.close()
         conn.close()
+        
         return user
     except Exception as e:
-        print(f"Erro ao buscar usuário: {e}")
-        conn.close()
+        error_msg = f"Erro ao buscar usuário: {e}"
+        print(error_msg)
+        
+        # Garantir que a conexão seja fechada em caso de erro
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception as close_error:
+                print(f"Erro ao fechar conexão: {close_error}")
+        
+        # Retornar erro HTTP
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro ao buscar usuário no banco de dados"
+            detail=f"Erro ao buscar usuário no banco de dados: {str(e)}"
         )
 
 # Função para autenticar usuário
