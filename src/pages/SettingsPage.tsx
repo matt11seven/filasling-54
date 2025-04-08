@@ -46,6 +46,7 @@ const SettingsPage = () => {
           
           // Verificar se é erro de autenticação
           if (error.message && error.message.includes("401")) {
+            logout();
             throw new Error("Sessão expirada ou inválida");
           }
           
@@ -57,6 +58,7 @@ const SettingsPage = () => {
           
           // Verificar se é erro de autenticação
           if (error.message && error.message.includes("401")) {
+            logout();
             throw new Error("Sessão expirada ou inválida");
           }
           
@@ -87,17 +89,14 @@ const SettingsPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated]);
-  
+  // Verificar autenticação antes de carregar dados
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
+    } else {
+      loadData();
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated]);
   
   const handleEditAgent = (agent: Agent) => {
     setSelectedAgent(agent);

@@ -14,16 +14,11 @@ export const getStages = async (): Promise<Stage[]> => {
       return [];
     }
     
-    // Ensure we're using a protocol-relative URL or HTTPS
     try {
-      // Determinar a URL correta para evitar Mixed Content
-      let apiUrl = '/api/etapas';
+      // Usar API path relativo para evitar problemas de HTTPS/HTTP
+      const apiUrl = '/api/etapas';
       
-      // Se estamos em HTTPS, forçar HTTPS na requisição
-      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-        apiUrl = `https://${window.location.hostname}/api/etapas`;
-        console.log('🔐 Forçando HTTPS para requisição de etapas:', apiUrl);
-      }
+      console.log(`🔄 Tentando buscar etapas de: ${apiUrl}`);
       
       const response = await fetch(apiUrl, {
         headers: {
@@ -33,6 +28,16 @@ export const getStages = async (): Promise<Stage[]> => {
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`🚨 API respondeu com status ${response.status}: ${errorText}`);
+        
+        // Se for erro de autenticação, não tentar fallback
+        if (response.status === 401) {
+          console.log("🔐 Erro de autenticação, redirecionando para login");
+          // Não vamos fazer logout aqui, deixaremos o AuthContext cuidar disso
+          throw new Error(`API responded with status ${response.status}`);
+        }
+        
         throw new Error(`API responded with status ${response.status}`);
       }
       
@@ -41,6 +46,12 @@ export const getStages = async (): Promise<Stage[]> => {
       return data || [];
     } catch (apiError) {
       console.error("Error fetching stages from API:", apiError);
+      
+      // Se não estamos autenticados, não tentar fallback
+      if (apiError.message && apiError.message.includes("401")) {
+        return [];
+      }
+      
       console.log("Falling back to local database query...");
       
       // Fallback para busca local se a API falhar
@@ -55,7 +66,12 @@ export const getStages = async (): Promise<Stage[]> => {
     }
   } catch (error) {
     console.error("Error fetching stages:", error);
-    toast.error("Erro ao carregar etapas");
+    
+    // Não mostrar toast de erro se for apenas falta de autenticação
+    if (!(error instanceof Error && error.message.includes("401"))) {
+      toast.error("Erro ao carregar etapas");
+    }
+    
     return [];
   }
 };

@@ -5,11 +5,51 @@ import { toast } from "sonner";
 
 export const getAgents = async (): Promise<Agent[]> => {
   try {
-    const result = await query("SELECT * FROM atendentes");
-    return (result.rows || []) as Agent[];
+    // Verificar se o token está presente
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      console.log("⚠️ Token de autenticação ausente, não é possível buscar atendentes");
+      return [];
+    }
+
+    // Primeiro tenta buscar da API
+    try {
+      const response = await fetch('/api/atendentes', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        // Se for erro de autenticação, não tentar fallback
+        if (response.status === 401) {
+          throw new Error("Unauthorized");
+        }
+        throw new Error(`API responded with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data || [];
+    } catch (apiError) {
+      // Somente fazer fallback se não for erro de autenticação
+      if (apiError.message === "Unauthorized") {
+        throw apiError;
+      }
+      
+      // Fallback para banco local
+      console.log("Falling back to local database query for agents");
+      const result = await query("SELECT * FROM atendentes");
+      return (result.rows || []) as Agent[];
+    }
   } catch (error) {
     console.error("Error fetching agents:", error);
-    toast.error("Erro ao carregar atendentes");
+    
+    // Não mostrar toast de erro se for apenas falta de autenticação
+    if (!(error instanceof Error && error.message.includes("Unauthorized"))) {
+      toast.error("Erro ao carregar atendentes");
+    }
+    
     return [];
   }
 };
