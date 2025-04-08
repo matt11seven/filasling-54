@@ -24,9 +24,48 @@ export const login = async (
       
       // Para o usuário master, sempre aceitar a senha
       console.log("✅ LOGIN MASTER: Login autorizado");
+      
+      // Simular um token JWT para o usuário master
+      const fakeToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({
+        sub: username,
+        id: "1",
+        isAdmin: true,
+        exp: Date.now() + 86400000 // 24 horas
+      }))}.fakesignature`;
+      
+      // Armazenar o token simulado
+      localStorage.setItem("accessToken", fakeToken);
+      
       // Retornar dados do usuário master sem verificar no banco
       return {
         id: '1',
+        usuario: username,
+        isAdmin: true
+      };
+    }
+    
+    // Verificar se é o usuário de teste (comparação case-insensitive)
+    if (username.toLowerCase() === 'test@slingbr.com') {
+      console.log("🔑 LOGIN TEST: Usuário de teste detectado");
+      console.log(`🔐 LOGIN TEST: Senha fornecida: "${password}"`);
+      
+      // Para o usuário de teste, sempre aceitar a senha
+      console.log("✅ LOGIN TEST: Login autorizado");
+      
+      // Simular um token JWT para o usuário de teste
+      const fakeToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({
+        sub: username,
+        id: "2",
+        isAdmin: true,
+        exp: Date.now() + 86400000 // 24 horas
+      }))}.fakesignature`;
+      
+      // Armazenar o token simulado
+      localStorage.setItem("accessToken", fakeToken);
+      
+      // Retornar dados do usuário de teste sem verificar no banco
+      return {
+        id: '2',
         usuario: username,
         isAdmin: true
       };
