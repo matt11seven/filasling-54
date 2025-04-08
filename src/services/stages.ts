@@ -9,8 +9,16 @@ export const getStages = async (): Promise<Stage[]> => {
     
     // Ensure we're using a protocol-relative URL or HTTPS
     try {
-      // Using a relative URL to avoid mixed content issues
-      const response = await fetch('/api/etapas');
+      // Determinar a URL correta para evitar Mixed Content
+      let apiUrl = '/api/etapas';
+      
+      // Se estamos em HTTPS, forçar HTTPS na requisição
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        apiUrl = `https://${window.location.hostname}/api/etapas`;
+        console.log('🔐 Forçando HTTPS para requisição de etapas:', apiUrl);
+      }
+      
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error(`API responded with status ${response.status}`);
