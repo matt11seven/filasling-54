@@ -186,6 +186,47 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
+# Endpoint para verificar a conexão com o banco de dados
+@router.get("/db-test")
+async def test_database_connection():
+    try:
+        # Tentar conectar ao banco de dados
+        conn = get_db_connection()
+        
+        # Testar consulta simples
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1 as test")
+            result = cursor.fetchone()
+        
+        # Testar uma consulta na tabela login
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT COUNT(*) as total_users FROM login")
+            users_count = cursor.fetchone()
+        
+        # Fechar conexão
+        conn.close()
+        
+        # Retornar sucesso
+        return {
+            "status": "ok", 
+            "message": "Conexão com o banco de dados bem-sucedida",
+            "db_host": DB_HOST,
+            "db_name": DB_NAME,
+            "test_result": result,
+            "users_count": users_count
+        }
+    except Exception as e:
+        # Retornar detalhes do erro
+        import traceback
+        return {
+            "status": "error",
+            "message": f"Erro ao conectar ao banco de dados: {str(e)}",
+            "traceback": traceback.format_exc(),
+            "db_host": DB_HOST,
+            "db_name": DB_NAME,
+            "db_user": DB_USER
+        }
+
 # Endpoint para login
 @router.post("/login")
 async def login(user_data: UserLogin):
