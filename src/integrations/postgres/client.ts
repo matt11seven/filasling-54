@@ -30,9 +30,18 @@ const getApiBaseUrl = (): string => {
 
   console.log(`🌐 Ambiente detectado: ${isProduction ? 'PRODUÇÃO' : 'DEV/LOCAL'}`);
   
-  // Em produção, sempre usar caminho relativo
+  // Em produção, sempre usar caminho relativo e HTTPS
   if (isProduction) {
     console.log('🔧 Usando URL da API relativa para ambiente de produção');
+    
+    // Se estamos em HTTPS, garantir que a API também use HTTPS
+    if (typeof window !== 'undefined' && window.location && window.location.protocol === 'https:') {
+      // Url absoluta com https
+      const httpsUrl = `https://${window.location.hostname}/api`;
+      console.log('🔐 Forçando HTTPS para todas as chamadas API:', httpsUrl);
+      return httpsUrl;
+    }
+    
     return '/api';
   }
   
