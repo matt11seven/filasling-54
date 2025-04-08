@@ -12,6 +12,9 @@ COPY . .
 # Build the frontend application
 RUN npm run build
 
+# Verificar se os arquivos foram gerados corretamente
+RUN ls -la /app/dist || echo "Pasta dist não foi criada!"
+
 # Stage para Python e Nginx
 FROM python:3.11-slim
 
@@ -31,6 +34,12 @@ RUN apt-get update && apt-get install -y \
 
 # Copiar os arquivos estáticos do frontend
 COPY --from=frontend-build /app/dist /usr/share/nginx/html
+
+# Verificar se os arquivos foram copiados corretamente
+RUN ls -la /usr/share/nginx/html
+
+# Garantir que pelo menos um arquivo index.html básico esteja presente
+RUN echo "<!DOCTYPE html><html><body><h1>FilaSling - Arquivo básico</h1><p>Este arquivo existe para garantir que o servidor Nginx tenha um arquivo para servir.</p></body></html>" > /usr/share/nginx/html/index-backup.html
 
 # Configurar diretórios de trabalho para o backend
 WORKDIR /app

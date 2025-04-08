@@ -8,6 +8,42 @@ log_message() {
 
 log_message "🚀 Iniciando contêiner monolítico FilaSling"
 
+# Verificar os arquivos do frontend
+log_message "🔍 Verificando arquivos do frontend..."
+ls -la /usr/share/nginx/html
+if [ ! -f "/usr/share/nginx/html/index.html" ]; then
+  log_message "⚠️ AVISO: index.html não encontrado, criando arquivo mínimo para teste"
+  cat > /usr/share/nginx/html/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>FilaSling - Teste</title>
+</head>
+<body>
+    <h1>FilaSling - Teste de Integração</h1>
+    <p>Se você está vendo esta página, o Nginx está funcionando corretamente!</p>
+    <button onclick="testApi()">Testar API</button>
+    <div id="api-result"></div>
+    
+    <script>
+        async function testApi() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                document.getElementById('api-result').innerHTML = 
+                    `API respondeu: ${JSON.stringify(data)}`;
+            } catch (error) {
+                document.getElementById('api-result').innerHTML = 
+                    `Erro: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
+EOF
+fi
+
 # Criar arquivo .env a partir das variáveis de ambiente, se não existir
 if [ ! -f /app/.env ]; then
   log_message "📝 Criando arquivo .env para o backend"
