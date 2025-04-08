@@ -1,48 +1,62 @@
 
-# Build stage
-FROM node:18-alpine as build
+# Build stage para o frontend
+FROM node:18-alpine as frontend-build
 
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copy the rest of the application
+# Copy the frontend code
 COPY . .
 
-# Build the application
+# Build the frontend application
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+# Stage para Python e Nginx
+FROM python:3.11-slim
 
-# Install necessary packages for our scripts and diagnostics
-RUN apk add --no-cache \
-    bash \
+# Instalar nginx e outras ferramentas necessárias
+RUN apt-get update && apt-get install -y \
+    nginx \
     postgresql-client \
-    gettext \
     curl \
-    iputils \
-    bind-tools \
-    netcat-openbsd
+    gettext \
+    procps \
+    iputils-ping \
+    dnsutils \
+    netcat-openbsd \
+    supervisor \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy built assets from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copiar os arquivos estáticos do frontend
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
 
-# Copy custom error page
-COPY ./usr/share/nginx/html/custom_50x.html /usr/share/nginx/html/custom_50x.html
+# Configurar diretórios de trabalho para o backend
+WORKDIR /app
 
-# Add nginx config
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+# Copiar os arquivos do backend
+COPY ./backend /app
 
-# Copy and set permissions for deployment scripts
-COPY ./env.sh /usr/local/bin/env.sh
-RUN chmod +x /usr/local/bin/env.sh
+# Instalar as dependências do Python backend
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Add a healthcheck
+# Adicionar configuração do Nginx
+COPY ./nginx-mono.conf /etc/nginx/conf.d/default.conf
+
+# Copiar script de ambiente
+COPY ./mono-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Configurar supervisord
+COPY ./supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Verificação de saúde
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
   CMD curl -f http://localhost/ || exit 1
 
-EXPOSE 80
+# Expor portas para Nginx e FastAPI
+EXPOSE 80 8000
 
-# Run the script to replace environment variables and start nginx
-CMD ["/bin/sh", "-c", "set -e; /usr/local/bin/env.sh && nginx -g 'daemon off;'"]
+# Iniciar supervisord para gerenciar Nginx e FastAPI
+CMD ["/usr/local/bin/entrypoint.sh"]

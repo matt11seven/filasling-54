@@ -1,6 +1,6 @@
 
-// This file provides a mock/proxy interface for database operations in the browser
-// Real connections will be handled by the server (via env.sh)
+// This file provides API client for database operations with Python backend
+// Connections are handled by the Python API backend
 
 import { toast } from 'sonner';
 
@@ -54,11 +54,11 @@ const getDbConfig = () => {
           .map(([k]) => k)
       );
       
-      // If we're in production but placeholders weren't replaced, log an error
-      if (import.meta.env.PROD) {
-        toast.error('Erro na configuração do banco de dados. Verifique os logs.');
-        console.error('❌ ERRO CRÍTICO: Os placeholders do banco de dados não foram substituídos pelo script env.sh');
-      }
+      // Se placeholders não foram substituídos, sempre mostra um erro no console
+      console.error('❌ ERRO: Os placeholders do banco de dados não foram substituídos corretamente');
+      
+      // Não usamos toast aqui para evitar dependências
+      // Em produção, isso será tratado pelo backend Python
     }
     
     return config;
@@ -131,44 +131,77 @@ export const query = async (text: string, params?: any[]) => {
     return { rows: [], rowCount: 0 };
   }
   
-  // For production, these calls should go through a secure API
-  console.log('🔄 Produção: tentando conexão real com banco de dados');
+  // For production, send requests to the API backend
+  console.log('🔄 Produção: enviando requisição para API');
   
-  if (!dbConfig || Object.values(dbConfig).some(val => typeof val === 'string' && val.includes('_PLACEHOLDER'))) {
-    console.error('❌ Database configuration is invalid or contains placeholders');
-    toast.error('Erro na configuração do banco de dados');
-    // Fallback to empty data
-    return { rows: [], rowCount: 0 };
-  }
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
   try {
-    // Em produção, nós estaríamos enviando esta query para o servidor
-    // Aqui, vamos simular um resultado bem-sucedido para não bloquear a UI
-    console.log('✅ Simulando resultado bem-sucedido para query em produção');
+    // Determine which API endpoint to call based on the query
+    let endpoint = '/query';
+    let method = 'POST';
+    let body = { query: text, params };
     
-    // Simulação de dados baseados no tipo de query
-    if (text.includes('FROM tickets')) {
-      return { 
-        rows: [
-          { 
-            id: 'prod-123', 
-            nome: 'Cliente Produção', 
-            telefone: '(11) 98765-4321',
-            user_ns: 'PROD123',
-            motivo: 'Consulta em produção',
-            email_atendente: 'atendente@exemplo.com',
-            nome_atendente: 'Atendente Real',
-            etapa_numero: 1,
-            data_criado: new Date().toISOString()
-          }
-        ],
-        rowCount: 1
-      };
+    // Parse query to determine appropriate endpoint
+    if (text.toLowerCase().includes('from tickets')) {
+      if (text.toLowerCase().includes('select')) {
+        endpoint = '/tickets';
+        method = 'GET';
+        body = null;
+      }
     }
     
-    return { rows: [], rowCount: 0 };
+    if (text.toLowerCase().includes('from atendentes')) {
+      if (text.toLowerCase().includes('select')) {
+        endpoint = '/atendentes';
+        method = 'GET';
+        body = null;
+      }
+    }
+    
+    if (text.toLowerCase().includes('from etapas')) {
+      if (text.toLowerCase().includes('select')) {
+        endpoint = '/etapas';
+        method = 'GET';
+        body = null;
+      }
+    }
+    
+    if (text.toLowerCase().includes('from login') && text.toLowerCase().includes('where usuario =')) {
+      // Login queries should be handled by auth/login instead
+      console.log('🔒 Consulta de login detectada, use a função de login específica');
+      return { rows: [], rowCount: 0 };
+    }
+    
+    console.log(`🌐 Fazendo requisição para ${API_URL}${endpoint} usando método ${method}`);
+    
+    // Make the API call
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`🚨 API respondeu com status: ${response.status}, erro: ${errorText}`);
+      throw new Error(`API respondeu com status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Dados recebidos da API:', data);
+    
+    // Format response to match expected format
+    if (Array.isArray(data)) {
+      return { rows: data, rowCount: data.length };
+    }
+    
+    return { rows: [data], rowCount: 1 };
   } catch (error) {
-    console.error('❌ Error executing query:', error);
+    console.error('❌ Erro ao executar query na API:', error);
     toast.error('Erro na execução da query');
     return { rows: [], rowCount: 0 };
   }
