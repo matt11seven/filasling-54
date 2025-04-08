@@ -112,13 +112,9 @@ PROJECT_NAME=${PROJECT_NAME:-filasling}
 DEFAULT_DOMAIN=$(expand_template_vars "${DOMAIN:-ops-aux-\$(PROJECT_NAME).waxfyw.easypanel.host}")
 
 # Determinar URL da API com base no ambiente
-if [[ "${ENVIRONMENT}" == "production" ]]; then
-  DEFAULT_API_URL="https://${DEFAULT_DOMAIN}/api"
-  log_message "🌐 Ambiente de produção detectado, usando URL: ${DEFAULT_API_URL}"
-else
-  DEFAULT_API_URL="/api"
-  log_message "🔗 Ambiente de desenvolvimento detectado, usando URL: ${DEFAULT_API_URL} (relativa)"
-fi
+# No contêiner monolítico, sempre usamos URL relativa para API no mesmo servidor
+DEFAULT_API_URL="/api"
+log_message "🔗 Contêiner monolítico: usando URL relativa para API: ${DEFAULT_API_URL}"
 
 # Usar a URL da API do ambiente se definida, ou o valor calculado
 API_URL=${VITE_API_URL:-${DEFAULT_API_URL}}
