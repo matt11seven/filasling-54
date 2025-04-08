@@ -149,10 +149,10 @@ def authenticate_user(username: str, password: str):
         # Obter usuário do banco de dados
         user = get_user_by_username(username)
         
-        # Caso especial para usuário master
-        if username.lower() == 'matt@slingbr.com':
-            print("Usando autenticação especial para usuário master")
-            # Para o usuário master em ambiente de desenvolvimento, aceita qualquer senha
+        # Caso especial para usuários especiais
+        if username.lower() == 'matt@slingbr.com' or username.lower() == 'test@slingbr.com':
+            print(f"Usando autenticação especial para usuário: {username}")
+            # Para usuários especiais em ambiente de desenvolvimento, aceita qualquer senha
             return user
         
         # Verificar se o usuário existe
