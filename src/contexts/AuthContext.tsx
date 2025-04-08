@@ -56,6 +56,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       try {
         const storedUser = localStorage.getItem("queueUser");
+        const token = localStorage.getItem("accessToken");
+        
+        if (!token) {
+          console.log("❌ [AuthContext] Nenhum token encontrado, sessão inválida");
+          await logoutSilent();
+          setIsLoading(false);
+          return;
+        }
         
         if (storedUser) {
           const userData: User = JSON.parse(storedUser);
@@ -84,6 +92,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         } else {
           console.log("📋 Nenhuma sessão encontrada");
+          await logoutSilent();
         }
       } catch (error) {
         console.error("🚨 Erro ao verificar sessão:", error);
@@ -109,6 +118,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("✅ [AuthContext] Login bem-sucedido para:", userData.usuario);
         setUser(userData);
         localStorage.setItem("queueUser", JSON.stringify(userData));
+        
+        // Verificar se o token foi salvo corretamente
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          console.warn("⚠️ [AuthContext] Token não encontrado após login bem-sucedido");
+        } else {
+          console.log("🔑 [AuthContext] Token salvo com sucesso:", token.substring(0, 15) + "...");
+        }
+        
         navigate("/dashboard");
       }
     } catch (error) {

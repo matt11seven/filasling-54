@@ -1,3 +1,4 @@
+
 // Este arquivo fornece um cliente para operações com a API Python backend
 // A conexão com o banco de dados é gerenciada pelo backend Python
 
@@ -51,10 +52,11 @@ const API_BASE_URL = getApiBaseUrl();
 
 console.log(`🌐 API Base URL: ${API_BASE_URL}`);
 
-// Função para verificar se o token de autenticação está presente no localStorage
+// Função para obter o token de autenticação do localStorage
 const getAuthToken = (): string | null => {
   if (typeof window !== 'undefined' && window.localStorage) {
-    return localStorage.getItem('auth_token');
+    // Usar o accessToken que é definido no login
+    return localStorage.getItem('accessToken');
   }
   return null;
 };
@@ -151,7 +153,7 @@ export const query = async (text: string, params?: any[]) => {
     
     console.log(`🌐 Fazendo requisição para ${apiUrl} (${method})`);
     
-    // Fazer a chamada para a API
+    // Fazer a chamada para a API com os headers de autenticação
     const response = await fetch(apiUrl, {
       method,
       headers: getCommonHeaders(),
@@ -260,7 +262,6 @@ export const loginViaApi = async (username: string, password: string) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ username, password })
-      // credentials: 'include' removido - causando problemas de CORS
     });
     
     if (!response.ok) {
@@ -277,7 +278,8 @@ export const loginViaApi = async (username: string, password: string) => {
     
     // Armazenar o token se estiver presente
     if (userData.access_token && typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', userData.access_token);
+      localStorage.setItem('accessToken', userData.access_token);
+      console.log('🔑 Token de autenticação armazenado:', userData.access_token.substring(0, 15) + '...');
     }
     
     return userData;

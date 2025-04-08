@@ -7,6 +7,13 @@ export const getStages = async (): Promise<Stage[]> => {
   try {
     console.log("Fetching stages from API...");
     
+    // Verificar se o token de autenticação está presente
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      console.log("⚠️ Token de autenticação ausente, não é possível buscar etapas");
+      return [];
+    }
+    
     // Ensure we're using a protocol-relative URL or HTTPS
     try {
       // Determinar a URL correta para evitar Mixed Content
@@ -18,7 +25,12 @@ export const getStages = async (): Promise<Stage[]> => {
         console.log('🔐 Forçando HTTPS para requisição de etapas:', apiUrl);
       }
       
-      const response = await fetch(apiUrl);
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`API responded with status ${response.status}`);

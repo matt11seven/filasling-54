@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +14,7 @@ import AgentDialog from "@/components/settings/AgentDialog";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   
   const [agents, setAgents] = useState<Agent[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -29,14 +30,36 @@ const SettingsPage = () => {
       
       console.log("Loading settings data...");
       
+      // Verificar se o token está presente
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.error("Token de autenticação não encontrado");
+        setLoadError("Sessão expirada ou inválida. Por favor, faça login novamente.");
+        toast.error("Sessão expirada, faça login novamente");
+        logout();
+        return;
+      }
+      
       const [agentsData, stagesData] = await Promise.all([
         getAgents().catch(error => {
           console.error("Error loading agents:", error);
+          
+          // Verificar se é erro de autenticação
+          if (error.message && error.message.includes("401")) {
+            throw new Error("Sessão expirada ou inválida");
+          }
+          
           toast.error("Erro ao carregar atendentes");
           return [];
         }),
         getStages().catch(error => {
           console.error("Error loading stages:", error);
+          
+          // Verificar se é erro de autenticação
+          if (error.message && error.message.includes("401")) {
+            throw new Error("Sessão expirada ou inválida");
+          }
+          
           toast.error("Erro ao carregar etapas");
           return [];
         }),
@@ -49,8 +72,16 @@ const SettingsPage = () => {
       setStages(stagesData);
     } catch (error) {
       console.error("Error loading settings data:", error);
-      setLoadError("Erro ao carregar dados. Tente novamente.");
-      toast.error("Erro ao carregar dados de configurações");
+      
+      // Se for erro de autenticação, fazer logout
+      if (error instanceof Error && error.message.includes("Sessão expirada")) {
+        setLoadError("Sessão expirada ou inválida. Por favor, faça login novamente.");
+        toast.error("Sessão expirada, faça login novamente");
+        logout();
+      } else {
+        setLoadError("Erro ao carregar dados. Tente novamente.");
+        toast.error("Erro ao carregar dados de configurações");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -95,9 +126,15 @@ const SettingsPage = () => {
         {loadError ? (
           <div className="text-center py-12 border rounded-lg mt-4">
             <p className="text-red-500 mb-4">{loadError}</p>
-            <Button onClick={loadData} variant="default">
-              Tentar Novamente
-            </Button>
+            {loadError.includes("Sessão expirada") ? (
+              <Button onClick={() => navigate("/login")} variant="default">
+                Fazer Login Novamente
+              </Button>
+            ) : (
+              <Button onClick={loadData} variant="default">
+                Tentar Novamente
+              </Button>
+            )}
           </div>
         ) : (
           <SettingsTabs 
